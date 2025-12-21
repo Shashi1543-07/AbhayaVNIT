@@ -105,8 +105,12 @@ export default function StudentDashboard() {
                         <button
                             onClick={() => {
                                 const warden = staff.find(s => s.role === 'warden' && s.hostelId === profile?.hostelId);
-                                if (warden && user) callService.startCall(user, warden);
-                                else alert("Warden currently unavailable for calls.");
+                                console.log("StudentDashboard: Requesting call to warden:", warden);
+                                if (warden && user) {
+                                    callService.startCall(user, warden);
+                                } else {
+                                    alert(`Warden currently unavailable for calls. (Hostel: ${profile?.hostelId || 'N/A'})`);
+                                }
                             }}
                             className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-secondary/10 active:scale-95 transition-all"
                         >

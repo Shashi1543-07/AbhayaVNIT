@@ -90,8 +90,8 @@ function App() {
 
   return (
     <Router>
-      <CallOverlay />
       <AnimatedRoutes />
+      <CallOverlay />
     </Router>
   );
 }

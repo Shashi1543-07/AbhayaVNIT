@@ -12,7 +12,7 @@ import { type SafeWalkSession } from '../../services/safeWalkService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { wardenNavItems } from '../../lib/navItems';
 import { doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
@@ -39,41 +39,6 @@ export default function WardenDashboard() {
         await deleteDoc(doc(db, 'notifications', id));
     };
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                // Count students in this hostel
-                const studentsQuery = query(
-                    collection(db, 'users'),
-                    where('role', '==', 'student'),
-                    where('hostelId', '==', wardenHostelId)
-                );
-                const studentsSnapshot = await getCountFromServer(studentsQuery);
-
-                // Count pending reports for this hostel
-                let pendingReportsCount = 0;
-                try {
-                    const reportsQuery = query(
-                        collection(db, 'reports'),
-                        where('hostelId', '==', wardenHostelId),
-                        where('status', '==', 'pending')
-                    );
-                    const reportsSnapshot = await getCountFromServer(reportsQuery);
-                    pendingReportsCount = reportsSnapshot.data().count;
-                } catch (e) {
-                    console.log('Reports collection might not exist yet', e);
-                }
-
-                // setStats({ // This line was removed as per instruction
-                //     studentsPresent: studentsSnapshot.data().count,
-                //     pendingReports: pendingReportsCount
-                // });
-            } catch (error) {
-                console.error('Error fetching warden stats:', error);
-            }
-        };
-        fetchStats();
-    }, [wardenHostelId]);
 
     // Nav items imported from src/lib/navItems.ts
 

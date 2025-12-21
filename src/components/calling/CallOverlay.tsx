@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../context/authStore';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, serverTimestamp, setDoc, orderBy, limit } from 'firebase/firestore';
 import { callService, type CallSession } from '../../services/callService';
 import IncomingCallModal from './IncomingCallModal';
 import InCallScreen from './InCallScreen';
@@ -13,6 +13,10 @@ export default function CallOverlay() {
     const [outboundCall, setOutboundCall] = useState<CallSession | null>(null);
     const [activeCall, setActiveCall] = useState<CallSession | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+
+    useEffect(() => {
+        if (user) console.log("CallOverlay: Active User UID:", user.uid);
+    }, [user]);
 
     const ringTimeoutRef = useRef<any>(null);
 
@@ -29,17 +33,23 @@ export default function CallOverlay() {
         const q = query(
             collection(db, 'calls'),
             where('receiverId', '==', user.uid),
-            where('status', '==', 'ringing')
+            where('status', '==', 'ringing'),
+            orderBy('createdAt', 'desc'),
+            limit(1)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.log("CallOverlay: Receiver Snapshot Size:", snapshot.size);
             if (!snapshot.empty) {
                 const callDoc = snapshot.docs[0];
                 const callData = { id: callDoc.id, ...callDoc.data() } as CallSession;
+                console.log("CallOverlay: Incoming call detected from:", callData.callerName);
                 setIncomingCall(callData);
             } else {
                 setIncomingCall(null);
             }
+        }, (error) => {
+            console.error("CallOverlay: Receiver Listener Error:", error);
         });
 
         return () => unsubscribe();
@@ -51,7 +61,9 @@ export default function CallOverlay() {
 
         const q = query(
             collection(db, 'calls'),
-            where('callerId', '==', user.uid)
+            where('callerId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(1)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -141,7 +153,7 @@ export default function CallOverlay() {
         await callService.endCall(call.id, 'missed');
 
         // Create formal notification
-        const notificationId = `missed_${call.id} `;
+        const notificationId = `missed_${call.id}`;
         await setDoc(doc(db, 'notifications', notificationId), {
             toUserId: call.receiverId,
             toRole: call.receiverRole,
@@ -149,7 +161,7 @@ export default function CallOverlay() {
             fromName: call.callerName,
             type: 'missed_call',
             callId: call.id,
-            message: `Missed call from ${call.callerName} `,
+            message: `Missed call from ${call.callerName}`,
             createdAt: serverTimestamp(),
             seen: false
         });

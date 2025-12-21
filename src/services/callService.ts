@@ -49,6 +49,7 @@ export class CallService {
     }
 
     async startCall(caller: any, receiver: any): Promise<string> {
+        console.log("callService: Starting call to receiver UID:", receiver.uid);
         this.cleanup();
 
         this.pc = new RTCPeerConnection(servers);
