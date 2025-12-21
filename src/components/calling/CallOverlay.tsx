@@ -30,26 +30,25 @@ export default function CallOverlay() {
     useEffect(() => {
         if (!user) return;
 
-        const q = query(
+        // Debug: Also listen without the composite index if possible
+        // To avoid index requirement for simple debugging, we can just filter for receiverId
+        const qSimple = query(
             collection(db, 'calls'),
-            where('receiverId', '==', user.uid),
-            where('status', '==', 'ringing'),
-            orderBy('createdAt', 'desc'),
-            limit(1)
+            where('receiverId', '==', user.uid)
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            console.log("CallOverlay: Receiver Snapshot Size:", snapshot.size);
-            if (!snapshot.empty) {
-                const callDoc = snapshot.docs[0];
-                const callData = { id: callDoc.id, ...callDoc.data() } as CallSession;
-                console.log("CallOverlay: Incoming call detected from:", callData.callerName);
+        const unsubscribe = onSnapshot(qSimple, (snapshot) => {
+            console.log("CallOverlay: [DEBUG] Total calls for user UID:", snapshot.size);
+            const ringingCall = snapshot.docs.find(d => d.data().status === 'ringing');
+            if (ringingCall) {
+                const callData = { id: ringingCall.id, ...ringingCall.data() } as CallSession;
+                console.log("CallOverlay: [DEBUG] ringing call found:", callData.callerName);
                 setIncomingCall(callData);
             } else {
                 setIncomingCall(null);
             }
         }, (error) => {
-            console.error("CallOverlay: Receiver Listener Error:", error);
+            console.error("CallOverlay: [DEBUG] Simple Listener Error:", error);
         });
 
         return () => unsubscribe();
