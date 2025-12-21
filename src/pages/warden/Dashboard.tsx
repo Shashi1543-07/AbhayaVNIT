@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { wardenNavItems } from '../../lib/navItems';
-import { doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
+import { doc, deleteDoc, onSnapshot, limit, serverTimestamp } from 'firebase/firestore';
 
 export default function WardenDashboard() {
     const { profile, user } = useAuthStore();
@@ -26,11 +26,14 @@ export default function WardenDashboard() {
         if (!user) return;
         const q = query(
             collection(db, 'notifications'),
-            where('toRole', '==', 'warden'),
-            limit(5)
+            where('toUserId', '==', user.uid),
+            limit(10)
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const sorted = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            setNotifications(sorted);
         });
         return () => unsubscribe();
     }, [user]);
@@ -82,7 +85,7 @@ export default function WardenDashboard() {
                 <motion.div variants={cardVariant}>
                     <h3 className="text-sm font-bold text-primary mb-3 ml-1">Active Emergencies</h3>
                     <div className="glass-card-soft bg-surface/50 rounded-2xl overflow-hidden border-2 border-emergency">
-                        <WardenActiveSOS />
+                        <WardenActiveSOS hostelId={wardenHostelId} />
                     </div>
                 </motion.div>
 

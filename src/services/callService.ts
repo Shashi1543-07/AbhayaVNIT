@@ -110,9 +110,13 @@ export class CallService {
             const data = snapshot.data();
             if (!this.pc) return;
 
-            if (!this.pc.currentRemoteDescription && data?.answer) {
+            if (data?.answer) {
                 const answerDescription = new RTCSessionDescription(data.answer);
-                this.pc.setRemoteDescription(answerDescription).catch(console.error);
+                // If peer connection is recycled or refreshed, we might need to set it again
+                if (this.pc.signalingState === 'have-local-offer') {
+                    console.log("callService: Applying remote answer");
+                    this.pc.setRemoteDescription(answerDescription).catch(console.error);
+                }
             }
 
             if (data?.iceCandidates) {
@@ -197,6 +201,25 @@ export class CallService {
     async endCall(callId: string, finalStatus: 'ended' | 'rejected' | 'missed' = 'ended') {
         const callDoc = doc(db, 'calls', callId);
         try {
+            const snap = await getDoc(callDoc);
+            const data = snap.data() as CallSession;
+
+            // If a caller ends a ringing call, it's a "missed call" for the receiver
+            if (data && data.status === 'ringing' && finalStatus === 'ended') {
+                const notificationId = `missed_${callId}`;
+                await setDoc(doc(db, 'notifications', notificationId), {
+                    toUserId: data.receiverId,
+                    toRole: data.receiverRole,
+                    fromUserId: data.callerId,
+                    fromName: data.callerName,
+                    type: 'missed_call',
+                    callId: callId,
+                    message: `Missed call from ${data.callerName}`,
+                    createdAt: serverTimestamp(),
+                    seen: false
+                }).catch(() => { });
+            }
+
             await updateDoc(callDoc, {
                 status: finalStatus,
                 updatedAt: serverTimestamp()

@@ -3,17 +3,21 @@ import { sosService, type SOSEvent } from '../../services/sosService';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export default function WardenActiveSOS() {
+interface WardenActiveSOSProps {
+    hostelId?: string;
+}
+
+export default function WardenActiveSOS({ hostelId }: WardenActiveSOSProps) {
     const [allEvents, setAllEvents] = useState<SOSEvent[]>([]);
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Subscribe to ALL active SOS events (no hostelId filter)
+        // Subscribe to SOS events filtered by hostelId if provided
         const unsubscribe = sosService.subscribeToActiveSOS((events) => {
             setAllEvents(events);
-        });
+        }, hostelId);
         return () => unsubscribe();
-    }, []);
+    }, [hostelId]);
 
     if (allEvents.length === 0) {
         return (

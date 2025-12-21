@@ -50,9 +50,9 @@ export interface SOSEvent {
 export const sosService = {
     // 1. Trigger SOS
     triggerSOS: async (
-        user: any, 
-        location: { lat: number; lng: number }, 
-        emergencyType: 'medical' | 'harassment' | 'general' = 'general', 
+        user: any,
+        location: { lat: number; lng: number },
+        emergencyType: 'medical' | 'harassment' | 'general' = 'general',
         triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button' = 'manual_gesture',
         audioUrl?: string
     ) => {
@@ -129,11 +129,22 @@ export const sosService = {
 
     // 2. Subscribe to Active SOS Events (Real-time)
     subscribeToActiveSOS: (callback: (events: SOSEvent[]) => void, hostelId?: string) => {
-        // Query only by status to avoid composite index requirement with hostelId
-        const q = query(
-            collection(db, 'sos_events'),
-            where('status', 'in', ['active', 'in_progress'])
-        );
+        // Query by status AND hostelId if provided to satisfy security rules
+        let q;
+        if (hostelId) {
+            console.log("sosService: Subscribing to SOS with hostelId:", hostelId);
+            q = query(
+                collection(db, 'sos_events'),
+                where('status', 'in', ['active', 'in_progress']),
+                where('hostelId', '==', hostelId)
+            );
+        } else {
+            console.log("sosService: Subscribing to ALL SOS events (Security/Admin view)");
+            q = query(
+                collection(db, 'sos_events'),
+                where('status', 'in', ['active', 'in_progress'])
+            );
+        }
 
         return onSnapshot(q, (snapshot) => {
             let events = snapshot.docs.map(doc => {
@@ -145,15 +156,12 @@ export const sosService = {
                 };
             }) as SOSEvent[];
 
-            // Filter by hostelId client-side if provided
-            if (hostelId) {
-                events = events.filter(e => e.hostelId === hostelId);
-            }
-
             // Sort client-side
             events.sort((a, b) => b.triggeredAt - a.triggeredAt);
 
             callback(events);
+        }, (error) => {
+            console.error("sosService: [DEBUG] SOS Subscription Error:", error);
         });
     },
 

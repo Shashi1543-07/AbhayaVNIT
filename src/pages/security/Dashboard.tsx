@@ -12,10 +12,13 @@ import { type SafeWalkSession } from '../../services/safeWalkService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { securityNavItems } from '../../lib/navItems';
+import { useAuthStore } from '../../context/authStore';
 
 export default function SecurityDashboard() {
+    const { user } = useAuthStore();
     const [activeEvents, setActiveEvents] = useState<SOSEvent[]>([]);
     const [selectedWalk, setSelectedWalk] = useState<SafeWalkSession | null>(null);
+    const [notifications, setNotifications] = useState<any[]>([]);
 
     useEffect(() => {
         const unsubscribe = sosService.subscribeToActiveSOS((events) => {
@@ -24,23 +27,25 @@ export default function SecurityDashboard() {
         return () => unsubscribe();
     }, []);
 
-    const [notifications, setNotifications] = useState<any[]>([]);
     useEffect(() => {
+        if (!user) return;
         const q = query(
             collection(db, 'notifications'),
-            where('toRole', '==', 'security'),
-            limit(5)
+            where('toUserId', '==', user.uid),
+            limit(10)
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const sorted = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            setNotifications(sorted);
         });
         return () => unsubscribe();
-    }, []);
+    }, [user]);
 
     const dismissNotification = async (id: string) => {
         await deleteDoc(doc(db, 'notifications', id));
     };
-
 
     return (
         <MobileWrapper>
@@ -153,6 +158,36 @@ export default function SecurityDashboard() {
                         onClose={() => setSelectedWalk(null)}
                     />
                 )}
+
+                {/* Call Support Section */}
+                <motion.div variants={cardVariant} className="p-4">
+                    <h3 className="text-sm font-bold text-primary mb-3 ml-1">Communication</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => {
+                                // Security can call any online warden
+                                alert("Routing call to Warden on duty...");
+                            }}
+                            className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-secondary/10 active:scale-95 transition-all"
+                        >
+                            <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
+                                <Shield className="w-5 h-5 text-secondary" />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase text-secondary">Contact Warden</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                alert("Connecting to Control Room...");
+                            }}
+                            className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-primary/10 active:scale-95 transition-all"
+                        >
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                <Shield className="w-5 h-5 text-primary" />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase text-primary">Dispatch</span>
+                        </button>
+                    </div>
+                </motion.div>
             </motion.main>
 
             <BottomNav items={securityNavItems} />

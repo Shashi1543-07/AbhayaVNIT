@@ -4,13 +4,30 @@ import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import LiveMap from '../../components/LiveMap';
 import { sosService, type SOSEvent } from '../../services/sosService';
+import { callService } from '../../services/callService';
+import { useAuthStore } from '../../context/authStore';
 import { Phone, MapPin, Clock, Shield, CheckCircle, ArrowLeft } from 'lucide-react';
 
 export default function SecuritySOSDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user, profile } = useAuthStore();
     const [event, setEvent] = useState<SOSEvent | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const initiateCall = () => {
+        if (!user || !event) return;
+        const receiver = {
+            uid: event.userId,
+            name: event.userName,
+            role: 'student'
+        };
+        callService.startCall({
+            uid: user.uid,
+            name: profile?.name || 'Security',
+            role: 'security'
+        }, receiver);
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -112,9 +129,17 @@ export default function SecuritySOSDetail() {
                                 <div className="w-8 h-8 rounded-full bg-slate-100/50 flex items-center justify-center">
                                     <Phone className="w-4 h-4 text-slate-500" />
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-xs text-slate-500 font-bold uppercase">Contact</p>
-                                    <p className="text-sm font-medium">+91 98765 43210</p>
+                                <div className="flex-1 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-bold uppercase">Contact</p>
+                                        <p className="text-sm font-medium">+91 98765 43210</p>
+                                    </div>
+                                    <button
+                                        onClick={initiateCall}
+                                        className="bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-xs font-bold border border-primary/20 flex items-center gap-1 active:scale-95 transition-transform"
+                                    >
+                                        <Phone className="w-3 h-3" /> Web Call
+                                    </button>
                                 </div>
                             </div>
                         </div>

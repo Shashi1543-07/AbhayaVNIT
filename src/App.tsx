@@ -88,6 +88,8 @@ function AnimatedRoutes() {
 function App() {
   useAuthListener();
 
+  console.log("App: Rendering Shell");
+
   return (
     <Router>
       <AnimatedRoutes />

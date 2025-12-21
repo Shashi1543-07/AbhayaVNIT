@@ -22,7 +22,10 @@ export default function StudentDashboard() {
     const [staff, setStaff] = useState<UserProfile[]>([]);
 
     useEffect(() => {
-        userService.getStaff().then(setStaff);
+        userService.getStaff().then(data => {
+            console.log("StudentDashboard: Staff list fetched:", data);
+            setStaff(data);
+        });
     }, []);
 
     useEffect(() => {
@@ -92,8 +95,15 @@ export default function StudentDashboard() {
                         <button
                             onClick={() => {
                                 const security = staff.find(s => s.role === 'security');
-                                if (security && user) callService.startCall(user, security);
-                                else alert("Security personnel currently unavailable for calls.");
+                                if (security && user) {
+                                    callService.startCall({
+                                        uid: user.uid,
+                                        name: profile?.name || user.displayName || 'Student',
+                                        role: 'student'
+                                    }, security);
+                                } else {
+                                    alert("Security personnel currently unavailable for calls.");
+                                }
                             }}
                             className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-primary/10 active:scale-95 transition-all"
                         >
@@ -104,12 +114,25 @@ export default function StudentDashboard() {
                         </button>
                         <button
                             onClick={() => {
-                                const warden = staff.find(s => s.role === 'warden' && s.hostelId === profile?.hostelId);
-                                console.log("StudentDashboard: Requesting call to warden:", warden);
+                                // Wardens created by admin use 'hostel', students use 'hostelId'
+                                const studentHostel = profile?.hostelId || profile?.hostel;
+                                const wardens = staff.filter(s =>
+                                    s.role === 'warden' &&
+                                    ((s as any).hostel === studentHostel || (s as any).hostelId === studentHostel)
+                                );
+
+                                console.log(`StudentDashboard: Found ${wardens.length} wardens for hostel ${studentHostel}:`, wardens);
+
+                                const warden = wardens[0];
                                 if (warden && user) {
-                                    callService.startCall(user, warden);
+                                    console.log("StudentDashboard: Proceeding to call warden:", warden.uid);
+                                    callService.startCall({
+                                        uid: user.uid,
+                                        name: profile?.name || user.displayName || 'Student',
+                                        role: 'student'
+                                    }, warden);
                                 } else {
-                                    alert(`Warden currently unavailable for calls. (Hostel: ${profile?.hostelId || 'N/A'})`);
+                                    alert(`Warden currently unavailable for calls. (Hostel: ${studentHostel || 'N/A'})`);
                                 }
                             }}
                             className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-secondary/10 active:scale-95 transition-all"

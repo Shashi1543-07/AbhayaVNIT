@@ -1,13 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../context/authStore';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot, doc, serverTimestamp, setDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { callService, type CallSession } from '../../services/callService';
 import IncomingCallModal from './IncomingCallModal';
 import InCallScreen from './InCallScreen';
 import OutboundCallModal from './OutboundCallModal';
 
+console.log("CallOverlay: Module Loading...");
+
 export default function CallOverlay() {
+    useEffect(() => {
+        console.log("CallOverlay: Mounted");
+        // Global debug helper
+        (window as any).__debugCallOverlay = {
+            forceState: (type: string, val: any) => {
+                if (type === 'incoming') setIncomingCall(val);
+                if (type === 'outbound') setOutboundCall(val);
+                if (type === 'active') setActiveCall(val);
+            }
+        };
+    }, []);
+
     const { user } = useAuthStore();
     const [incomingCall, setIncomingCall] = useState<CallSession | null>(null);
     const [outboundCall, setOutboundCall] = useState<CallSession | null>(null);
@@ -16,6 +30,7 @@ export default function CallOverlay() {
 
     useEffect(() => {
         if (user) console.log("CallOverlay: Active User UID:", user.uid);
+        if ((window as any).__debugCallOverlay) (window as any).__debugCallOverlay.user = user;
     }, [user]);
 
     const ringTimeoutRef = useRef<any>(null);
@@ -26,83 +41,118 @@ export default function CallOverlay() {
         });
     }, []);
 
-    // 1. Receiver Listener: Watch for calls where I am the receiver and status is 'ringing'
+    // 1. Receiver Listener: Watch for calls where I am the receiver
     useEffect(() => {
         if (!user) return;
 
-        // Debug: Also listen without the composite index if possible
-        // To avoid index requirement for simple debugging, we can just filter for receiverId
-        const qSimple = query(
+        console.log("CallOverlay: [RECEIVER] Starting listener for", user.uid);
+
+        // Simple query to avoid composite index requirements
+        const qAll = query(
             collection(db, 'calls'),
             where('receiverId', '==', user.uid)
         );
 
-        const unsubscribe = onSnapshot(qSimple, (snapshot) => {
-            console.log("CallOverlay: [DEBUG] Total calls for user UID:", snapshot.size);
-            const ringingCall = snapshot.docs.find(d => d.data().status === 'ringing');
-            if (ringingCall) {
-                const callData = { id: ringingCall.id, ...ringingCall.data() } as CallSession;
-                console.log("CallOverlay: [DEBUG] ringing call found:", callData.callerName);
-                setIncomingCall(callData);
-            } else {
+        const unsubscribe = onSnapshot(qAll, (snapshot) => {
+            console.log("CallOverlay: [RECEIVER] Snapshot updated. Docs:", snapshot.size);
+
+            // Filter in memory to avoid index issues
+            const activeDocs = snapshot.docs.filter(d =>
+                ['ringing', 'accepted'].includes(d.data().status)
+            );
+
+            if (activeDocs.length === 0) {
                 setIncomingCall(null);
+                setActiveCall(prev => (prev?.receiverId === user.uid ? null : prev));
+                return;
+            }
+
+            // Sort logic: Resilient to null timestamps and different formats
+            const sortedDocs = activeDocs.sort((a, b) => {
+                const aData = a.data();
+                const bData = b.data();
+                const aTime = aData.createdAt?.toMillis?.() || aData.createdAt?.seconds * 1000 || Date.now();
+                const bTime = bData.createdAt?.toMillis?.() || bData.createdAt?.seconds * 1000 || Date.now();
+                return bTime - aTime;
+            });
+
+            const callData = { id: sortedDocs[0].id, ...sortedDocs[0].data() } as CallSession;
+            console.log("CallOverlay: [RECEIVER] Processing doc:", callData.id, "Status:", callData.status);
+
+            if (callData.status === 'ringing') {
+                setIncomingCall(callData);
+                setActiveCall(null);
+            } else if (callData.status === 'accepted') {
+                setIncomingCall(null);
+                if (!activeCall || activeCall.id !== callData.id) {
+                    setActiveCall(callData);
+                }
             }
         }, (error) => {
-            console.error("CallOverlay: [DEBUG] Simple Listener Error:", error);
+            console.error("CallOverlay: [RECEIVER] Listener Error:", error);
         });
 
         return () => unsubscribe();
-    }, [user]);
+    }, [user, activeCall?.id]);
 
     // 2. Caller Listener: Watch for calls where I am the caller
     useEffect(() => {
         if (!user) return;
 
-        const q = query(
+        console.log("CallOverlay: [CALLER] Starting listener for", user.uid);
+
+        const qAll = query(
             collection(db, 'calls'),
-            where('callerId', '==', user.uid),
-            orderBy('createdAt', 'desc'),
-            limit(1)
+            where('callerId', '==', user.uid)
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (snapshot.empty) {
+        const unsubscribe = onSnapshot(qAll, (snapshot) => {
+            console.log("CallOverlay: [CALLER] Snapshot updated. Docs:", snapshot.size);
+
+            const activeDocs = snapshot.docs.filter(d =>
+                ['ringing', 'accepted'].includes(d.data().status)
+            );
+
+            if (activeDocs.length === 0) {
                 setOutboundCall(null);
-                setActiveCall(null);
-                setRemoteStream(null);
+                setActiveCall(prev => (prev?.callerId === user.uid ? null : prev));
                 return;
             }
 
-            const callDoc = snapshot.docs[0];
-            const callData = { id: callDoc.id, ...callDoc.data() } as CallSession;
+            const sortedDocs = activeDocs.sort((a, b) => {
+                const aData = a.data();
+                const bData = b.data();
+                const aTime = aData.createdAt?.toMillis?.() || aData.createdAt?.seconds * 1000 || Date.now();
+                const bTime = bData.createdAt?.toMillis?.() || bData.createdAt?.seconds * 1000 || Date.now();
+                return bTime - aTime;
+            });
+
+            const callData = { id: sortedDocs[0].id, ...sortedDocs[0].data() } as CallSession;
+            console.log("CallOverlay: [CALLER] Processing doc:", callData.id, "Status:", callData.status);
 
             if (callData.status === 'ringing') {
                 setOutboundCall(callData);
-                // Start timeout if not already started
                 if (!ringTimeoutRef.current) {
                     ringTimeoutRef.current = setTimeout(() => {
                         handleMissedCall(callData);
-                    }, 30000); // 30 seconds
+                    }, 45000);
                 }
             } else if (callData.status === 'accepted') {
-                clearTimeout(ringTimeoutRef.current);
-                ringTimeoutRef.current = null;
-                setOutboundCall(null);
-                if (!activeCall) {
-                    setActiveCall(callData);
-                    // Remote stream handled via callService.join/start callbacks but
-                    // if caller, startCall was already called. In callService, we'll
-                    // manage stream via ref/callback.
+                if (ringTimeoutRef.current) {
+                    clearTimeout(ringTimeoutRef.current);
+                    ringTimeoutRef.current = null;
                 }
-            } else if (callData.status === 'rejected' || callData.status === 'ended' || callData.status === 'missed') {
-                clearTimeout(ringTimeoutRef.current);
-                ringTimeoutRef.current = null;
-                handleCleanup();
+                setOutboundCall(null);
+                if (!activeCall || activeCall.id !== callData.id) {
+                    setActiveCall(callData);
+                }
             }
+        }, (error) => {
+            console.error("CallOverlay: [CALLER] Listener Error:", error);
         });
 
         return () => unsubscribe();
-    }, [user, activeCall]);
+    }, [user, activeCall?.id]);
 
     // 3. Active Call Status Listener (for receiver who accepted)
     useEffect(() => {
@@ -113,6 +163,14 @@ export default function CallOverlay() {
             if (!snapshot.exists() || snapshot.data()?.status === 'ended' || snapshot.data()?.status === 'missed') {
                 handleCleanup();
                 unsubscribe();
+            }
+        }, (error) => {
+            // Suppress "permission-denied" errors during deletion/cleanup
+            if (error.code !== 'permission-denied') {
+                console.error("CallOverlay: Active Status Listener Error:", error);
+            } else {
+                console.log("CallOverlay: [DEBUG] Cleanup race condition handled (permission-denied)");
+                handleCleanup();
             }
         });
 
@@ -140,31 +198,19 @@ export default function CallOverlay() {
     const handleEndCall = async () => {
         const callToEnd = activeCall || outboundCall || incomingCall;
         if (callToEnd) {
+            // Notifications are now handled in callService.endCall
             await callService.endCall(callToEnd.id, 'ended');
             handleCleanup();
         }
     };
 
     const handleMissedCall = async (call: CallSession) => {
-        clearTimeout(ringTimeoutRef.current);
-        ringTimeoutRef.current = null;
-
+        // Notification creation logic moved to callService.endCall
+        if (ringTimeoutRef.current) {
+            clearTimeout(ringTimeoutRef.current);
+            ringTimeoutRef.current = null;
+        }
         await callService.endCall(call.id, 'missed');
-
-        // Create formal notification
-        const notificationId = `missed_${call.id}`;
-        await setDoc(doc(db, 'notifications', notificationId), {
-            toUserId: call.receiverId,
-            toRole: call.receiverRole,
-            fromUserId: call.callerId,
-            fromName: call.callerName,
-            type: 'missed_call',
-            callId: call.id,
-            message: `Missed call from ${call.callerName}`,
-            createdAt: serverTimestamp(),
-            seen: false
-        });
-
         handleCleanup();
     };
 
@@ -175,15 +221,9 @@ export default function CallOverlay() {
         setRemoteStream(null);
     };
 
-    // Callback for caller to set remote stream
-    // Since startCall is called from Dashboard, we pass the callback there.
-    // Dashboard needs access to callService.
-
-    // We'll update Dashboard.tsx to pass the stream handler.
-
     return (
         <>
-            {incomingCall && (
+            {incomingCall && !activeCall && (
                 <IncomingCallModal
                     callerName={incomingCall.callerName}
                     callerRole={incomingCall.callerRole}
@@ -198,12 +238,10 @@ export default function CallOverlay() {
                     partnerRole={user?.uid === activeCall.callerId ? activeCall.receiverRole : activeCall.callerRole}
                     remoteStream={remoteStream}
                     onEnd={handleEndCall}
-                // For caller, we need to ensure their stream is set
-                // They call startCall(..., (stream) => setRemoteStream(stream))
                 />
             )}
 
-            {outboundCall && (
+            {outboundCall && !activeCall && (
                 <OutboundCallModal
                     receiverName={outboundCall.receiverName}
                     receiverRole={outboundCall.receiverRole}
