@@ -1,6 +1,5 @@
-```
 import { useState, useEffect, useRef } from 'react';
-import { useAuthStore } '../../context/authStore';
+import { useAuthStore } from '../../context/authStore';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { callService, type CallSession } from '../../services/callService';
@@ -14,7 +13,7 @@ export default function CallOverlay() {
     const [outboundCall, setOutboundCall] = useState<CallSession | null>(null);
     const [activeCall, setActiveCall] = useState<CallSession | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-    
+
     const ringTimeoutRef = useRef<any>(null);
 
     useEffect(() => {
@@ -142,7 +141,7 @@ export default function CallOverlay() {
         await callService.endCall(call.id, 'missed');
 
         // Create formal notification
-        const notificationId = `missed_${ call.id } `;
+        const notificationId = `missed_${call.id} `;
         await setDoc(doc(db, 'notifications', notificationId), {
             toUserId: call.receiverId,
             toRole: call.receiverRole,
@@ -150,7 +149,7 @@ export default function CallOverlay() {
             fromName: call.callerName,
             type: 'missed_call',
             callId: call.id,
-            message: `Missed call from ${ call.callerName } `,
+            message: `Missed call from ${call.callerName} `,
             createdAt: serverTimestamp(),
             seen: false
         });

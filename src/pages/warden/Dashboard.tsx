@@ -4,7 +4,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import ActionCard from '../../components/ui/ActionCard';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { useAuthStore } from '../../context/authStore';
-import { AlertTriangle, FileText, Megaphone, Users, Home, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, PhoneMissed, X } from 'lucide-react';
 import WardenActiveSOS from '../../components/warden/WardenActiveSOS';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import SafeWalkMap from '../../components/security/SafeWalkMap';
@@ -15,17 +15,12 @@ import { useEffect, useState } from 'react';
 import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { wardenNavItems } from '../../lib/navItems';
-import { PhoneMissed, X } from 'lucide-react';
 import { doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
 
 export default function WardenDashboard() {
     const { profile, user } = useAuthStore();
     const wardenHostelId = profile?.hostelId || profile?.hostel || 'H6';
     const [selectedWalk, setSelectedWalk] = useState<SafeWalkSession | null>(null);
-    const [stats, setStats] = useState({
-        studentsPresent: 0,
-        pendingReports: 0
-    });
     const [notifications, setNotifications] = useState<any[]>([]);
     useEffect(() => {
         if (!user) return;

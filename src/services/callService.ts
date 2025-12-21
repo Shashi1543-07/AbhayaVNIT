@@ -129,7 +129,7 @@ export class CallService {
         return callDoc.id;
     }
 
-    async joinCall(callId: string, onRemoteStream: (stream: MediaStream) => void) {
+    async joinCall(callId: string) {
         this.cleanup();
 
         this.pc = new RTCPeerConnection(servers);
