@@ -27,20 +27,30 @@ service cloud.firestore {
     }
 
     // SOS Events Collection
+    // SOS Events Collection
     match /sos_events/{eventId} {
-      allow create: if isAuthenticated();
-      // Wardens can read if they are a warden (broad access for safety, client-side filters specific hostel)
-      // Security and Admin can read all.
+      // Allow creation only if data is valid and user is owner
+      allow create: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'active'
+        && request.resource.data.location.lat is number
+        && request.resource.data.location.lng is number;
+
+      // Wardens: Only their hostel OR if assigned
+      // Security/Admin: ALL
       allow read: if isAuthenticated() && (
         request.auth.uid == resource.data.userId || 
         hasRole('admin') || 
         hasRole('security') || 
-        hasRole('warden')
+        (hasRole('warden') && resource.data.hostelId == getUserData().hostelId)
       );
+      
+      // Updates: Only status/timeline (e.g., resolving, acknowledging)
       allow update: if isAuthenticated() && (
         hasRole('admin') || 
         hasRole('security') || 
-        request.auth.uid == resource.data.userId
+        request.auth.uid == resource.data.userId ||
+         (hasRole('warden') && resource.data.hostelId == getUserData().hostelId)
       );
     }
 
