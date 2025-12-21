@@ -24,21 +24,21 @@ export default function SecurityDashboard() {
         return () => unsubscribe();
     }, []);
 
-    const [missedCalls, setMissedCalls] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<any[]>([]);
     useEffect(() => {
         const q = query(
-            collection(db, 'missed_calls'),
-            where('receiverId', '==', 'security'),
+            collection(db, 'notifications'),
+            where('toRole', '==', 'security'),
             limit(5)
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setMissedCalls(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
         return () => unsubscribe();
     }, []);
 
-    const dismissMissedCall = async (id: string) => {
-        await deleteDoc(doc(db, 'missed_calls', id));
+    const dismissNotification = async (id: string) => {
+        await deleteDoc(doc(db, 'notifications', id));
     };
 
 
@@ -52,12 +52,12 @@ export default function SecurityDashboard() {
                 initial="hidden"
                 animate="visible"
             >
-                {/* Missed Calls Alerts */}
-                {missedCalls.length > 0 && (
+                {/* Visual Alerts / Notifications */}
+                {notifications.length > 0 && (
                     <div className="px-4 pt-4 space-y-2">
-                        {missedCalls.map(call => (
+                        {notifications.map(notif => (
                             <motion.div
-                                key={call.id}
+                                key={notif.id}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 className="glass-card-soft bg-red-50 border-red-200 p-3 rounded-xl flex items-center justify-between"
@@ -67,13 +67,13 @@ export default function SecurityDashboard() {
                                         <PhoneMissed className="w-4 h-4 text-red-500" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-red-700">Missed Call: {call.callerName}</p>
+                                        <p className="text-sm font-bold text-red-700">{notif.message}</p>
                                         <p className="text-[10px] text-red-500">
-                                            {call.createdAt?.seconds ? new Date(call.createdAt.seconds * 1000).toLocaleTimeString() : 'Just now'}
+                                            {notif.createdAt?.seconds ? new Date(notif.createdAt.seconds * 1000).toLocaleTimeString() : 'Just now'}
                                         </p>
                                     </div>
                                 </div>
-                                <button onClick={() => dismissMissedCall(call.id)} className="text-red-400 hover:text-red-600">
+                                <button onClick={() => dismissNotification(notif.id)} className="text-red-400 hover:text-red-600">
                                     <X size={16} />
                                 </button>
                             </motion.div>

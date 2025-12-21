@@ -26,23 +26,22 @@ export default function WardenDashboard() {
         studentsPresent: 0,
         pendingReports: 0
     });
-    const [missedCalls, setMissedCalls] = useState<any[]>([]);
-
+    const [notifications, setNotifications] = useState<any[]>([]);
     useEffect(() => {
         if (!user) return;
         const q = query(
-            collection(db, 'missed_calls'),
-            where('receiverRole', '==', 'warden'),
+            collection(db, 'notifications'),
+            where('toRole', '==', 'warden'),
             limit(5)
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setMissedCalls(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
         return () => unsubscribe();
     }, [user]);
 
-    const dismissMissedCall = async (id: string) => {
-        await deleteDoc(doc(db, 'missed_calls', id));
+    const dismissNotification = async (id: string) => {
+        await deleteDoc(doc(db, 'notifications', id));
     };
 
     useEffect(() => {
@@ -92,12 +91,12 @@ export default function WardenDashboard() {
                 initial="hidden"
                 animate="visible"
             >
-                {/* Missed Calls Alerts */}
-                {missedCalls.length > 0 && (
+                {/* Alerts / Notifications */}
+                {notifications.length > 0 && (
                     <div className="space-y-2 mb-4">
-                        {missedCalls.map(call => (
+                        {notifications.map(notif => (
                             <motion.div
-                                key={call.id}
+                                key={notif.id}
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="glass-card-soft bg-red-50/80 border-red-200 p-3 rounded-xl flex items-center justify-between"
@@ -107,11 +106,11 @@ export default function WardenDashboard() {
                                         <PhoneMissed className="w-4 h-4 text-red-500" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-red-700">Missed Call: {call.callerName}</p>
-                                        <p className="text-[10px] text-red-500">Time: {call.createdAt?.seconds ? new Date(call.createdAt.seconds * 1000).toLocaleTimeString() : 'Just now'}</p>
+                                        <p className="text-sm font-bold text-red-700">{notif.message}</p>
+                                        <p className="text-[10px] text-red-500">Time: {notif.createdAt?.seconds ? new Date(notif.createdAt.seconds * 1000).toLocaleTimeString() : 'Just now'}</p>
                                     </div>
                                 </div>
-                                <button onClick={() => dismissMissedCall(call.id)} className="text-red-400 hover:text-red-600">
+                                <button onClick={() => dismissNotification(notif.id)} className="text-red-400 hover:text-red-600">
                                     <X size={16} />
                                 </button>
                             </motion.div>
