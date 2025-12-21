@@ -86,14 +86,23 @@ export default function ActiveSOSList({ events, selectedEventId, onSelect }: Act
                             <h3 className="font-bold text-slate-800">{event.userName}</h3>
 
                             {/* Emergency Type Badge */}
-                            {event.emergencyType && (
-                                <div className="mt-1 mb-1">
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {event.emergencyType && (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border uppercase
+                                        ${event.emergencyType === 'medical' ? 'bg-red-100 text-red-700 border-red-200' :
+                                            event.emergencyType === 'harassment' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                                'bg-slate-100 text-slate-700 border-slate-200'}
+                                    `}>
                                         <Shield className="w-3 h-3" />
                                         {event.emergencyType}
                                     </span>
-                                </div>
-                            )}
+                                )}
+                                {event.triggerMethod && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100 uppercase italic">
+                                        {event.triggerMethod.replace('_', ' ')}
+                                    </span>
+                                )}
+                            </div>
 
                             <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
                                 <MapPin className="w-3 h-3" />

@@ -2,14 +2,9 @@ import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { Shield, Map as MapIcon, User, Bell, CheckCircle } from 'lucide-react';
+import { securityNavItems } from '../../lib/navItems';
 
 export default function SecurityPatrol() {
-    const securityNavItems = [
-        { icon: Bell, label: 'SOS', path: '/security/dashboard' },
-        { icon: MapIcon, label: 'Map', path: '/security/map' },
-        { icon: Shield, label: 'Patrol', path: '/security/patrol' },
-        { icon: User, label: 'Profile', path: '/security/profile' },
-    ];
 
     return (
         <MobileWrapper>

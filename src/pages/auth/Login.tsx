@@ -3,7 +3,7 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth, db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Home } from 'lucide-react';
 
 export default function Login() {
     const [searchParams] = useSearchParams();
@@ -81,6 +81,17 @@ export default function Login() {
             <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
             <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-secondary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
             <div className="absolute -bottom-32 left-20 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+
+
+            <div className="absolute top-6 left-6 z-20">
+                <Link
+                    to="/"
+                    className="flex items-center gap-2 px-4 py-2 glass-button-secondary hover:bg-white/40 transition-all text-sm font-semibold"
+                >
+                    <Home className="w-4 h-4" />
+                    Back to Home
+                </Link>
+            </div>
 
             <div className="p-8 glass-card-auth w-full max-w-md relative z-10">
                 <h2 className="text-2xl font-bold mb-6 text-center text-primary">{displayRole} Login</h2>

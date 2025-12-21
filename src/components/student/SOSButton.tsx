@@ -1,9 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, MapPin, Loader2 } from 'lucide-react';
+import { Mic, MicOff, MapPin, Loader2, Plus, Skull } from 'lucide-react';
 import { sosService } from '../../services/sosService';
 import { useAuthStore } from '../../context/authStore';
+import gsap from 'gsap';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Float } from '@react-three/drei';
 
-export default function SOSButton() {
+interface SOSButtonProps {
+    onActivate?: (type: 'medical' | 'harassment' | 'general') => void;
+    disabled?: boolean;
+}
+
+export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
     const { user, profile } = useAuthStore();
     const [isLongPressing, setIsLongPressing] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -12,9 +20,12 @@ export default function SOSButton() {
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [locationStatus, setLocationStatus] = useState('Locating...');
     const [sosId, setSosId] = useState<string | null>(null);
+    const [dragType, setDragType] = useState<'medical' | 'harassment' | 'general'>('general');
 
+    const buttonRef = useRef<HTMLButtonElement>(null);
     const timerRef = useRef<any>(null);
     const startTimeRef = useRef<number>(0);
+    const startYRef = useRef<number>(0);
 
     // Get Location on Mount
     useEffect(() => {
@@ -39,32 +50,106 @@ export default function SOSButton() {
         }
     }, []);
 
-    const handleMouseDown = () => {
-        if (isActive) return;
+    const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+        if (isActive || disabled) return;
         setIsLongPressing(true);
         startTimeRef.current = Date.now();
+        startYRef.current = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        setDragType('general');
+
+        // GSAP Pulse Initialization
+        gsap.to(buttonRef.current, {
+            scale: 0.9,
+            duration: 0.2,
+            ease: "power2.out"
+        });
 
         timerRef.current = setInterval(() => {
             const elapsed = Date.now() - startTimeRef.current;
-            const newProgress = Math.min((elapsed / 3000) * 100, 100);
+            const newProgress = Math.min((elapsed / 2500) * 100, 100);
             setProgress(newProgress);
 
             if (newProgress >= 100) {
+                // Auto-trigger if reached 100% without release (though we usually wait for release or trigger here)
+                // For "One-hand panic", auto-triggering on 100% is good.
                 activateSOS();
             }
         }, 50);
     };
 
-    const handleMouseUp = () => {
-        if (isActive) return;
-        setIsLongPressing(false);
-        setProgress(0);
-        if (timerRef.current) clearInterval(timerRef.current);
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+        if (!isLongPressing || isActive) return;
+
+        const currentY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const deltaY = startYRef.current - currentY; // Up is positive
+
+        if (deltaY > 50) {
+            setDragType('medical');
+        } else if (deltaY < -50) {
+            setDragType('harassment');
+        } else {
+            setDragType('general');
+        }
+
+        // Move button slightly with drag (GSAP) - Smoother easing
+        gsap.to(buttonRef.current, {
+            y: -deltaY * 0.25, // Slightly reduced multiplier for better control
+            duration: 0.3,
+            ease: "power2.out"
+        });
     };
+
+    const handleEnd = () => {
+        if (isActive) return;
+
+        if (progress >= 100) {
+            activateSOS();
+        } else {
+            // Cancel and Snap back
+            setIsLongPressing(false);
+            setProgress(0);
+            if (timerRef.current) clearInterval(timerRef.current);
+
+            gsap.to(buttonRef.current, {
+                y: 0,
+                scale: 1,
+                duration: 0.6,
+                ease: "elastic.out(1, 0.3)"
+            });
+        }
+    };
+
+    useEffect(() => {
+        if (isLongPressing) {
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+            window.addEventListener('touchmove', handleMove);
+            window.addEventListener('touchend', handleEnd);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleEnd);
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('touchend', handleEnd);
+        };
+    }, [isLongPressing, progress, dragType]);
 
     const activateSOS = async () => {
         if (timerRef.current) clearInterval(timerRef.current);
+        if (isActive) return;
         setIsActive(true);
+        setIsLongPressing(false);
+
+        // GSAP Activation Animation - Reset y position and animate scale
+        gsap.to(buttonRef.current, {
+            y: 0,
+            scale: 1.15,
+            duration: 0.5,
+            ease: "back.out(1.7)"
+        });
+
+        const finalType = dragType;
+        if (onActivate) onActivate(finalType);
 
         if (!user || !location) {
             alert("Cannot trigger SOS: Missing user or location data.");
@@ -73,11 +158,20 @@ export default function SOSButton() {
         }
 
         try {
-            // Merge user auth object with profile data to ensure all fields (hostel, roomNo) are present
             const sosUser = { ...user, ...profile };
-            const id = await sosService.triggerSOS(sosUser, location, audioEnabled ? 'audio-placeholder-url' : undefined);
-            setSosId(id);
-            console.log('SOS ACTIVATED', id);
+            const result = await sosService.triggerSOS(
+                sosUser,
+                location,
+                finalType,
+                'manual_gesture',
+                audioEnabled ? 'audio-placeholder-url' : undefined
+            );
+
+            if (typeof result === 'object') {
+                setSosId(result.sosId);
+            } else {
+                setSosId(result);
+            }
         } catch (error) {
             console.error("Failed to trigger SOS", error);
             alert("Failed to send SOS alert. Please call emergency contacts directly.");
@@ -99,7 +193,30 @@ export default function SOSButton() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center w-full py-8 relative overflow-hidden">
+        <div className="flex flex-col items-center justify-center w-full py-12 relative overflow-visible">
+            {/* Gesture Hints */}
+            {isLongPressing && (
+                <div className="absolute inset-0 pointer-events-none z-0">
+                    <div className={`absolute top-0 left-1/2 -translate-x-1/2 transition-all duration-300 ${dragType === 'medical' ? 'scale-125 text-red-600 opacity-100' : 'scale-100 text-slate-400 opacity-40'}`}>
+                        <Plus className="w-12 h-12" />
+                        <span className="text-xs font-bold block text-center">MEDICAL</span>
+                    </div>
+                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 transition-all duration-300 ${dragType === 'harassment' ? 'scale-125 text-purple-600 opacity-100' : 'scale-100 text-slate-400 opacity-40'}`}>
+                        <Skull className="w-12 h-12" />
+                        <span className="text-xs font-bold block text-center">THREAT</span>
+                    </div>
+                </div>
+            )}
+
+            {/* 3D Visual Feedback */}
+            {isLongPressing && (
+                <div className="absolute w-[300px] h-[300px] pointer-events-none opacity-50">
+                    <Canvas camera={{ position: [0, 0, 3] }}>
+                        <RotatingRing progress={progress} type={dragType} />
+                    </Canvas>
+                </div>
+            )}
+
             {/* Pulse Effects */}
             {isLongPressing && !isActive && (
                 <div className="absolute w-64 h-64 rounded-full bg-red-100 animate-ping opacity-75" />
@@ -110,35 +227,43 @@ export default function SOSButton() {
 
             {/* Main Button */}
             <button
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onTouchStart={handleMouseDown}
-                onTouchEnd={handleMouseUp}
-                className={`relative w-48 h-48 rounded-full flex items-center justify-center shadow-xl transition-all duration-300
-                    ${isActive ? 'bg-red-600 scale-110' : 'bg-gradient-to-br from-red-500 to-red-600 hover:scale-105'}
-                    ${isLongPressing ? 'scale-95' : ''}
+                ref={buttonRef}
+                onMouseDown={handleStart}
+                onTouchStart={handleStart}
+                className={`relative w-48 h-48 rounded-full flex items-center justify-center shadow-2xl transition-all
+                    ${isActive ? 'bg-red-700' : 'bg-gradient-to-br from-red-500 to-red-600'}
+                    ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : ''}
+                    z-20
                 `}
+                disabled={disabled}
             >
+                {/* Visual Glow for Drag Type */}
+                {!isActive && isLongPressing && (
+                    <div className={`absolute inset-0 rounded-full blur-xl transition-all duration-300 ${dragType === 'medical' ? 'bg-red-400 opacity-60' :
+                        dragType === 'harassment' ? 'bg-purple-400 opacity-60' :
+                            'bg-red-200 opacity-40'
+                        }`} />
+                )}
+
                 {/* Progress Ring */}
                 {!isActive && (
-                    <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                    <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none scale-[1.05]">
                         <circle
-                            cx="96" cy="96" r="92"
+                            cx="96" cy="96" r="94"
                             fill="none"
-                            stroke="white"
-                            strokeWidth="4"
-                            strokeDasharray="578"
-                            strokeDashoffset={578 - (578 * progress) / 100}
-                            className="opacity-50"
+                            stroke={dragType === 'medical' ? '#ef4444' : dragType === 'harassment' ? '#a855f7' : '#ffffff'}
+                            strokeWidth="6"
+                            strokeDasharray="590"
+                            strokeDashoffset={590 - (590 * progress) / 100}
+                            className="transition-colors duration-300"
                         />
                     </svg>
                 )}
 
-                <div className="text-center text-white z-10">
+                <div className="text-center text-white z-10 select-none">
                     <span className="text-4xl font-black tracking-wider block mb-1">SOS</span>
-                    <span className="text-xs font-medium opacity-90 uppercase tracking-wide">
-                        {isActive ? 'ACTIVATED' : 'Hold 3 Sec'}
+                    <span className="text-xs font-bold uppercase tracking-wide">
+                        {isActive ? 'SENT' : dragType === 'medical' ? 'MEDICAL' : dragType === 'harassment' ? 'THREAT' : 'HOLD'}
                     </span>
                 </div>
             </button>
@@ -162,17 +287,41 @@ export default function SOSButton() {
             </div>
 
             {isActive && (
-                <div className="mt-6 text-center">
-                    <p className="text-red-600 font-bold animate-pulse mb-2">Emergency Alert Sent!</p>
-                    <p className="text-xs text-slate-500 mb-4">Security and Wardens have been notified.</p>
+                <div className="mt-8 text-center bg-red-50 p-6 rounded-3xl border border-red-100 shadow-inner z-10">
+                    <p className="text-red-700 font-bold text-lg animate-pulse mb-1">Emergency Help Requested</p>
+                    <p className="text-sm text-red-600/80 mb-4 font-medium uppercase tracking-tighter">
+                        Type: {dragType === 'general' ? 'Critical' : dragType}
+                    </p>
                     <button
                         onClick={cancelSOS}
-                        className="text-sm text-slate-400 underline hover:text-slate-600"
+                        className="px-6 py-2 bg-white text-slate-500 text-xs font-bold rounded-full border border-slate-200 hover:text-red-600 hover:border-red-200 shadow-sm transition-all"
                     >
-                        Cancel Emergency
+                        CANCEL EMERGENCY
                     </button>
                 </div>
             )}
         </div>
+    );
+}
+
+function RotatingRing({ progress, type }: { progress: number; type: string }) {
+    const ringRef = useRef<any>(null);
+
+    useFrame((state, delta) => {
+        if (ringRef.current) {
+            ringRef.current.rotation.z += delta * (progress / 20 + 0.5);
+            ringRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 5) * 0.05);
+        }
+    });
+
+    const color = type === 'medical' ? '#ef4444' : type === 'harassment' ? '#a855f7' : '#ffffff';
+
+    return (
+        <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+            <mesh ref={ringRef}>
+                <ringGeometry args={[1.3, 1.35, 64]} />
+                <meshBasicMaterial color={color} transparent opacity={0.6} side={2} />
+            </mesh>
+        </Float>
     );
 }

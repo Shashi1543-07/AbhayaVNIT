@@ -1,24 +1,29 @@
 import MobileWrapper from '../../components/layout/MobileWrapper';
-import { sosService } from '../../services/sosService';
 import { useAuthStore } from '../../context/authStore';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
-import SOSButton from '../../components/ui/SOSButton';
+import SOSButton from '../../components/student/SOSButton';
 import ActionCard from '../../components/ui/ActionCard';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { Footprints, Shield, AlertTriangle, MapPin } from 'lucide-react';
+import { Footprints, Shield, AlertTriangle, MapPin, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { broadcastService, type Broadcast } from '../../services/broadcastService';
+import { callService } from '../../services/callService';
+import { userService, type UserProfile } from '../../services/userService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 
 export default function StudentDashboard() {
     const navigate = useNavigate();
-    const { user, profile } = useAuthStore();
+    const { profile, user } = useAuthStore();
     const [sosActive, setSosActive] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
+    const [staff, setStaff] = useState<UserProfile[]>([]);
+
+    useEffect(() => {
+        userService.getStaff().then(setStaff);
+    }, []);
 
     useEffect(() => {
         if (profile?.hostelId) {
@@ -29,35 +34,10 @@ export default function StudentDashboard() {
         }
     }, [profile?.hostelId]);
 
-    const handleSOS = async (type: 'medical' | 'harassment' | 'general') => {
-        if (!user) return;
-        setLoading(true);
-        try {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0,
-                });
-            });
-            const location = { lat: position.coords.latitude, lng: position.coords.longitude };
-            const userData = {
-                uid: user.uid,
-                displayName: profile?.name || user.displayName,
-                phoneNumber: profile?.contactNumber || user.phoneNumber,
-                role: 'student',
-                hostelId: profile?.hostelId || profile?.hostel,
-                roomNo: profile?.roomNo,
-            };
-            await sosService.triggerSOS(userData, location, type);
-            setSosActive(true);
-            if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
-        } catch (error) {
-            console.error('Failed to trigger SOS', error);
-            alert('Failed to activate SOS. Please call emergency services directly.');
-        } finally {
-            setLoading(false);
-        }
+    const handleSOS = () => {
+        // Just update UI state, the button handles the API call
+        setSosActive(true);
+        if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
     };
 
     return (
@@ -75,7 +55,7 @@ export default function StudentDashboard() {
             >
                 {/* SOS Section */}
                 <motion.div variants={cardVariant} className="flex flex-col items-center justify-center py-4">
-                    <SOSButton onActivate={handleSOS} disabled={loading} />
+                    <SOSButton onActivate={handleSOS} />
                     <p className="text-muted text-xs mt-4">Long press to activate emergency</p>
                 </motion.div>
 
@@ -102,6 +82,39 @@ export default function StudentDashboard() {
                         <ActionCard icon={Footprints} label="Safe Walk" onClick={() => navigate('/student/safewalk')} />
                         <ActionCard icon={Shield} label="Escort" onClick={() => navigate('/student/escort')} />
                         <ActionCard icon={AlertTriangle} label="Report" onClick={() => navigate('/student/report')} />
+                    </div>
+                </motion.div>
+
+                {/* Calling Section */}
+                <motion.div variants={cardVariant}>
+                    <h3 className="text-sm font-bold text-primary mb-3 ml-1">Call for Help</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => {
+                                const security = staff.find(s => s.role === 'security');
+                                if (security && user) callService.startCall(user, security);
+                                else alert("Security personnel currently unavailable for calls.");
+                            }}
+                            className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-primary/10 active:scale-95 transition-all"
+                        >
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                <Shield className="w-5 h-5 text-primary" />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase text-primary">Call Security</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                const warden = staff.find(s => s.role === 'warden' && s.hostelId === profile?.hostelId);
+                                if (warden && user) callService.startCall(user, warden);
+                                else alert("Warden currently unavailable for calls.");
+                            }}
+                            className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-secondary/10 active:scale-95 transition-all"
+                        >
+                            <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
+                                <Home className="w-5 h-5 text-secondary" />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase text-secondary">Call Warden</span>
+                        </button>
                     </div>
                 </motion.div>
 

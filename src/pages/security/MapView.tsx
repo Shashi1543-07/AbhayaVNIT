@@ -6,6 +6,7 @@ import ComprehensiveMap from '../../components/security/ComprehensiveMap';
 import WalkDetailPanel from '../../components/security/WalkDetailPanel';
 import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkService';
 import { Shield, Map as MapIcon, User, Bell } from 'lucide-react';
+import { securityNavItems } from '../../lib/navItems';
 
 export default function SecurityMapView() {
     const [selectedWalk, setSelectedWalk] = useState<SafeWalkSession | null>(null);
@@ -29,12 +30,6 @@ export default function SecurityMapView() {
         };
     }, []);
 
-    const securityNavItems = [
-        { icon: Bell, label: 'SOS', path: '/security/dashboard' },
-        { icon: MapIcon, label: 'Map', path: '/security/map' },
-        { icon: Shield, label: 'Patrol', path: '/security/patrol' },
-        { icon: User, label: 'Profile', path: '/security/profile' },
-    ];
 
     return (
         <MobileWrapper>

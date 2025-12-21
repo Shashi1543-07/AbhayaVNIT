@@ -72,6 +72,20 @@ export default function WardenActiveSOS() {
                                     </span>
                                 </div>
                                 <h3 className="font-bold text-primary">{latestEvent.userName}</h3>
+                                <div className="flex flex-wrap gap-2 mt-1 mb-1">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase
+                                        ${latestEvent.emergencyType === 'medical' ? 'bg-red-100 text-red-700 border-red-200' :
+                                            latestEvent.emergencyType === 'harassment' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                                'bg-slate-100 text-slate-700 border-slate-200'}
+                                    `}>
+                                        {latestEvent.emergencyType || 'General'}
+                                    </span>
+                                    {latestEvent.triggerMethod && (
+                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-medium border border-blue-100 italic">
+                                            {latestEvent.triggerMethod.replace('_', ' ')}
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-sm text-muted">
                                     Hostel {latestEvent.hostelId} • Room {latestEvent.roomNo}
                                 </p>

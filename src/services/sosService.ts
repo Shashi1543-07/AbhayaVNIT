@@ -38,7 +38,8 @@ export interface SOSEvent {
     }[];
     audioUrl?: string;
     // Enhanced SOS fields
-    emergencyType?: string;
+    emergencyType: 'medical' | 'harassment' | 'general';
+    triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button';
     description?: string;
     voiceTranscript?: string;
     isDetailsAdded?: boolean;
@@ -48,12 +49,19 @@ export interface SOSEvent {
 
 export const sosService = {
     // 1. Trigger SOS
-    triggerSOS: async (user: any, location: { lat: number; lng: number }, emergencyType: string = 'general', audioUrl?: string) => {
+    triggerSOS: async (
+        user: any, 
+        location: { lat: number; lng: number }, 
+        emergencyType: 'medical' | 'harassment' | 'general' = 'general', 
+        triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button' = 'manual_gesture',
+        audioUrl?: string
+    ) => {
         try {
+            // 1. Create SOS Event Doc first to get ID
             const sosData = {
                 userId: user.uid,
                 userName: user.name || user.displayName || 'Unknown Student',
-                userPhone: user.phoneNumber || '', // Assuming phone is available in user object or profile
+                userPhone: user.phoneNumber || '',
                 role: user.role || 'student',
                 hostelId: user.hostelId || user.hostel || null,
                 roomNo: user.roomNo || null,
@@ -64,16 +72,38 @@ export const sosService = {
                     time: Date.now(),
                     action: 'SOS Triggered',
                     by: user.uid,
-                    note: `Emergency: ${emergencyType}`
+                    note: `Emergency: ${emergencyType} (${triggerMethod})`
                 }],
                 audioUrl: audioUrl || null,
                 emergencyType,
+                triggerMethod,
                 createdAt: serverTimestamp(),
-                isDetailsAdded: false
+                isDetailsAdded: false,
+                chatId: '' // Will update after
             };
 
             const docRef = await addDoc(collection(db, 'sos_events'), sosData);
-            return docRef.id;
+            const sosId = docRef.id;
+
+            // 2. Create Conversation with Deterministic ID: "sos_{sosId}"
+            const { chatService } = await import('./chatService');
+
+            // Participants: Student (creator)
+            const participants = { [user.uid]: true };
+            const participantRoles = { student: user.uid };
+
+            // We use 'sos' as type, and sos_{sosId} as the custom conversation ID
+            const chatId = await chatService.createConversation(
+                'sos',
+                participants,
+                participantRoles,
+                `sos_${sosId}`
+            );
+
+            // 3. Link back to SOS Event
+            await updateDoc(docRef, { chatId: chatId });
+
+            return { sosId, chatId };
         } catch (error) {
             console.error("Error triggering SOS:", error);
             throw error;

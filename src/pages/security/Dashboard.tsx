@@ -3,12 +3,15 @@ import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { sosService, type SOSEvent } from '../../services/sosService';
-import { Shield, Map as MapIcon, User, Bell } from 'lucide-react';
+import { db } from '../../lib/firebase';
+import { collection, query, where, onSnapshot, limit, deleteDoc, doc } from 'firebase/firestore';
+import { Shield, Map as MapIcon, User, Bell, MessageCircle, PhoneMissed, X } from 'lucide-react';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import WalkDetailPanel from '../../components/security/WalkDetailPanel';
 import { type SafeWalkSession } from '../../services/safeWalkService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
+import { securityNavItems } from '../../lib/navItems';
 
 export default function SecurityDashboard() {
     const [activeEvents, setActiveEvents] = useState<SOSEvent[]>([]);
@@ -21,12 +24,23 @@ export default function SecurityDashboard() {
         return () => unsubscribe();
     }, []);
 
-    const securityNavItems = [
-        { icon: Bell, label: 'SOS', path: '/security/dashboard' },
-        { icon: MapIcon, label: 'Map', path: '/security/map' },
-        { icon: Shield, label: 'Patrol', path: '/security/patrol' },
-        { icon: User, label: 'Profile', path: '/security/profile' },
-    ];
+    const [missedCalls, setMissedCalls] = useState<any[]>([]);
+    useEffect(() => {
+        const q = query(
+            collection(db, 'missed_calls'),
+            where('receiverId', '==', 'security'),
+            limit(5)
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setMissedCalls(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const dismissMissedCall = async (id: string) => {
+        await deleteDoc(doc(db, 'missed_calls', id));
+    };
+
 
     return (
         <MobileWrapper>
@@ -38,6 +52,35 @@ export default function SecurityDashboard() {
                 initial="hidden"
                 animate="visible"
             >
+                {/* Missed Calls Alerts */}
+                {missedCalls.length > 0 && (
+                    <div className="px-4 pt-4 space-y-2">
+                        {missedCalls.map(call => (
+                            <motion.div
+                                key={call.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="glass-card-soft bg-red-50 border-red-200 p-3 rounded-xl flex items-center justify-between"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-red-100 p-2 rounded-full">
+                                        <PhoneMissed className="w-4 h-4 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-red-700">Missed Call: {call.callerName}</p>
+                                        <p className="text-[10px] text-red-500">
+                                            {call.createdAt?.seconds ? new Date(call.createdAt.seconds * 1000).toLocaleTimeString() : 'Just now'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button onClick={() => dismissMissedCall(call.id)} className="text-red-400 hover:text-red-600">
+                                    <X size={16} />
+                                </button>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Active SOS Card */}
                 {activeEvents.length > 0 ? (
                     <motion.div variants={cardVariant} className="p-4">

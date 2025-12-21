@@ -4,6 +4,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import LiveMap from '../../components/LiveMap';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { Shield, Map as MapIcon, User, Bell } from 'lucide-react';
+import { securityNavItems } from '../../lib/navItems';
 import { useState, useEffect } from 'react';
 
 export default function SecurityMap() {
@@ -16,12 +17,6 @@ export default function SecurityMap() {
         return () => unsubscribe();
     }, []);
 
-    const securityNavItems = [
-        { icon: Bell, label: 'SOS', path: '/security/dashboard' },
-        { icon: MapIcon, label: 'Map', path: '/security/map' },
-        { icon: Shield, label: 'Patrol', path: '/security/patrol' },
-        { icon: User, label: 'Profile', path: '/security/profile' },
-    ];
 
     return (
         <MobileWrapper>

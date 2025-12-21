@@ -1,44 +1,35 @@
 import { db } from '../lib/firebase';
-import {
-    collection,
-    query,
-    where,
-    getDocs
-} from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
-export interface StudentProfile {
-    id: string;
-    displayName: string;
-    email: string;
-    phone?: string;
+export interface UserProfile {
+    uid: string;
+    name: string;
+    role: 'student' | 'warden' | 'security';
     hostelId?: string;
-    roomNo?: string;
-    emergencyContact?: string;
-    role: string;
+    phoneNumber?: string;
 }
 
 export const userService = {
-    // 1. Get Students by Hostel (Warden)
-    getStudentsByHostel: async (hostelId: string): Promise<StudentProfile[]> => {
+    getStaff: async (): Promise<UserProfile[]> => {
         try {
+            // We need two queries because 'in' operator limits are strict and sometimes composite index issues arise.
+            // But for simple roles, 'in' ["warden", "security"] works if no other inequalities.
+            // However, to be safe and avoid index creation during demo, we can just fetch all users (if small DB) or do 2 queries.
+            // Let's try the 'in' query.
+
             const q = query(
                 collection(db, 'users'),
-                where('role', '==', 'student'),
-                where('hostelId', '==', hostelId)
+                where('role', 'in', ['warden', 'security']),
+                limit(20)
             );
 
             const snapshot = await getDocs(q);
-            const students = snapshot.docs.map(doc => ({
-                id: doc.id,
+            return snapshot.docs.map(doc => ({
+                uid: doc.id,
                 ...doc.data()
-            })) as StudentProfile[];
-
-            // Sort client-side to avoid composite index requirement
-            return students.sort((a, b) => a.displayName.localeCompare(b.displayName));
+            } as UserProfile));
         } catch (error) {
-            console.error("Error fetching students:", error);
-            // Return empty array or throw based on preference. 
-            // For now, returning empty to avoid breaking UI.
+            console.error("Error fetching staff:", error);
             return [];
         }
     }

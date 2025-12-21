@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Map, FileText, User } from 'lucide-react';
+import { Home, Map, FileText, User, MessageCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -23,6 +23,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ items }) => {
     const defaultItems: NavItem[] = [
         { icon: Home, label: 'Home', path: '/student/dashboard' },
         { icon: Map, label: 'Track', path: '/student/safewalk' },
+        { icon: MessageCircle, label: 'Messages', path: '/student/messages' },
         { icon: FileText, label: 'Reports', path: '/student/reports' },
         { icon: User, label: 'Profile', path: '/student/profile' },
     ];

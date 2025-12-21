@@ -8,6 +8,7 @@ import StudentDashboard from './pages/student/Dashboard';
 import ReportIncident from './pages/student/ReportIncident';
 import SafeWalk from './pages/student/SafeWalk';
 import Reports from './pages/student/Reports';
+import Messages from './pages/student/Messages';
 import Profile from './pages/student/Profile';
 import WardenDashboard from './pages/warden/Dashboard';
 import WardenSOS from './pages/warden/SOS';
@@ -27,6 +28,7 @@ import ProtectedRoute from './features/auth/ProtectedRoute';
 import { useAuthListener } from './hooks/useAuthListener';
 import WardenBroadcasts from './pages/warden/Broadcasts';
 import WardenSOSDetail from './pages/warden/WardenSOSDetail';
+import CallOverlay from './components/calling/CallOverlay';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -47,6 +49,7 @@ function AnimatedRoutes() {
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/report" element={<ReportIncident />} />
           <Route path="/student/safewalk" element={<SafeWalk />} />
+          <Route path="/student/messages" element={<Messages />} />
           <Route path="/student/reports" element={<Reports />} />
           <Route path="/student/profile" element={<Profile />} />
         </Route>
@@ -56,6 +59,7 @@ function AnimatedRoutes() {
           <Route path="/warden/sos" element={<WardenSOS />} />
           <Route path="/warden/sos/:id" element={<WardenSOSDetail />} />
           <Route path="/warden/reports" element={<WardenReports />} />
+          <Route path="/warden/messages" element={<Messages />} />
           <Route path="/warden/profile" element={<WardenProfile />} />
           <Route path="/warden/broadcasts" element={<WardenBroadcasts />} />
         </Route>
@@ -63,6 +67,7 @@ function AnimatedRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['security']} />}>
           <Route path="/security/dashboard" element={<SecurityDashboard />} />
           <Route path="/security/sos/:id" element={<SecuritySOSDetail />} />
+          <Route path="/security/messages" element={<Messages />} />
           <Route path="/security/map" element={<SecurityMapView />} />
           <Route path="/security/patrol" element={<SecurityPatrol />} />
           <Route path="/security/profile" element={<SecurityProfile />} />
@@ -85,6 +90,7 @@ function App() {
 
   return (
     <Router>
+      <CallOverlay />
       <AnimatedRoutes />
     </Router>
   );

@@ -1,5 +1,7 @@
 import { Phone, User, Shield, CheckCircle, MapPin, Clock, AlertTriangle } from 'lucide-react';
 import { type SOSEvent } from '../../services/sosService';
+import { callService } from '../../services/callService';
+import { useAuthStore } from '../../context/authStore';
 import LiveMap from '../LiveMap';
 
 interface SOSDetailPanelProps {
@@ -11,7 +13,18 @@ interface SOSDetailPanelProps {
 }
 
 export default function SOSDetailPanel({ event, onAssign, onResolve, onEscalate, onTrack }: SOSDetailPanelProps) {
+    const { user } = useAuthStore();
     const timeElapsed = Math.floor((Date.now() - event.triggeredAt) / 1000 / 60); // minutes
+
+    const initiateCall = () => {
+        if (!user) return;
+        const receiver = {
+            uid: event.userId,
+            name: event.userName,
+            role: 'student'
+        };
+        callService.startCall(user, receiver);
+    };
 
     return (
         <div className="bg-surface rounded-2xl shadow-sm border border-surface overflow-hidden flex flex-col h-full">
@@ -69,11 +82,25 @@ export default function SOSDetailPanel({ event, onAssign, onResolve, onEscalate,
                         </div>
 
                         {event.emergencyType && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-muted">Type:</span>
-                                <span className="px-2 py-1 bg-surface border border-emergency/30 rounded text-sm font-bold text-emergency uppercase">
-                                    {event.emergencyType}
-                                </span>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-muted">Type:</span>
+                                    <span className={`px-2 py-1 border rounded text-sm font-bold uppercase
+                                        ${event.emergencyType === 'medical' ? 'bg-red-50 text-red-700 border-red-200' :
+                                            event.emergencyType === 'harassment' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                'bg-slate-50 text-slate-700 border-slate-200'}
+                                    `}>
+                                        {event.emergencyType}
+                                    </span>
+                                </div>
+                                {event.triggerMethod && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-muted">Method:</span>
+                                        <span className="px-2 py-1 bg-blue-50 border border-blue-100 rounded text-sm font-medium text-blue-700 uppercase italic">
+                                            {event.triggerMethod.replace('_', ' ')}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -104,9 +131,15 @@ export default function SOSDetailPanel({ event, onAssign, onResolve, onEscalate,
                     </h3>
                     <div className="flex justify-between items-center">
                         <span className="font-medium text-primary">Mother</span>
-                        <a href="tel:9876543210" className="bg-surface border border-emergency/30 text-emergency px-3 py-1 rounded text-sm font-bold hover:bg-emergency/5">
-                            Call 9876543210
+                        <a href={`tel:${event.userPhone}`} className="bg-surface border border-emergency/30 text-emergency px-3 py-1 rounded text-sm font-bold hover:bg-emergency/5">
+                            GSM Call
                         </a>
+                        <button
+                            onClick={initiateCall}
+                            className="bg-primary text-white px-3 py-1 rounded text-sm font-bold hover:bg-primary/90 flex items-center gap-1"
+                        >
+                            <Phone className="w-3 h-3" /> Web Call
+                        </button>
                     </div>
                 </div>
 

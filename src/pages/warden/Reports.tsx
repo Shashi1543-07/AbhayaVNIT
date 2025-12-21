@@ -4,15 +4,11 @@ import BottomNav from '../../components/layout/BottomNav';
 import { AlertTriangle, FileText, Home, Megaphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
+import { wardenNavItems } from '../../lib/navItems';
 
 export default function WardenReports() {
 
-    const wardenNavItems = [
-        { icon: Home, label: 'Dashboard', path: '/warden/dashboard' },
-        { icon: AlertTriangle, label: 'SOS', path: '/warden/sos' },
-        { icon: FileText, label: 'Reports', path: '/warden/reports' },
-        { icon: Megaphone, label: 'Broadcast', path: '/warden/broadcasts' },
-    ];
+    // Nav items imported from shared lib
 
     return (
         <MobileWrapper>

@@ -5,6 +5,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import { useAuthStore } from '../../context/authStore';
 import { broadcastService, type Broadcast } from '../../services/broadcastService';
 import { Megaphone, Send, AlertTriangle, FileText, Home, User } from 'lucide-react';
+import { wardenNavItems } from '../../lib/navItems';
 
 export default function WardenBroadcasts() {
     const { profile } = useAuthStore();
@@ -43,12 +44,6 @@ export default function WardenBroadcasts() {
         }
     };
 
-    const wardenNavItems = [
-        { icon: Home, label: 'Dashboard', path: '/warden/dashboard' },
-        { icon: AlertTriangle, label: 'SOS', path: '/warden/sos' },
-        { icon: FileText, label: 'Reports', path: '/warden/reports' },
-        { icon: Megaphone, label: 'Broadcast', path: '/warden/broadcasts' },
-    ];
 
     return (
         <MobileWrapper>
