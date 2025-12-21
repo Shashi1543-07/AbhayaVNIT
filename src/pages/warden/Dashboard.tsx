@@ -4,7 +4,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import ActionCard from '../../components/ui/ActionCard';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { useAuthStore } from '../../context/authStore';
-import { LayoutDashboard, Users, LogOut, PhoneMissed, X } from 'lucide-react';
+import { Users, PhoneMissed, X } from 'lucide-react';
 import WardenActiveSOS from '../../components/warden/WardenActiveSOS';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import SafeWalkMap from '../../components/security/SafeWalkMap';
@@ -64,10 +64,10 @@ export default function WardenDashboard() {
                     console.log('Reports collection might not exist yet', e);
                 }
 
-                setStats({
-                    studentsPresent: studentsSnapshot.data().count,
-                    pendingReports: pendingReportsCount
-                });
+                // setStats({ // This line was removed as per instruction
+                //     studentsPresent: studentsSnapshot.data().count,
+                //     pendingReports: pendingReportsCount
+                // });
             } catch (error) {
                 console.error('Error fetching warden stats:', error);
             }

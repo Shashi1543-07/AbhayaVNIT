@@ -5,7 +5,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, limit, deleteDoc, doc } from 'firebase/firestore';
-import { Shield, PhoneMissed, X, List, Calendar, Settings, LogOut } from 'lucide-react';
+import { Shield, PhoneMissed, X } from 'lucide-react';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import WalkDetailPanel from '../../components/security/WalkDetailPanel';
 import { type SafeWalkSession } from '../../services/safeWalkService';
