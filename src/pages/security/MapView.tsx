@@ -5,7 +5,6 @@ import BottomNav from '../../components/layout/BottomNav';
 import ComprehensiveMap from '../../components/security/ComprehensiveMap';
 import WalkDetailPanel from '../../components/security/WalkDetailPanel';
 import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkService';
-import { Shield, Map as MapIcon, User, Bell } from 'lucide-react';
 import { securityNavItems } from '../../lib/navItems';
 
 export default function SecurityMapView() {

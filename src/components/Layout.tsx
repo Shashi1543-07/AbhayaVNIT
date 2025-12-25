@@ -26,8 +26,8 @@ export default function Layout({ children, role }: LayoutProps) {
         return (
             <div className="min-h-screen bg-transparent pb-20">
                 {/* Top Header for Admin */}
-                <header className="bg-white/80 backdrop-blur-md border-b border-white/20 sticky top-0 z-30 shadow-sm">
-                    <div className="px-4 py-3 flex items-center justify-between">
+                <header className="bg-white/80 backdrop-blur-md border-b border-white/20 fixed top-0 left-0 right-0 z-40 shadow-sm h-20 pt-6">
+                    <div className="px-4 py-3 flex items-center justify-between h-full">
                         <div className="flex items-center gap-3">
                             <span className="font-semibold text-slate-800">VNIT Admin</span>
                         </div>
@@ -47,7 +47,7 @@ export default function Layout({ children, role }: LayoutProps) {
                     </div>
                 </header>
 
-                <main className="p-4 lg:p-8 max-w-3xl mx-auto">
+                <main className="pt-20 p-4 lg:p-8 max-w-3xl mx-auto">
                     {children}
                 </main>
 
@@ -109,8 +109,8 @@ export default function Layout({ children, role }: LayoutProps) {
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white/80 backdrop-blur-md border-b border-white/20 sticky top-0 z-30 shadow-sm">
-                    <div className="px-4 py-3 flex items-center justify-between">
+                <header className="bg-white/80 backdrop-blur-md border-b border-white/20 fixed top-0 left-0 right-0 z-30 shadow-sm h-20 pt-6">
+                    <div className="px-4 py-3 flex items-center justify-between h-full">
                         <div className="flex items-center gap-3">
                             <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 lg:hidden">
                                 <Menu className="w-6 h-6 text-slate-600" />
@@ -131,7 +131,7 @@ export default function Layout({ children, role }: LayoutProps) {
                     </div>
                 </header>
 
-                <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
+                <main className="flex-1 p-4 lg:p-8 pt-20 overflow-y-auto">
                     {children}
                 </main>
             </div>

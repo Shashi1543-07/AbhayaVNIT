@@ -1,7 +1,7 @@
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
-import { AlertTriangle, FileText, Home, Megaphone } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { wardenNavItems } from '../../lib/navItems';
@@ -12,7 +12,7 @@ export default function WardenReports() {
 
     return (
         <MobileWrapper>
-            <TopHeader title="Student Reports" showProfile={true} showBackButton={true} />
+            <TopHeader title="Student Reports" showBackButton={true} />
             <motion.main
                 className="px-4 py-6 pb-20"
                 variants={containerStagger}

@@ -47,7 +47,7 @@ export default function StudentDashboard() {
         <MobileWrapper>
             <TopHeader
                 title={profile?.name ? `Welcome, ${profile.name.split(' ')[0]}!` : 'Welcome!'}
-                showNotifications={true}
+                showBackButton={true}
             />
 
             <motion.main

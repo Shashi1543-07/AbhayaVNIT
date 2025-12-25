@@ -39,7 +39,7 @@ export default function Reports() {
 
     return (
         <MobileWrapper>
-            <TopHeader title="My Reports" />
+            <TopHeader title="My Reports" showBackButton={true} />
 
             <motion.main
                 className="px-4 py-6 pb-20 min-h-screen bg-transparent"

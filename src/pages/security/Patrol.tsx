@@ -1,7 +1,7 @@
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
-import { Shield, Map as MapIcon, User, Bell, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { securityNavItems } from '../../lib/navItems';
 
 export default function SecurityPatrol() {

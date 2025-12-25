@@ -82,7 +82,7 @@ export default function Messages() {
 
     return (
         <MobileWrapper>
-            <TopHeader title="Messages" showNotifications={true} />
+            <TopHeader title="Messages" showBackButton={true} />
 
             <div className="px-4 py-4 space-y-4">
                 {/* Start New Chat Button */}

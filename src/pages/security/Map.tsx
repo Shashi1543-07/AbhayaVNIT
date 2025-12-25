@@ -3,7 +3,6 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import LiveMap from '../../components/LiveMap';
 import { sosService, type SOSEvent } from '../../services/sosService';
-import { Shield, Map as MapIcon, User, Bell } from 'lucide-react';
 import { securityNavItems } from '../../lib/navItems';
 import { useState, useEffect } from 'react';
 

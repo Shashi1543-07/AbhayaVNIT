@@ -3,17 +3,10 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { useAuthStore } from '../../context/authStore';
 import { securityNavItems } from '../../lib/navItems';
-import { Shield, Map as MapIcon, User, Bell, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Shield } from 'lucide-react';
 
 export default function SecurityProfile() {
-    const { profile, logout } = useAuthStore();
-    const navigate = useNavigate();
-
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
-    };
+    const { profile } = useAuthStore();
 
 
     return (
@@ -31,15 +24,6 @@ export default function SecurityProfile() {
                     </div>
                 </div>
 
-                <div className="glass-card rounded-2xl overflow-hidden border border-black/15">
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 p-4 text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        <span className="font-medium">Sign Out</span>
-                    </button>
-                </div>
             </main>
             <BottomNav items={securityNavItems} />
         </MobileWrapper>

@@ -2,20 +2,12 @@ import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { useAuthStore } from '../../context/authStore';
-import { useNavigate } from 'react-router-dom';
-import { User, Phone, Mail, Home, LogOut, ChevronRight, Shield, Bell } from 'lucide-react';
-
+import { User, Phone, Mail, Home, ChevronRight, Shield, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 
 export default function Profile() {
-    const { user, profile, logout } = useAuthStore();
-    const navigate = useNavigate();
-
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
-    };
+    const { user, profile } = useAuthStore();
 
     return (
         <MobileWrapper>
@@ -99,17 +91,6 @@ export default function Profile() {
                         <ChevronRight className="w-4 h-4 text-muted" />
                     </motion.button>
                 </motion.div>
-
-                {/* Logout Button */}
-                <motion.button
-                    variants={cardVariant}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleLogout}
-                    className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 hover:shadow-lg transition-all shadow-md border border-white/20"
-                >
-                    <LogOut className="w-5 h-5" />
-                    Logout
-                </motion.button>
             </motion.main>
 
             <BottomNav />

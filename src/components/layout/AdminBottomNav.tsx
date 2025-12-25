@@ -25,7 +25,7 @@ const AdminBottomNav: React.FC = () => {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
-            <div className="w-full max-w-[480px] bg-white/90 backdrop-blur-md border-t border-white/20 shadow-lg pointer-events-auto">
+            <div className="w-full max-w-[480px] bg-white/95 backdrop-blur-md border-t border-white/20 shadow-lg pointer-events-auto">
                 <div className="flex justify-around items-center h-16 relative">
                     {navItems.map((item) => {
                         const active = isActive(item.path);

@@ -6,7 +6,7 @@ import LiveMap from '../../components/LiveMap';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { callService } from '../../services/callService';
 import { useAuthStore } from '../../context/authStore';
-import { Phone, MapPin, Clock, Shield, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Phone, MapPin, Clock, Shield, CheckCircle } from 'lucide-react';
 
 export default function SecuritySOSDetail() {
     const { id } = useParams();
@@ -76,12 +76,7 @@ export default function SecuritySOSDetail() {
 
     return (
         <MobileWrapper>
-            <div className="bg-white shadow-sm pt-safe-top pb-2 px-4 flex items-center gap-3 sticky top-0 z-50">
-                <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-slate-100">
-                    <ArrowLeft className="w-6 h-6 text-slate-700" />
-                </button>
-                <h1 className="text-lg font-bold text-slate-800">Emergency Details</h1>
-            </div>
+            <TopHeader title="Emergency Details" showBackButton={true} />
 
             <main className="flex-1 flex flex-col h-full">
                 {/* Map Section */}
