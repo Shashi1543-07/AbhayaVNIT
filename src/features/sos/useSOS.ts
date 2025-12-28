@@ -14,35 +14,45 @@ export const useSOS = () => {
     useEffect(() => {
         if (!user) return;
 
-        const q = query(
-            collection(db, 'sos_events'),
-            where('userId', '==', user.uid),
-            where('status', 'in', ['active', 'in_progress'])
-            // orderBy('triggeredAt', 'desc'), // Removed to avoid index requirement
-            // limit(1)
-        );
+        try {
+            const q = query(
+                collection(db, 'sos_events'),
+                where('userId', '==', user.uid),
+                where('status.resolved', '==', false)
+            );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (!snapshot.empty) {
-                const events = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        ...data,
-                        timeline: data.timeline || [] // Ensure timeline exists
-                    };
-                }) as SOSEvent[];
+            const unsubscribe = onSnapshot(q,
+                (snapshot) => {
+                    if (!snapshot.empty) {
+                        const events = snapshot.docs.map(doc => {
+                            const data = doc.data();
+                            return {
+                                id: doc.id,
+                                ...data,
+                                timeline: data.timeline || [] // Ensure timeline exists
+                            };
+                        }) as SOSEvent[];
 
-                // Sort client-side to find the latest one
-                events.sort((a, b) => (b.triggeredAt || 0) - (a.triggeredAt || 0));
+                        // Sort client-side to find the latest one
+                        events.sort((a, b) => (b.triggeredAt || 0) - (a.triggeredAt || 0));
 
-                setActiveSOS(events[0]);
-            } else {
-                setActiveSOS(null);
-            }
-        });
+                        setActiveSOS(events[0]);
+                    } else {
+                        setActiveSOS(null);
+                    }
+                },
+                (error) => {
+                    console.error("useSOS: Error subscribing to SOS events:", error);
+                    // If there's an index error, set activeSOS to null and continue
+                    setActiveSOS(null);
+                }
+            );
 
-        return () => unsubscribe();
+            return () => unsubscribe();
+        } catch (err) {
+            console.error("useSOS: Error setting up SOS subscription:", err);
+            setActiveSOS(null);
+        }
     }, [user]);
 
     const triggerSOS = async () => {

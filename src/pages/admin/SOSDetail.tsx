@@ -1,14 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import MobileWrapper from '../../components/layout/MobileWrapper';
-import TopHeader from '../../components/layout/TopHeader';
+import Layout from '../../components/Layout';
 import LiveMap from '../../components/LiveMap';
-import { type SOSEvent } from '../../services/sosService';
+import { sosService, type SOSEvent } from '../../services/sosService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { MapPin, Clock, Shield, Phone, User, AlertTriangle } from 'lucide-react';
+import { MapPin, Clock, Shield, Phone, User, AlertTriangle, ArrowLeft } from 'lucide-react';
 
-export default function WardenSOSDetail() {
+export default function AdminSOSDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [event, setEvent] = useState<SOSEvent | null>(null);
@@ -17,6 +16,7 @@ export default function WardenSOSDetail() {
     useEffect(() => {
         if (!id) return;
 
+        // Subscribe to specific SOS event
         const unsubscribe = onSnapshot(doc(db, 'sos_events', id), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
@@ -36,36 +36,40 @@ export default function WardenSOSDetail() {
 
     if (loading) {
         return (
-            <MobileWrapper>
-                <TopHeader title="SOS Details" showBackButton={true} />
-                <div className="flex items-center justify-center h-screen pb-20">
+            <Layout role="admin">
+                <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                 </div>
-            </MobileWrapper>
+            </Layout>
         );
     }
 
     if (!event) {
         return (
-            <MobileWrapper>
-                <TopHeader title="SOS Details" showBackButton={true} />
-                <div className="p-4 text-center pt-20">
+            <Layout role="admin">
+                <div className="p-4 text-center">
                     <p className="text-muted mb-4">This SOS event does not exist or has been removed.</p>
-                    <button onClick={() => navigate('/warden/dashboard')} className="text-primary font-bold">
+                    <button onClick={() => navigate('/admin/dashboard')} className="text-primary font-bold">
                         Return to Dashboard
                     </button>
                 </div>
-            </MobileWrapper>
+            </Layout>
         );
     }
 
     const timeElapsed = Math.floor((Date.now() - event.triggeredAt) / 1000 / 60); // minutes
 
     return (
-        <MobileWrapper>
-            <TopHeader title="SOS Event Details" showBackButton={true} />
+        <Layout role="admin">
+            <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/admin/dashboard')} className="text-primary hover:text-primary-dark">
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h1 className="text-2xl font-bold text-primary">SOS Event Details</h1>
+                </div>
 
-            <main className="px-4 py-4 space-y-4 pb-20 pt-24">
                 {/* Map Section */}
                 <div className="h-64 rounded-xl overflow-hidden border-2 border-surface shadow-lg">
                     <LiveMap sosEvents={[event]} />
@@ -189,10 +193,10 @@ export default function WardenSOSDetail() {
                 {/* View Only Notice */}
                 <div className="glass-card rounded-xl p-4 bg-blue-50/50 border border-blue-200">
                     <p className="text-sm text-blue-700 text-center">
-                        <strong>Warden View:</strong> You are viewing this SOS in read-only mode. Only Security personnel can take action on SOS events.
+                        <strong>Admin View:</strong> You are viewing this SOS in read-only mode. Only Security personnel can take action on SOS events.
                     </p>
                 </div>
-            </main>
-        </MobileWrapper>
+            </div>
+        </Layout>
     );
 }

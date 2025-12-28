@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { wardenNavItems } from '../../lib/navItems';
-import { doc, deleteDoc, onSnapshot, limit, serverTimestamp } from 'firebase/firestore';
+import { doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
 
 export default function WardenDashboard() {
     const { profile, user } = useAuthStore();
@@ -49,7 +49,7 @@ export default function WardenDashboard() {
         <MobileWrapper>
             <TopHeader title={`Hostel ${wardenHostelId} Warden`} showBackButton={true} showProfile={true} />
             <motion.main
-                className="px-4 py-6 space-y-6 pb-20"
+                className="px-4 py-6 space-y-6 pb-20 pt-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

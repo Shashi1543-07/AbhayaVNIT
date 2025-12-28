@@ -130,10 +130,10 @@ export default function ComprehensiveMap() {
 
             {/* Sidebar with walk details */}
             {selectedWalk && (
-                <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 max-w-sm w-80 z-10">
+                <div className="absolute top-4 right-4 glass-card rounded-xl shadow-lg p-4 max-w-sm w-80 z-10 backdrop-blur-md bg-white/90 border border-white/20">
                     <div className="flex justify-between items-start mb-3">
                         <div>
-                            <h3 className="font-bold text-lg">{selectedWalk.userName}</h3>
+                            <h3 className="font-bold text-lg text-slate-800">{selectedWalk.userName}</h3>
                             <p className="text-sm text-slate-500">{selectedWalk.userHostel}</p>
                         </div>
                         <button
@@ -173,7 +173,7 @@ export default function ComprehensiveMap() {
                             window.dispatchEvent(new CustomEvent('openWalkDetail', { detail: selectedWalk }));
                             setSelectedWalk(null);
                         }}
-                        className="w-full mt-4 bg-primary text-white py-2 rounded-lg font-semibold text-sm"
+                        className="w-full mt-4 bg-primary text-white py-2 rounded-lg font-semibold text-sm shadow-md hover:bg-primary/90 transition-colors"
                     >
                         View Full Details
                     </button>
@@ -181,23 +181,23 @@ export default function ComprehensiveMap() {
             )}
 
             {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-10">
-                <h4 className="text-xs font-bold mb-2">Walk Status</h4>
+            <div className="absolute bottom-4 left-4 glass-card rounded-lg shadow-lg p-3 z-10 backdrop-blur-md bg-white/90 border border-white/20">
+                <h4 className="text-xs font-bold mb-2 text-slate-700">Walk Status</h4>
                 <div className="space-y-1">
-                    <div className="flex items-center text-xs">
-                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                    <div className="flex items-center text-xs text-slate-600">
+                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2 shadow-sm"></div>
                         <span>Active</span>
                     </div>
-                    <div className="flex items-center text-xs">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                    <div className="flex items-center text-xs text-slate-600">
+                        <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2 shadow-sm"></div>
                         <span>Delayed/Off-route</span>
                     </div>
-                    <div className="flex items-center text-xs">
-                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                    <div className="flex items-center text-xs text-slate-600">
+                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2 shadow-sm"></div>
                         <span>Danger</span>
                     </div>
-                    <div className="flex items-center text-xs">
-                        <div className="w-3 h-3 rounded-full bg-gray-500 mr-2"></div>
+                    <div className="flex items-center text-xs text-slate-600">
+                        <div className="w-3 h-3 rounded-full bg-gray-500 mr-2 shadow-sm"></div>
                         <span>Paused</span>
                     </div>
                 </div>

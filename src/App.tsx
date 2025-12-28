@@ -24,6 +24,7 @@ import UserManagement from './pages/admin/UserManagement';
 import SystemSettings from './pages/admin/SystemSettings';
 import AuditLogs from './pages/admin/AuditLogs';
 import Broadcasts from './pages/admin/Broadcasts';
+import AdminSOSDetail from './pages/admin/SOSDetail';
 import ProtectedRoute from './features/auth/ProtectedRoute';
 import { useAuthListener } from './hooks/useAuthListener';
 import WardenBroadcasts from './pages/warden/Broadcasts';
@@ -79,6 +80,7 @@ function AnimatedRoutes() {
           <Route path="/admin/settings" element={<SystemSettings />} />
           <Route path="/admin/logs" element={<AuditLogs />} />
           <Route path="/admin/broadcasts" element={<Broadcasts />} />
+          <Route path="/admin/sos/:id" element={<AdminSOSDetail />} />
         </Route>
       </Routes>
     </AnimatePresence>

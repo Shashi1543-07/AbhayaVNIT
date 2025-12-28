@@ -84,7 +84,7 @@ export default function Messages() {
         <MobileWrapper>
             <TopHeader title="Messages" showBackButton={true} />
 
-            <div className="px-4 py-4 space-y-4">
+            <div className="px-4 py-4 space-y-4 pt-24">
                 {/* Start New Chat Button */}
                 <button
                     onClick={handleOpenNewChat}

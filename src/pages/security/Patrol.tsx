@@ -9,7 +9,7 @@ export default function SecurityPatrol() {
     return (
         <MobileWrapper>
             <TopHeader title="Patrol Management" showBackButton={true} />
-            <main className="px-4 py-6 pb-20 space-y-4">
+            <main className="px-4 py-6 pb-20 space-y-4 pt-24">
                 <div className="glass-card rounded-2xl p-6 border border-black/15">
                     <h3 className="font-bold text-slate-800 mb-4">Current Shift</h3>
                     <div className="flex items-center gap-3 mb-4">

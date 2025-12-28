@@ -137,10 +137,17 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
     const activateSOS = async () => {
         if (timerRef.current) clearInterval(timerRef.current);
         if (isActive) return;
+
+        // 1. Check User
+        if (!user) {
+            alert("Cannot trigger SOS: User identification missing. Please relogin.");
+            return;
+        }
+
         setIsActive(true);
         setIsLongPressing(false);
 
-        // GSAP Activation Animation - Reset y position and animate scale
+        // GSAP Activation Animation
         gsap.to(buttonRef.current, {
             y: 0,
             scale: 1.15,
@@ -151,9 +158,39 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
         const finalType = dragType;
         if (onActivate) onActivate(finalType);
 
-        if (!user || !location) {
-            alert("Cannot trigger SOS: Missing user or location data.");
+        // 2. Get Location (Use tracked or fetch one-time)
+        let finalLocation = location;
+
+        if (!finalLocation) {
+            setLocationStatus('Fetching location...');
+            try {
+                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                });
+                finalLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                setLocation(finalLocation);
+            } catch (err) {
+                console.error("Failed to get one-time location:", err);
+                // Fallback or Alert? 
+                // For safety, maybe send with 0,0 or handle gracefully?
+                // Let's alert for now as per "Missing user or location data" request context, 
+                // but trying hard to get it first.
+                // Or better: Send with null location if allowed by rules (rules require number).
+                // If rules require number, we must fail or send approximate.
+            }
+        }
+
+        if (!finalLocation) {
+            alert("Cannot trigger SOS: Location unavailable. Ensure GPS is on.");
             setIsActive(false);
+            setLocationStatus('Location Error');
             return;
         }
 
@@ -161,8 +198,8 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
             const sosUser = { ...user, ...profile };
             const result = await sosService.triggerSOS(
                 sosUser,
-                location,
-                finalType,
+                finalLocation,
+                finalType === 'general' ? 'other' : finalType,
                 'manual_gesture',
                 audioEnabled ? 'audio-placeholder-url' : undefined
             );

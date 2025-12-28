@@ -13,11 +13,12 @@ import { callService } from '../../services/callService';
 import { userService, type UserProfile } from '../../services/userService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
+import { useSOS } from '../../features/sos/useSOS';
 
 export default function StudentDashboard() {
     const navigate = useNavigate();
-    const { profile, user } = useAuthStore();
-    const [sosActive, setSosActive] = useState(false);
+    const { user, profile } = useAuthStore();
+    const { activeSOS } = useSOS();
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [staff, setStaff] = useState<UserProfile[]>([]);
 
@@ -38,8 +39,7 @@ export default function StudentDashboard() {
     }, [profile?.hostelId]);
 
     const handleSOS = () => {
-        // Just update UI state, the button handles the API call
-        setSosActive(true);
+        // Just vibrate, the button handles the API call
         if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
     };
 
@@ -51,7 +51,7 @@ export default function StudentDashboard() {
             />
 
             <motion.main
-                className="px-4 py-6 space-y-6"
+                className="px-4 py-6 space-y-6 pt-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -61,6 +61,66 @@ export default function StudentDashboard() {
                     <SOSButton onActivate={handleSOS} />
                     <p className="text-muted text-xs mt-4">Long press to activate emergency</p>
                 </motion.div>
+
+                {/* Active SOS Status */}
+                {activeSOS && (
+                    <motion.div
+                        variants={cardVariant}
+                        className="glass-card rounded-2xl p-5 border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 to-white"
+                    >
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                                    <Shield className="w-5 h-5 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-emerald-800">SOS Active</h3>
+                                    <p className="text-xs text-emerald-600">
+                                        {new Date(activeSOS.triggeredAt).toLocaleTimeString()}
+                                    </p>
+                                </div>
+                            </div>
+                            <span className={`px-3 py-1 rounded-lg text-xs font-bold
+                                ${!activeSOS.status.recognised ? 'bg-amber-100 text-amber-700 animate-pulse' :
+                                    !activeSOS.status.resolved ? 'bg-blue-100 text-blue-700' :
+                                        'bg-green-100 text-green-700'}
+                            `}>
+                                {!activeSOS.status.recognised ? 'Pending' :
+                                    !activeSOS.status.resolved ? 'Security Responding' :
+                                        'Resolved'}
+                            </span>
+                        </div>
+
+                        {activeSOS.status.recognised && activeSOS.assignedTo && (
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 mb-3">
+                                <p className="text-sm font-bold text-blue-800">Security Personnel Assigned</p>
+                                <p className="text-xs text-blue-600">{activeSOS.assignedTo.name}</p>
+                            </div>
+                        )}
+
+                        {!activeSOS.status.recognised && (
+                            <div className="text-center py-3">
+                                <p className="text-sm text-amber-700 font-medium">
+                                    ⏳ Awaiting security response...
+                                </p>
+                                <p className="text-xs text-muted mt-1">
+                                    Your emergency signal has been sent. Help is on the way.
+                                </p>
+                            </div>
+                        )}
+
+                        {activeSOS.status.resolved && (
+                            <div className="text-center py-3 bg-green-50 rounded-lg">
+                                <p className="text-sm text-green-700 font-bold">
+                                    ✓ Emergency Resolved
+                                </p>
+                                <p className="text-xs text-muted mt-1">
+                                    Resolved at {activeSOS.resolvedAt ? new Date(activeSOS.resolvedAt).toLocaleTimeString() : 'N/A'}
+                                </p>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
 
                 {/* Location Info */}
                 <motion.div variants={cardVariant} className="glass-card rounded-2xl p-4 flex items-center justify-between">
@@ -145,22 +205,8 @@ export default function StudentDashboard() {
                     </div>
                 </motion.div>
 
-                {/* Live Status */}
-                {sosActive && (
-                    <motion.div variants={cardVariant} className="glass-card rounded-2xl p-4 border-l-4 border-emergency">
-                        <h3 className="text-sm font-bold text-primary mb-2">Live Status</h3>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <span className="relative flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
-                                </span>
-                                <span className="font-semibold text-emergency">SOS Active</span>
-                            </div>
-                            <span className="text-xs text-muted">Guard on the way (2 min)</span>
-                        </div>
-                    </motion.div>
-                )}
+                {/* Bottom Spacer */}
+                <div className="h-20" />
 
                 {/* Alerts / Broadcasts */}
                 {broadcasts.length > 0 && (

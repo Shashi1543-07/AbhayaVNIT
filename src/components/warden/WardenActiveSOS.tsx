@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sosService, type SOSEvent } from '../../services/sosService';
-import { AlertTriangle, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
+import SOSCard from '../common/SOSCard';
 
 interface WardenActiveSOSProps {
     hostelId?: string;
@@ -9,7 +9,6 @@ interface WardenActiveSOSProps {
 
 export default function WardenActiveSOS({ hostelId }: WardenActiveSOSProps) {
     const [allEvents, setAllEvents] = useState<SOSEvent[]>([]);
-    const navigate = useNavigate();
 
     useEffect(() => {
         // Subscribe to SOS events filtered by hostelId if provided
@@ -41,63 +40,10 @@ export default function WardenActiveSOS({ hostelId }: WardenActiveSOSProps) {
                 <span className="text-xs text-emergency bg-emergency/20 px-2 py-1 rounded">Global View</span>
             </div>
 
-            <div className="flex-1 p-2 space-y-2">
-                {/* Group events by userId */}
-                {Object.values(allEvents.reduce((acc, event) => {
-                    if (!acc[event.userId]) {
-                        acc[event.userId] = [];
-                    }
-                    acc[event.userId].push(event);
-                    return acc;
-                }, {} as Record<string, SOSEvent[]>)).map(userEvents => {
-                    // Sort user events by time (newest first)
-                    userEvents.sort((a, b) => b.triggeredAt - a.triggeredAt);
-                    const latestEvent = userEvents[0];
-                    const count = userEvents.length;
-
-                    return (
-                        <div
-                            key={latestEvent.userId}
-                            onClick={() => navigate(`/warden/sos/${latestEvent.id}`)}
-                            className="p-4 rounded-2xl bg-surface hover:bg-emergency/5 cursor-pointer transition-all flex items-center justify-between group"
-                        >
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="px-2 py-0.5 bg-emergency/20 text-emergency rounded text-xs font-bold animate-pulse">
-                                        {latestEvent.status.toUpperCase()}
-                                    </span>
-                                    {count > 1 && (
-                                        <span className="px-2 py-0.5 bg-emergency text-white rounded-full text-xs font-bold">
-                                            {count} Alerts
-                                        </span>
-                                    )}
-                                    <span className="text-xs text-muted font-mono">
-                                        {new Date(latestEvent.triggeredAt).toLocaleTimeString()}
-                                    </span>
-                                </div>
-                                <h3 className="font-bold text-primary">{latestEvent.userName}</h3>
-                                <div className="flex flex-wrap gap-2 mt-1 mb-1">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase
-                                        ${latestEvent.emergencyType === 'medical' ? 'bg-red-100 text-red-700 border-red-200' :
-                                            latestEvent.emergencyType === 'harassment' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                                'bg-slate-100 text-slate-700 border-slate-200'}
-                                    `}>
-                                        {latestEvent.emergencyType || 'General'}
-                                    </span>
-                                    {latestEvent.triggerMethod && (
-                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-medium border border-blue-100 italic">
-                                            {latestEvent.triggerMethod.replace('_', ' ')}
-                                        </span>
-                                    )}
-                                </div>
-                                <p className="text-sm text-muted">
-                                    Hostel {latestEvent.hostelId} • Room {latestEvent.roomNo}
-                                </p>
-                            </div>
-                            <ChevronRight className="text-muted group-hover:text-primary" />
-                        </div>
-                    );
-                })}
+            <div className="flex-1 p-3 space-y-4 overflow-y-auto">
+                {allEvents.map(event => (
+                    <SOSCard key={event.id} event={event} role="warden" />
+                ))}
             </div>
         </div>
     );

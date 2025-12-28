@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
 import { auth } from '../lib/firebase';
 import { Menu, X, LogOut } from 'lucide-react';
 import { cn } from '../lib/utils';
+import TopHeader from './layout/TopHeader';
 import AdminBottomNav from './layout/AdminBottomNav';
 
 interface LayoutProps {
@@ -25,29 +26,10 @@ export default function Layout({ children, role }: LayoutProps) {
     if (role === 'admin') {
         return (
             <div className="min-h-screen bg-transparent pb-20">
-                {/* Top Header for Admin */}
-                <header className="bg-white/80 backdrop-blur-md border-b border-white/20 fixed top-0 left-0 right-0 z-40 shadow-sm h-20 pt-6">
-                    <div className="px-4 py-3 flex items-center justify-between h-full">
-                        <div className="flex items-center gap-3">
-                            <span className="font-semibold text-slate-800">VNIT Admin</span>
-                        </div>
+                {/* Standard Top Header for Admin */}
+                <TopHeader title="VNIT Admin" showBackButton={false} />
 
-                        <div className="flex items-center gap-4 ml-auto">
-                            <div className="hidden md:flex flex-col items-end mr-2">
-                                <span className="text-sm font-semibold text-slate-700">{user?.displayName || 'Admin'}</span>
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Logout"
-                            >
-                                <LogOut className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-                </header>
-
-                <main className="pt-20 p-4 lg:p-8 max-w-3xl mx-auto">
+                <main className="pt-24 p-4 lg:p-8 max-w-3xl mx-auto">
                     {children}
                 </main>
 

@@ -210,7 +210,7 @@ export default function SafeWalk() {
             <TopHeader title="Safe Walk" showBackButton={true} />
 
             <motion.main
-                className="px-4 py-6 space-y-6 pb-24"
+                className="px-4 py-6 space-y-6 pb-24 pt-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

@@ -12,38 +12,66 @@ import {
 
 export interface SOSEvent {
     id: string;
+    // Student information
     userId: string;
     userName: string;
+    studentId: string;  // For clarity (same as userId)
+    studentName: string; // For clarity (same as userName)
     userPhone: string;
     role: 'student' | 'warden' | 'staff';
+
+    // Location details
     hostelId?: string;
+    hostel: string;      // Hostel ID/name
     roomNo?: string;
-    status: 'active' | 'in_progress' | 'resolved';
-    triggeredAt: number;
-    location: {
-        lat: number;
-        lng: number;
-        address?: string;
+    roomNumber: string;  // Student's room
+
+    // New status structure for role-based management
+    status: {
+        recognised: boolean;  // Set by Security when they acknowledge
+        resolved: boolean;    // Set by Security when incident is resolved
     };
+
+    // Security assignment
+    recognisedBy: string | null;  // Security userId who recognised
     assignedTo?: {
         id: string;
         name: string;
         role: string;
     };
+
+    // Timestamps
+    triggeredAt: number;
+    createdAt: number;
+    resolvedAt: number | null;
+
+    // Location
+    location: {
+        lat: number;
+        lng: number;
+        address?: string;
+    };
+    liveLocation: {
+        lat: number;
+        lng: number;
+    };
+
+    // Timeline
     timeline: {
         time: number;
         action: string;
         by: string;
         note?: string;
     }[];
-    audioUrl?: string;
-    // Enhanced SOS fields
-    emergencyType: 'medical' | 'harassment' | 'general';
+
+    // Emergency details
+    emergencyType: 'medical' | 'harassment' | 'other';
     triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button';
     description?: string;
+    optionalMessage?: string;
     voiceTranscript?: string;
+    audioUrl?: string;
     isDetailsAdded?: boolean;
-    resolvedAt?: number;
     resolutionSummary?: string;
 }
 
@@ -52,32 +80,58 @@ export const sosService = {
     triggerSOS: async (
         user: any,
         location: { lat: number; lng: number },
-        emergencyType: 'medical' | 'harassment' | 'general' = 'general',
+        emergencyType: 'medical' | 'harassment' | 'other' = 'other',
         triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button' = 'manual_gesture',
         audioUrl?: string
     ) => {
         try {
             // 1. Create SOS Event Doc first to get ID
             const sosData = {
+                // Student information
                 userId: user.uid,
                 userName: user.name || user.displayName || 'Unknown Student',
+                studentId: user.uid,
+                studentName: user.name || user.displayName || 'Unknown Student',
                 userPhone: user.phoneNumber || '',
                 role: user.role || 'student',
+
+                // Location details
                 hostelId: user.hostelId || user.hostel || null,
+                hostel: user.hostelId || user.hostel || 'Unknown',
                 roomNo: user.roomNo || null,
-                status: 'active',
+                roomNumber: user.roomNo || user.roomNumber || 'N/A',
+
+                // New status structure
+                status: {
+                    recognised: false,
+                    resolved: false
+                },
+
+                // Security assignment (initially null)
+                recognisedBy: null,
+                assignedTo: null,
+
+                // Timestamps
                 triggeredAt: Date.now(),
+                createdAt: serverTimestamp(),
+                resolvedAt: null,
+
+                // Location
                 location,
+                liveLocation: location,
+
+                // Timeline
                 timeline: [{
                     time: Date.now(),
                     action: 'SOS Triggered',
                     by: user.uid,
                     note: `Emergency: ${emergencyType} (${triggerMethod})`
                 }],
+
+                // Emergency details
                 audioUrl: audioUrl || null,
                 emergencyType,
                 triggerMethod,
-                createdAt: serverTimestamp(),
                 isDetailsAdded: false,
                 chatId: '' // Will update after
             };
@@ -129,20 +183,20 @@ export const sosService = {
 
     // 2. Subscribe to Active SOS Events (Real-time)
     subscribeToActiveSOS: (callback: (events: SOSEvent[]) => void, hostelId?: string) => {
-        // Query by status AND hostelId if provided to satisfy security rules
+        // Query for SOS events where status.resolved = false
         let q;
         if (hostelId) {
             console.log("sosService: Subscribing to SOS with hostelId:", hostelId);
             q = query(
                 collection(db, 'sos_events'),
-                where('status', 'in', ['active', 'in_progress']),
+                where('status.resolved', '==', false),
                 where('hostelId', '==', hostelId)
             );
         } else {
             console.log("sosService: Subscribing to ALL SOS events (Security/Admin view)");
             q = query(
                 collection(db, 'sos_events'),
-                where('status', 'in', ['active', 'in_progress'])
+                where('status.resolved', '==', false)
             );
         }
 
@@ -165,36 +219,58 @@ export const sosService = {
         });
     },
 
-    // 3. Assign Guard
-    assignGuard: async (sosId: string, guard: { id: string; name: string; role: string }) => {
+    // 3. Recognise SOS (Security Only)
+    recogniseSOS: async (sosId: string, securityId: string, securityName: string) => {
         const sosRef = doc(db, 'sos_events', sosId);
         const { arrayUnion } = await import('firebase/firestore');
 
         await updateDoc(sosRef, {
-            status: 'in_progress',
-            assignedTo: guard,
+            'status.recognised': true,
+            recognisedBy: securityId,
+            assignedTo: {
+                id: securityId,
+                name: securityName,
+                role: 'security'
+            },
             timeline: arrayUnion({
                 time: Date.now(),
-                action: 'Security Assigned',
-                by: guard.id,
-                note: `Assigned to ${guard.name}`
+                action: 'SOS Recognised by Security',
+                by: securityId,
+                note: `Recognised by ${securityName}`
             })
         });
     },
 
-    // 4. Resolve SOS
-    resolveSOS: async (sosId: string, userId: string, summary: string) => {
+    // 3.5 Assign Guard (Deprecated - keeping for backward compatibility)
+    assignGuard: async (sosId: string, guard: { id: string; name: string; role: string }) => {
+        // This now calls recogniseSOS
+        await sosService.recogniseSOS(sosId, guard.id, guard.name);
+    },
+
+    // 4. Resolve SOS (Security Only - must be recognised first)
+    resolveSOS: async (sosId: string, securityId: string, summary: string) => {
         const sosRef = doc(db, 'sos_events', sosId);
-        const { arrayUnion } = await import('firebase/firestore');
+        const { arrayUnion, getDoc } = await import('firebase/firestore');
+
+        // Check if SOS is recognised first
+        const sosDoc = await getDoc(sosRef);
+        if (!sosDoc.exists()) {
+            throw new Error('SOS event not found');
+        }
+
+        const sosData = sosDoc.data() as SOSEvent;
+        if (!sosData.status.recognised) {
+            throw new Error('SOS must be recognised before it can be resolved');
+        }
 
         await updateDoc(sosRef, {
-            status: 'resolved',
+            'status.resolved': true,
             resolvedAt: Date.now(),
             resolutionSummary: summary,
             timeline: arrayUnion({
                 time: Date.now(),
                 action: 'Resolved',
-                by: userId,
+                by: securityId,
                 note: summary
             })
         });
@@ -217,7 +293,7 @@ export const sosService = {
     getResolvedEvents: (callback: (events: SOSEvent[]) => void) => {
         const q = query(
             collection(db, 'sos_events'),
-            where('status', '==', 'resolved')
+            where('status.resolved', '==', true)
             // orderBy('resolvedAt', 'desc'), // Removed to avoid index requirement
             // limit(50)
         );

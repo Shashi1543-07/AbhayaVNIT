@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
+import SOSCard from '../../components/common/SOSCard';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { Users, UserPlus, FileText, Shield, UserCheck, UserX, Activity, Megaphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { collection, getCountFromServer, query, where, limit, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { motion } from 'framer-motion';
-import { containerStagger, cardVariant, alertCard } from '../../lib/animations';
+import { containerStagger, cardVariant } from '../../lib/animations';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
@@ -125,21 +126,9 @@ export default function AdminDashboard() {
                             <p className="text-sm text-slate-500">No active emergencies.</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {activeSOS.map(sos => (
-                                <motion.div
-                                    key={sos.id}
-                                    variants={alertCard}
-                                    className="bg-red-50 border border-red-200 p-4 rounded-lg animate-pulse"
-                                >
-                                    <p className="font-bold text-red-800 text-sm">{sos.userName} - {sos.emergencyType || 'SOS'}</p>
-                                    <p className="text-xs text-red-600 mb-2">
-                                        {sos.hostelId ? `Hostel ${sos.hostelId}` : 'Unknown'} • {new Date(sos.triggeredAt).toLocaleTimeString()}
-                                    </p>
-                                    <Link to="/security/dashboard" className="block text-center bg-red-500 text-white py-1.5 rounded-lg text-xs font-bold shadow-sm">
-                                        View Details
-                                    </Link>
-                                </motion.div>
+                                <SOSCard key={sos.id} event={sos} role="admin" />
                             ))}
                         </div>
                     )}

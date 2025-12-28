@@ -14,7 +14,7 @@ export default function Profile() {
             <TopHeader title="My Profile" showBackButton={true} />
 
             <motion.main
-                className="px-4 py-6 pb-20 space-y-6"
+                className="px-4 py-6 pb-20 space-y-6 pt-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

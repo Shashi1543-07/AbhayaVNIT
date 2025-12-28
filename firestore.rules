@@ -34,29 +34,32 @@ service cloud.firestore {
 
     // SOS Events Collection
     match /sos_events/{eventId} {
-      // Allow creation only if data is valid and user is owner
+      // 1. Creation: Allow anyone (student) to trigger
+      // Simplified to fix "Insufficient Permissions" error on object check
       allow create: if isAuthenticated() 
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'active'
-        && request.resource.data.location.lat is number
-        && request.resource.data.location.lng is number;
-
-      // Wardens: Only their hostel OR if assigned
-      // Security/Admin: ALL
+        && request.resource.data.userId == request.auth.uid;
+        
+      // 2. Read: Strict visibility rules
+      // - Student: Own SOS only
+      // - Security: ALL
+      // - Admin: ALL
+      // - Warden: Only same hostel
       allow read: if isAuthenticated() && (
         request.auth.uid == resource.data.userId || 
-        hasRole('admin') || 
         hasRole('security') || 
+        hasRole('admin') || 
         (hasRole('warden') && resource.data.hostelId == getUserData().hostelId)
       );
-      
-      // Updates: Only status/timeline (e.g., resolving, acknowledging)
-      allow update: if isAuthenticated() && (
-        hasRole('admin') || 
-        hasRole('security') || 
-        request.auth.uid == resource.data.userId ||
-         (hasRole('warden') && resource.data.hostelId == getUserData().hostelId)
-      );
+
+      // 3. Update: EXCLUSIVE to Security
+      // - Only Security can change status (recognise/resolve)
+      // - No one else can update SOS events
+      allow update: if isAuthenticated() 
+        && hasRole('security')
+        // Optional: Block changing immutable fields like studentId or original location if needed
+        // but mostly ensuring only security can write is the key requirement.
+        && request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['status', 'recognisedBy', 'resolvedAt', 'timeline', 'assignedTo', 'updatedAt', 'resolutionSummary']);
     }
 
     // Incidents Collection

@@ -22,7 +22,7 @@ export default function ActiveSOSList({ events, selectedEventId, onSelect }: Act
     useEffect(() => {
         if (!audioRef.current) return;
 
-        const hasActiveEvents = events.some(e => e.status === 'active');
+        const hasActiveEvents = events.some(e => !e.status.recognised);
 
         if (hasActiveEvents && soundEnabled) {
             audioRef.current.play().catch(e => console.log("Audio play failed (interaction required):", e));
@@ -75,9 +75,13 @@ export default function ActiveSOSList({ events, selectedEventId, onSelect }: Act
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase
-                                    ${event.status === 'active' ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-amber-100 text-amber-700'}
+                                    ${!event.status.recognised ? 'bg-red-100 text-red-700 animate-pulse' :
+                                        !event.status.resolved ? 'bg-amber-100 text-amber-700' :
+                                            'bg-green-100 text-green-700'}
                                 `}>
-                                    {event.status}
+                                    {!event.status.recognised ? 'Pending' :
+                                        !event.status.resolved ? 'Recognised' :
+                                            'Resolved'}
                                 </span>
                                 <span className="text-xs text-slate-500 font-mono">
                                     {new Date(event.triggeredAt).toLocaleTimeString()}
@@ -111,6 +115,11 @@ export default function ActiveSOSList({ events, selectedEventId, onSelect }: Act
                             {event.hostelId && (
                                 <p className="text-xs text-slate-500 mt-1">
                                     Hostel: {event.hostelId} • Room: {event.roomNo}
+                                </p>
+                            )}
+                            {event.status.recognised && event.recognisedBy && (
+                                <p className="text-xs text-blue-600 font-medium mt-2">
+                                    ✓ Recognised by Security
                                 </p>
                             )}
                         </div>

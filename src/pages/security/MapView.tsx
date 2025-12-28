@@ -32,10 +32,10 @@ export default function SecurityMapView() {
 
     return (
         <MobileWrapper>
-            <div className="bg-slate-50 min-h-screen">
+            <div className="bg-transparent min-h-screen">
                 <TopHeader title={`Live Map - ${activeCount} Active`} />
 
-                <main className="p-4 pb-24">
+                <main className="p-4 pb-24 pt-24">
                     <ComprehensiveMap />
                 </main>
 

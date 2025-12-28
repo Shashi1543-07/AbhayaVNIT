@@ -6,13 +6,12 @@ import LiveMap from '../LiveMap';
 
 interface SOSDetailPanelProps {
     event: SOSEvent;
-    onAssign: (eventId: string) => void;
+    onRecognise: (eventId: string) => void;
     onResolve: (eventId: string) => void;
-    onEscalate: (eventId: string) => void;
     onTrack: (eventId: string) => void;
 }
 
-export default function SOSDetailPanel({ event, onAssign, onResolve, onEscalate, onTrack }: SOSDetailPanelProps) {
+export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack }: SOSDetailPanelProps) {
     const { user } = useAuthStore();
     const timeElapsed = Math.floor((Date.now() - event.triggeredAt) / 1000 / 60); // minutes
 
@@ -61,6 +60,12 @@ export default function SOSDetailPanel({ event, onAssign, onResolve, onEscalate,
                                 </span>
                             )}
                         </div>
+                        {event.status.recognised && event.assignedTo && (
+                            <div className="mt-2 flex items-center gap-2 text-sm bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg inline-flex">
+                                <Shield className="w-4 h-4" />
+                                <span className="font-medium">Assigned to: {event.assignedTo.name}</span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-right">
@@ -167,33 +172,30 @@ export default function SOSDetailPanel({ event, onAssign, onResolve, onEscalate,
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto pt-4 border-t border-surface">
-                    {event.status === 'active' && (
+                    {!event.status.recognised && (
                         <button
-                            onClick={() => onAssign(event.id)}
-                            className="col-span-2 bg-primary text-white py-3 rounded-2xl font-bold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 shadow-sm"
+                            onClick={() => onRecognise(event.id)}
+                            className="col-span-2 bg-indigo-600 text-white py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
                         >
                             <Shield className="w-5 h-5" />
-                            Assign Guard
+                            Recognise SOS
                         </button>
                     )}
 
-                    {event.status === 'in_progress' && (
-                        <>
-                            <button
-                                onClick={() => onResolve(event.id)}
-                                className="bg-success text-white py-3 rounded-2xl font-bold hover:bg-success-dark transition-colors flex items-center justify-center gap-2 shadow-sm"
-                            >
-                                <CheckCircle className="w-5 h-5" />
-                                Mark Resolved
-                            </button>
-                            <button
-                                onClick={() => onEscalate(event.id)}
-                                className="bg-warning text-white py-3 rounded-2xl font-bold hover:bg-warning-dark transition-colors flex items-center justify-center gap-2 shadow-sm"
-                            >
-                                <AlertTriangle className="w-5 h-5" />
-                                Escalate
-                            </button>
-                        </>
+                    {event.status.recognised && !event.status.resolved && (
+                        <button
+                            onClick={() => onResolve(event.id)}
+                            className="col-span-2 bg-indigo-600 text-white py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                        >
+                            <CheckCircle className="w-5 h-5" />
+                            Mark Resolved
+                        </button>
+                    )}
+
+                    {event.status.resolved && (
+                        <div className="col-span-2 text-center py-3 text-success font-bold">
+                            ✓ This SOS has been resolved
+                        </div>
                     )}
                 </div>
             </div>

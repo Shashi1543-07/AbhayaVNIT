@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
@@ -49,7 +49,7 @@ export default function WardenBroadcasts() {
         <MobileWrapper>
             <TopHeader title="Broadcasts" showBackButton={true} showProfile={true} />
 
-            <main className="px-4 py-6 space-y-6 pb-24">
+            <main className="px-4 py-6 space-y-6 pb-24 pt-24">
                 {/* Create Broadcast */}
                 <div className="glass-card rounded-2xl p-4 space-y-4 border-2 border-black/15">
                     <h2 className="font-bold text-slate-800 flex items-center gap-2">

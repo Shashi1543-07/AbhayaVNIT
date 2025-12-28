@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import MobileWrapper from '../../components/layout/MobileWrapper';
+import SOSCard from '../../components/common/SOSCard';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { sosService, type SOSEvent } from '../../services/sosService';
@@ -52,7 +53,7 @@ export default function SecurityDashboard() {
             <TopHeader title="Security Control" showBackButton={true} />
 
             <motion.main
-                className="pb-20"
+                className="pb-20 pt-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -86,41 +87,13 @@ export default function SecurityDashboard() {
                     </div>
                 )}
 
-                {/* Active SOS Card */}
+                {/* Active SOS Cards - Unified Design */}
                 {activeEvents.length > 0 ? (
-                    <motion.div variants={cardVariant} className="p-4">
-                        <div className="glass-card rounded-2xl border-l-4 border-emergency overflow-hidden">
-                            <div className="p-4 bg-emergency-pulse border-b border-emergency/30 flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <span className="relative flex h-3 w-3">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                                    </span>
-                                    <h3 className="font-bold text-emergency">Active SOS</h3>
-                                </div>
-                                <span className="text-xs font-bold text-emergency bg-emergency-pulse/30 px-2 py-1 rounded-full">
-                                    {activeEvents.length} Active
-                                </span>
-                            </div>
-                            <div className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <p className="font-bold text-lg text-primary">{activeEvents[0].userName}</p>
-                                        <p className="text-sm text-muted">H6-216 • Near Library</p>
-                                    </div>
-                                    <p className="text-xs text-muted font-mono">
-                                        {new Date(activeEvents[0].triggeredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => window.location.href = `/security/sos/${activeEvents[0].id}`}
-                                    className="w-full mt-2 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white font-bold py-2 rounded-lg shadow-lg hover:opacity-90 transition-all"
-                                >
-                                    View Details
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
+                    <div className="px-4 space-y-4">
+                        {activeEvents.map(event => (
+                            <SOSCard key={event.id} event={event} role="security" />
+                        ))}
+                    </div>
                 ) : (
                     <motion.div variants={cardVariant} className="p-4">
                         <div className="glass-card bg-success/10 rounded-2xl p-4 border border-success/30 flex items-center gap-3">

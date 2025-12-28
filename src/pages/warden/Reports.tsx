@@ -14,7 +14,7 @@ export default function WardenReports() {
         <MobileWrapper>
             <TopHeader title="Student Reports" showBackButton={true} />
             <motion.main
-                className="px-4 py-6 pb-20"
+                className="px-4 py-6 pb-20 pt-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
