@@ -4,12 +4,19 @@ import {
     doc,
     updateDoc,
     onSnapshot,
-    deleteDoc,
     serverTimestamp,
     getDoc,
     setDoc,
-    arrayUnion
+    getDocs,
+    deleteDoc as firestoreDeleteDoc,
+    query,
+    where,
+    addDoc
 } from 'firebase/firestore';
+
+
+
+
 
 export interface CallSession {
     id: string;
@@ -31,7 +38,7 @@ export interface CallSession {
 const servers = {
     iceServers: [
         {
-            urls: ['stun:stun.l.google.com:19302'],
+            urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
         },
     ],
     iceCandidatePoolSize: 10,
@@ -53,7 +60,17 @@ export class CallService {
         this.cleanup();
 
         this.pc = new RTCPeerConnection(servers);
-        this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+        // Better constraints for clean audio
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            video: false
+        });
+
         this.remoteStream = new MediaStream();
 
         this.localStream.getTracks().forEach((track) => {
@@ -63,6 +80,7 @@ export class CallService {
         });
 
         this.pc.ontrack = (event) => {
+            console.log("callService: Remote track received");
             event.streams[0].getTracks().forEach((track) => {
                 this.remoteStream?.addTrack(track);
             });
@@ -72,13 +90,12 @@ export class CallService {
         };
 
         const callDoc = doc(collection(db, 'calls'));
+        const callerCandidates = collection(callDoc, 'callerCandidates');
+        const calleeCandidates = collection(callDoc, 'calleeCandidates');
 
         this.pc.onicecandidate = (event) => {
             if (event.candidate) {
-                updateDoc(callDoc, {
-                    iceCandidates: arrayUnion(event.candidate.toJSON()),
-                    updatedAt: serverTimestamp()
-                }).catch(() => { });
+                addDoc(callerCandidates, event.candidate.toJSON()).catch(() => { });
             }
         };
 
@@ -98,7 +115,6 @@ export class CallService {
                 type: offerDescription.type,
                 sdp: offerDescription.sdp,
             },
-            iceCandidates: [],
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
@@ -110,19 +126,10 @@ export class CallService {
             const data = snapshot.data();
             if (!this.pc) return;
 
-            if (data?.answer) {
+            if (data?.answer && this.pc.signalingState === 'have-local-offer') {
+                console.log("callService: Applying remote answer");
                 const answerDescription = new RTCSessionDescription(data.answer);
-                // If peer connection is recycled or refreshed, we might need to set it again
-                if (this.pc.signalingState === 'have-local-offer') {
-                    console.log("callService: Applying remote answer");
-                    this.pc.setRemoteDescription(answerDescription).catch(console.error);
-                }
-            }
-
-            if (data?.iceCandidates) {
-                data.iceCandidates.forEach((candidateData: any) => {
-                    this.pc?.addIceCandidate(new RTCIceCandidate(candidateData)).catch(() => { });
-                });
+                this.pc.setRemoteDescription(answerDescription).catch(console.error);
             }
 
             if (data?.status === 'ended' || data?.status === 'rejected' || data?.status === 'missed') {
@@ -131,14 +138,35 @@ export class CallService {
             }
         });
 
+        // Listen for callee candidates
+        onSnapshot(calleeCandidates, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const data = change.doc.data();
+                    const candidate = new RTCIceCandidate(data);
+                    this.pc?.addIceCandidate(candidate).catch(() => { });
+                }
+            });
+        });
+
         return callDoc.id;
     }
 
     async joinCall(callId: string) {
+        console.log("callService: Joining call:", callId);
         this.cleanup();
 
         this.pc = new RTCPeerConnection(servers);
-        this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            video: false
+        });
+
         this.remoteStream = new MediaStream();
 
         this.localStream.getTracks().forEach((track) => {
@@ -148,6 +176,7 @@ export class CallService {
         });
 
         this.pc.ontrack = (event) => {
+            console.log("callService: Remote track received");
             event.streams[0].getTracks().forEach((track) => {
                 this.remoteStream?.addTrack(track);
             });
@@ -157,13 +186,12 @@ export class CallService {
         };
 
         const callDoc = doc(db, 'calls', callId);
+        const callerCandidates = collection(callDoc, 'callerCandidates');
+        const calleeCandidates = collection(callDoc, 'calleeCandidates');
 
         this.pc.onicecandidate = (event) => {
             if (event.candidate) {
-                updateDoc(callDoc, {
-                    iceCandidates: arrayUnion(event.candidate.toJSON()),
-                    updatedAt: serverTimestamp()
-                }).catch(() => { });
+                addDoc(calleeCandidates, event.candidate.toJSON()).catch(() => { });
             }
         };
 
@@ -181,27 +209,42 @@ export class CallService {
             updatedAt: serverTimestamp()
         });
 
-        const unsubscribe = onSnapshot(callDoc, (snapshot) => {
+        onSnapshot(callDoc, (snapshot) => {
             const data = snapshot.data();
-            if (!this.pc) return;
-
-            if (data?.iceCandidates) {
-                data.iceCandidates.forEach((candidateData: any) => {
-                    this.pc?.addIceCandidate(new RTCIceCandidate(candidateData)).catch(() => { });
-                });
-            }
-
             if (data?.status === 'ended' || data?.status === 'rejected' || data?.status === 'missed') {
                 this.cleanup();
-                unsubscribe();
             }
         });
+
+        // Listen for caller candidates
+        onSnapshot(callerCandidates, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const data = change.doc.data();
+                    const candidate = new RTCIceCandidate(data);
+                    this.pc?.addIceCandidate(candidate).catch(() => { });
+                }
+            });
+        });
     }
+
+    toggleMute(muted: boolean) {
+        if (this.localStream) {
+            this.localStream.getAudioTracks().forEach(track => {
+                track.enabled = !muted;
+            });
+        }
+    }
+
 
     async endCall(callId: string, finalStatus: 'ended' | 'rejected' | 'missed' = 'ended') {
         const callDoc = doc(db, 'calls', callId);
         try {
             const snap = await getDoc(callDoc);
+            if (!snap.exists()) {
+                this.cleanup();
+                return;
+            }
             const data = snap.data() as CallSession;
 
             // If a caller ends a ringing call, it's a "missed call" for the receiver
@@ -212,6 +255,7 @@ export class CallService {
                     toRole: data.receiverRole,
                     fromUserId: data.callerId,
                     fromName: data.callerName,
+                    fromRole: data.callerRole || 'student',
                     type: 'missed_call',
                     callId: callId,
                     message: `Missed call from ${data.callerName}`,
@@ -229,12 +273,38 @@ export class CallService {
 
             // Auto cleanup after 5 seconds
             setTimeout(async () => {
-                await deleteDoc(callDoc).catch(() => { });
+                await firestoreDeleteDoc(callDoc).catch(() => { });
             }, 5000);
         } catch (e) {
             this.cleanup();
         }
     }
+
+    async sanitizeStaleCalls(userId: string) {
+        console.log("callService: Sanitizing stale calls for user:", userId);
+        try {
+            // Find calls where user is caller or receiver and status is NOT ended
+            const q1 = query(collection(db, 'calls'), where('callerId', '==', userId));
+            const q2 = query(collection(db, 'calls'), where('receiverId', '==', userId));
+
+            const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+            const docs = [...snap1.docs, ...snap2.docs];
+
+            const now = Date.now();
+            for (const d of docs) {
+                const data = d.data() as any;
+                const createdAt = data.createdAt?.toMillis?.() || data.createdAt?.seconds * 1000 || 0;
+                // If more than 5 minutes old or exists, mark as ended/delete
+                if (now - createdAt > 300000 || ['ended', 'rejected', 'missed'].includes(data.status)) {
+                    await firestoreDeleteDoc(d.ref).catch(() => { });
+                }
+            }
+
+        } catch (error) {
+            console.error("callService: Error sanitizing calls:", error);
+        }
+    }
+
 
     private cleanup() {
         if (this.pc) {

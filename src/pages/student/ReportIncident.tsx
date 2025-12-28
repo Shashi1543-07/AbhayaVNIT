@@ -13,9 +13,10 @@ import { motion } from 'framer-motion';
 import { containerStagger, cardVariant, buttonGlow } from '../../lib/animations';
 
 export default function ReportIncident() {
-    const { user } = useAuthStore();
+    const { user, profile } = useAuthStore();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+
     const [category, setCategory] = useState('harassment');
     const [description, setDescription] = useState('');
     const [isAnonymous, setIsAnonymous] = useState(false);
@@ -30,19 +31,50 @@ export default function ReportIncident() {
             let photoURL = '';
 
             if (photo) {
-                const storageRef = ref(storage, `incidents/${Date.now()}_${photo.name}`);
-                await uploadBytes(storageRef, photo);
-                photoURL = await getDownloadURL(storageRef);
+                console.log('ReportIncident: Sanitizing and uploading photo:', photo.name);
+                const safeName = photo.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const storageRef = ref(storage, `incidents/${Date.now()}_${safeName}`);
+                try {
+                    await uploadBytes(storageRef, photo);
+                    photoURL = await getDownloadURL(storageRef);
+                    console.log('ReportIncident: Photo uploaded successfully:', photoURL);
+                } catch (uploadError: any) {
+                    console.error('ReportIncident: Photo upload failed:', uploadError);
+
+                    // Specific handling for CORS/Network failures
+                    const isNetworkError = uploadError.code === 'storage/unknown' || uploadError.message?.includes('net::ERR');
+
+                    if (isNetworkError) {
+                        const proceed = window.confirm(
+                            "Photo upload failed (likely a CORS or Network issue).\n\n" +
+                            "Would you like to submit the report WITHOUT the photo?"
+                        );
+                        if (!proceed) throw new Error('Submission cancelled by user due to upload failure.');
+                    } else if (uploadError.code === 'storage/unauthorized') {
+                        throw new Error('Permission denied to upload photo. Please check your Firebase rules.');
+                    } else {
+                        throw uploadError;
+                    }
+                }
             }
 
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject);
+            console.log('ReportIncident: Fetching geolocation...');
+            const position = await new Promise<GeolocationPosition>((resolve) => {
+                navigator.geolocation.getCurrentPosition(resolve, () => {
+
+                    console.warn("Location access denied or timed out, submitting with default coords");
+                    resolve({ coords: { latitude: 0, longitude: 0 } } as any);
+                }, { timeout: 8000 }); // Slightly faster timeout
             });
 
+
+            const targetHostelId = profile?.hostelId || profile?.hostel || 'H6';
+            console.log('ReportIncident: Submitting to hostel:', targetHostelId);
+
             await incidentService.createIncident({
-                userId: isAnonymous ? null : user.uid,
+                userId: user.uid, // ALWAYS store the real owner's ID privately
                 reportedBy: isAnonymous ? 'Anonymous' : user.uid,
-                reporterName: isAnonymous ? 'Anonymous' : (user.displayName || 'Student'),
+                reporterName: isAnonymous ? 'Anonymous' : (profile?.name || user.displayName || 'Student'),
                 category,
                 description,
                 photoURL: photoURL || '',
@@ -50,14 +82,17 @@ export default function ReportIncident() {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 },
-                hostelId: (user as any).hostelId || 'H6',
+                hostelId: targetHostelId,
                 isAnonymous
             });
 
             navigate('/student/reports');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error reporting incident:', error);
-            alert('Failed to submit report. Please try again.');
+            // Hide the generic "Failed to submit" if we already showed a specific alert
+            if (!error.message?.includes('cancelled by user')) {
+                alert(error.message || 'Failed to submit report. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -68,11 +103,12 @@ export default function ReportIncident() {
             <TopHeader title="New Report" showBackButton={true} />
 
             <motion.main
-                className="px-4 py-6 pb-20"
+                className="px-4 py-6 pb-20 pt-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <motion.div variants={cardVariant} className="glass-card p-4 rounded-2xl shadow-soft space-y-4 border border-white/40">
                         <div>

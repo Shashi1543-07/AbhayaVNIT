@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 
 export interface UserProfile {
     uid: string;
@@ -9,14 +9,23 @@ export interface UserProfile {
     phoneNumber?: string;
 }
 
+export interface StudentProfile {
+    id: string;
+    displayName: string;
+    email: string;
+    role: 'student';
+    hostelId: string;
+    roomNo?: string;
+    phone?: string;
+    emergencyContact?: string;
+    course?: string;
+    year?: string;
+    bloodGroup?: string;
+}
+
 export const userService = {
     getStaff: async (): Promise<UserProfile[]> => {
         try {
-            // We need two queries because 'in' operator limits are strict and sometimes composite index issues arise.
-            // But for simple roles, 'in' ["warden", "security"] works if no other inequalities.
-            // However, to be safe and avoid index creation during demo, we can just fetch all users (if small DB) or do 2 queries.
-            // Let's try the 'in' query.
-
             const q = query(
                 collection(db, 'users'),
                 where('role', 'in', ['warden', 'security']),
@@ -32,5 +41,60 @@ export const userService = {
             console.error("Error fetching staff:", error);
             return [];
         }
+    },
+
+    getUserProfile: async (uid: string): Promise<any | null> => {
+        try {
+            const docRef = doc(db, 'users', uid);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                return { id: snap.id, ...snap.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error("Error fetching user profile:", error);
+            return null;
+        }
+    },
+
+    getStudentsByHostel: async (hostelId: string): Promise<StudentProfile[]> => {
+        try {
+            console.log("userService: Fetching students for hostel:", hostelId);
+            const q = query(
+                collection(db, 'users'),
+                where('role', '==', 'student')
+            );
+
+            const snapshot = await getDocs(q);
+            const allStudents = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    displayName: data.name || data.displayName || 'Unnamed',
+                    email: data.email || '',
+                    role: 'student',
+                    hostelId: data.hostelId || data.hostel || '',
+                    roomNo: data.roomNo,
+                    phone: data.phoneNumber || data.phone,
+                    emergencyContact: data.emergencyContact || data.emergencyPhone,
+                    course: data.course,
+                    year: data.year,
+                    bloodGroup: data.bloodGroup
+                } as StudentProfile;
+            });
+
+            // Filter client-side to handle both 'hostelId' and 'hostel' fields and different casing
+            const filtered = allStudents.filter(s =>
+                s.hostelId.toLowerCase() === hostelId.toLowerCase()
+            );
+
+            console.log(`userService: Found ${filtered.length} students for ${hostelId}`);
+            return filtered;
+        } catch (error) {
+            console.error("Error fetching students:", error);
+            return [];
+        }
     }
+
 };
+

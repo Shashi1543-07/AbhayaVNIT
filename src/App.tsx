@@ -29,7 +29,9 @@ import ProtectedRoute from './features/auth/ProtectedRoute';
 import { useAuthListener } from './hooks/useAuthListener';
 import WardenBroadcasts from './pages/warden/Broadcasts';
 import WardenSOSDetail from './pages/warden/WardenSOSDetail';
+import WardenDirectory from './pages/warden/Directory';
 import CallOverlay from './components/calling/CallOverlay';
+
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -63,7 +65,9 @@ function AnimatedRoutes() {
           <Route path="/warden/messages" element={<Messages />} />
           <Route path="/warden/profile" element={<WardenProfile />} />
           <Route path="/warden/broadcasts" element={<WardenBroadcasts />} />
+          <Route path="/warden/directory" element={<WardenDirectory />} />
         </Route>
+
 
         <Route element={<ProtectedRoute allowedRoles={['security']} />}>
           <Route path="/security/dashboard" element={<SecurityDashboard />} />

@@ -17,8 +17,12 @@ import { db } from '../../lib/firebase';
 import { wardenNavItems } from '../../lib/navItems';
 import { doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
 
+import { useNavigate } from 'react-router-dom';
+
 export default function WardenDashboard() {
+    const navigate = useNavigate();
     const { profile, user } = useAuthStore();
+
     const wardenHostelId = profile?.hostelId || profile?.hostel || 'H6';
     const [selectedWalk, setSelectedWalk] = useState<SafeWalkSession | null>(null);
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -47,7 +51,8 @@ export default function WardenDashboard() {
 
     return (
         <MobileWrapper>
-            <TopHeader title={`Hostel ${wardenHostelId} Warden`} showBackButton={true} showProfile={true} />
+            <TopHeader title={`Hostel ${wardenHostelId} Warden`} showBackButton={true} />
+
             <motion.main
                 className="px-4 py-6 space-y-6 pb-20 pt-24"
                 variants={containerStagger}
@@ -151,8 +156,10 @@ export default function WardenDashboard() {
                         label="Student Directory"
                         variant="default"
                         className="w-full flex-row justify-start px-6 py-4 gap-4"
+                        onClick={() => navigate('/warden/directory')}
                     />
                 </motion.div>
+
             </motion.main>
 
             <BottomNav items={wardenNavItems} />

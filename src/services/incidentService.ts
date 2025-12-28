@@ -36,15 +36,16 @@ export const incidentService = {
     // 1. Create Incident (Student)
     createIncident: async (data: Omit<Incident, 'id' | 'createdAt' | 'timeline' | 'status'>) => {
         try {
+            console.log('IncidentService: Creating incident for user:', data.userId || data.reportedBy);
             await addDoc(collection(db, 'incidents'), {
                 ...data,
                 status: 'open',
                 createdAt: serverTimestamp(),
                 timeline: [{
                     time: Date.now(),
-                    action: 'Reported',
-                    by: data.reportedBy,
-                    note: 'Incident reported'
+                    action: 'Incident Reported',
+                    by: data.reportedBy || 'Student',
+                    note: 'Initial report submitted.'
                 }]
             });
         } catch (error) {
@@ -55,11 +56,8 @@ export const incidentService = {
 
     // 2. Subscribe to Incidents (Warden)
     subscribeToIncidents: (hostelId: string, callback: (incidents: Incident[]) => void) => {
-        const q = query(
-            collection(db, 'incidents'),
-            where('hostelId', '==', hostelId)
-            // orderBy('createdAt', 'desc') // Removed to avoid index requirement
-        );
+        // Fetch all incidents for now to handle potential field naming or case mismatches
+        const q = query(collection(db, 'incidents'));
 
         return onSnapshot(q, (snapshot) => {
             const incidents = snapshot.docs.map(doc => ({
@@ -67,31 +65,59 @@ export const incidentService = {
                 ...doc.data()
             })) as Incident[];
 
-            // Sort client-side
-            incidents.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            // Filter client-side for robust matching
+            const filtered = incidents.filter(i => {
+                const item = i as any;
+                return (item.hostelId?.toLowerCase() === hostelId.toLowerCase()) ||
+                    (item.hostel?.toLowerCase() === hostelId.toLowerCase());
+            });
 
-            callback(incidents);
+
+            // Sort client-side
+            filtered.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+            callback(filtered);
         });
     },
 
-    // 2.5 Subscribe to User Incidents (Student)
+
+    // 2.5 Subscribe to User Incidents (Student) - Ultra-Robust (No Index Required)
     subscribeToUserIncidents: (userId: string, callback: (incidents: Incident[]) => void) => {
-        const q = query(
-            collection(db, 'incidents'),
-            where('userId', '==', userId)
-        );
+        if (!userId) return () => { };
 
-        return onSnapshot(q, (snapshot) => {
-            const incidents = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Incident[];
+        console.log('IncidentService: Running parallel queries for userId:', userId);
 
-            // Sort client-side
-            incidents.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        let reportsMap = new Map<string, Incident>();
 
-            callback(incidents);
-        });
+        const handleSnapshot = (snapshot: any) => {
+            snapshot.docs.forEach((doc: any) => {
+                reportsMap.set(doc.id, { id: doc.id, ...doc.data() } as Incident);
+            });
+
+            const merged = Array.from(reportsMap.values());
+            // Sort merged results
+            merged.sort((a, b) => {
+                const timeA = a.createdAt?.seconds || (typeof a.createdAt === 'number' ? a.createdAt / 1000 : 0);
+                const timeB = b.createdAt?.seconds || (typeof b.createdAt === 'number' ? b.createdAt / 1000 : 0);
+                return timeB - timeA;
+            });
+
+            console.log('IncidentService: Cumulative results:', merged.length);
+            callback(merged);
+        };
+
+        // Query 1: Primary Ownership
+        const q1 = query(collection(db, 'incidents'), where('userId', '==', userId));
+        const unsub1 = onSnapshot(q1, handleSnapshot, (err) => console.error('Query 1 Failed:', err));
+
+        // Query 2: Legacy/Anonymous Ownership
+        const q2 = query(collection(db, 'incidents'), where('reportedBy', '==', userId));
+        const unsub2 = onSnapshot(q2, handleSnapshot, (err) => console.error('Query 2 Failed:', err));
+
+        return () => {
+            unsub1();
+            unsub2();
+        };
     },
 
     // 3. Update Status (Warden)

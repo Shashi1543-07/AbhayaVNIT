@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { callService } from '../../services/callService';
+
 import { Mic, MicOff, PhoneOff, User, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -32,13 +34,11 @@ export default function InCallScreen({ partnerName, partnerRole, remoteStream, o
     };
 
     const toggleMute = () => {
-        if (remoteStream) {
-            remoteStream.getAudioTracks().forEach(track => {
-                track.enabled = isMuted;
-            });
-            setIsMuted(!isMuted);
-        }
+        const newMuted = !isMuted;
+        callService.toggleMute(newMuted);
+        setIsMuted(newMuted);
     };
+
 
     return (
         <div className="fixed inset-0 z-[1000] bg-slate-900 flex flex-col items-center justify-between py-20 px-6 text-white overflow-hidden">

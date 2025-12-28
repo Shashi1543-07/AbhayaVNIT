@@ -6,6 +6,8 @@ import { callService, type CallSession } from '../../services/callService';
 import IncomingCallModal from './IncomingCallModal';
 import InCallScreen from './InCallScreen';
 import OutboundCallModal from './OutboundCallModal';
+import { ShieldAlert } from 'lucide-react';
+
 
 console.log("CallOverlay: Module Loading...");
 
@@ -29,9 +31,13 @@ export default function CallOverlay() {
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
     useEffect(() => {
-        if (user) console.log("CallOverlay: Active User UID:", user.uid);
+        if (user) {
+            console.log("CallOverlay: Active User UID:", user.uid);
+            callService.sanitizeStaleCalls(user.uid);
+        }
         if ((window as any).__debugCallOverlay) (window as any).__debugCallOverlay.user = user;
     }, [user]);
+
 
     const ringTimeoutRef = useRef<any>(null);
 
@@ -67,14 +73,21 @@ export default function CallOverlay() {
                 return;
             }
 
-            // Sort logic: Resilient to null timestamps and different formats
+            // Sort logic: Prioritize 'accepted' over 'ringing', then by date
             const sortedDocs = activeDocs.sort((a, b) => {
                 const aData = a.data();
                 const bData = b.data();
+                // Status priority: accepted (2) > ringing (1)
+                const aStatusScore = aData.status === 'accepted' ? 2 : 1;
+                const bStatusScore = bData.status === 'accepted' ? 2 : 1;
+
+                if (aStatusScore !== bStatusScore) return bStatusScore - aStatusScore;
+
                 const aTime = aData.createdAt?.toMillis?.() || aData.createdAt?.seconds * 1000 || Date.now();
                 const bTime = bData.createdAt?.toMillis?.() || bData.createdAt?.seconds * 1000 || Date.now();
                 return bTime - aTime;
             });
+
 
             const callData = { id: sortedDocs[0].id, ...sortedDocs[0].data() } as CallSession;
             console.log("CallOverlay: [RECEIVER] Processing doc:", callData.id, "Status:", callData.status);
@@ -122,10 +135,16 @@ export default function CallOverlay() {
             const sortedDocs = activeDocs.sort((a, b) => {
                 const aData = a.data();
                 const bData = b.data();
+                const aStatusScore = aData.status === 'accepted' ? 2 : 1;
+                const bStatusScore = bData.status === 'accepted' ? 2 : 1;
+
+                if (aStatusScore !== bStatusScore) return bStatusScore - aStatusScore;
+
                 const aTime = aData.createdAt?.toMillis?.() || aData.createdAt?.seconds * 1000 || Date.now();
                 const bTime = bData.createdAt?.toMillis?.() || bData.createdAt?.seconds * 1000 || Date.now();
                 return bTime - aTime;
             });
+
 
             const callData = { id: sortedDocs[0].id, ...sortedDocs[0].data() } as CallSession;
             console.log("CallOverlay: [CALLER] Processing doc:", callData.id, "Status:", callData.status);
@@ -248,6 +267,17 @@ export default function CallOverlay() {
                     onCancel={handleEndCall}
                 />
             )}
+
+            {!window.isSecureContext && (
+                <div className="fixed top-4 left-4 right-4 z-[9999] bg-amber-500 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-bounce">
+                    <ShieldAlert className="w-8 h-8 flex-shrink-0" />
+                    <div className="text-sm">
+                        <p className="font-bold">Insecure Connection Detected</p>
+                        <p className="opacity-90">Microphone and Location features are blocked by the browser. Please use HTTPS or localhost.</p>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
+

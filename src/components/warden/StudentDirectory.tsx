@@ -21,20 +21,20 @@ export default function StudentDirectory({ hostelId }: StudentDirectoryProps) {
     }, [hostelId]);
 
     const filteredStudents = students.filter(student =>
-        student.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.roomNo?.toLowerCase().includes(searchTerm.toLowerCase())
+        (student.displayName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (student.roomNo?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     return (
-        <div className="bg-surface rounded-xl shadow-sm border border-surface overflow-hidden flex flex-col h-full">
-            <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <h2 className="font-bold text-primary">Student Directory</h2>
+        <div className="glass-card-soft bg-white/20 backdrop-blur-xl rounded-3xl shadow-soft border border-white/40 overflow-hidden flex flex-col h-full">
+            <div className="p-6 border-b border-white/20 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gradient-to-br from-white/30 to-white/10">
+                <h2 className="text-lg font-bold text-slate-800">Student Directory</h2>
                 <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
                         type="text"
                         placeholder="Search name or room..."
-                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2 bg-white/40 border border-white/50 backdrop-blur-md rounded-xl text-sm focus:ring-2 focus:ring-indigo-400 outline-none placeholder-slate-500 text-slate-800"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -43,51 +43,52 @@ export default function StudentDirectory({ hostelId }: StudentDirectoryProps) {
 
             <div className="overflow-x-auto flex-1">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                    <thead className="bg-white/30 text-slate-700 font-bold border-b border-white/20 sticky top-0 z-10 backdrop-blur-md">
                         <tr>
-                            <th className="p-4">Name</th>
-                            <th className="p-4">Room</th>
-                            <th className="p-4">Contact</th>
-                            <th className="p-4">Emergency Contact</th>
-                            <th className="p-4">Action</th>
+                            <th className="p-4 whitespace-nowrap">Name</th>
+                            <th className="p-4 whitespace-nowrap">Room</th>
+                            <th className="p-4 whitespace-nowrap">Contact Info</th>
+                            <th className="p-4 whitespace-nowrap">Emergency Contact</th>
+                            <th className="p-4 whitespace-nowrap">Course/Year</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-white/10">
                         {loading ? (
-                            <tr><td colSpan={5} className="p-8 text-center text-slate-500">Loading directory...</td></tr>
+                            <tr><td colSpan={5} className="p-12 text-center text-slate-600 font-medium">Loading directory...</td></tr>
                         ) : filteredStudents.length === 0 ? (
-                            <tr><td colSpan={5} className="p-8 text-center text-slate-500">No students found.</td></tr>
+                            <tr><td colSpan={5} className="p-12 text-center text-slate-600 font-medium">No students found for this hostel.</td></tr>
                         ) : (
                             filteredStudents.map(student => (
-                                <tr key={student.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="p-4 font-medium text-slate-800 flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                                            {student.displayName[0]}
+                                <tr key={student.id} className="hover:bg-white/40 transition-all duration-300">
+                                    <td className="p-4 flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF99AC] to-[#C084FC] flex items-center justify-center text-white font-bold shadow-sm shrink-0">
+                                            {student.displayName?.[0] || '?'}
                                         </div>
-                                        {student.displayName}
+                                        <span className="font-bold text-slate-800 truncate max-w-[150px]" title={student.displayName}>{student.displayName}</span>
                                     </td>
-                                    <td className="p-4 text-slate-600">
-                                        <span className="flex items-center gap-1">
-                                            <MapPin className="w-3 h-3 text-slate-400" /> {student.roomNo || 'N/A'}
+                                    <td className="p-4 text-slate-700 whitespace-nowrap font-medium">
+                                        <span className="flex items-center gap-1.5">
+                                            <div className="p-1.5 rounded-lg bg-indigo-100/50 text-indigo-600">
+                                                <MapPin className="w-3.5 h-3.5" />
+                                            </div>
+                                            {student.roomNo || 'N/A'}
                                         </span>
                                     </td>
-                                    <td className="p-4 text-slate-600">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="flex items-center gap-1 text-xs">
-                                                <Phone className="w-3 h-3 text-slate-400" /> {student.phone || 'N/A'}
+                                    <td className="p-4 text-slate-700">
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="flex items-center gap-1.5 text-xs font-medium">
+                                                <Phone className="w-3.5 h-3.5 text-slate-500" /> {student.phone || 'N/A'}
                                             </span>
-                                            <span className="flex items-center gap-1 text-xs">
-                                                <Mail className="w-3 h-3 text-slate-400" /> {student.email}
+                                            <span className="flex items-center gap-1.5 text-xs truncate max-w-[180px] font-medium" title={student.email}>
+                                                <Mail className="w-3.5 h-3.5 text-slate-500" /> {student.email}
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-slate-600">
+                                    <td className="p-4 text-indigo-700 whitespace-nowrap font-bold text-xs bg-indigo-50/20">
                                         {student.emergencyContact || 'Not set'}
                                     </td>
-                                    <td className="p-4">
-                                        <button className="text-indigo-600 hover:text-indigo-800 font-medium text-xs">
-                                            View Profile
-                                        </button>
+                                    <td className="p-4 text-slate-600 text-xs italic font-medium">
+                                        {student.course && student.year ? `${student.course} (${student.year})` : student.course || student.year || 'N/A'}
                                     </td>
                                 </tr>
                             ))
@@ -98,3 +99,5 @@ export default function StudentDirectory({ hostelId }: StudentDirectoryProps) {
         </div>
     );
 }
+
+
