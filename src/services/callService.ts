@@ -27,7 +27,9 @@ export interface CallSession {
     callerRole: string;
     receiverRole: string;
     status: 'ringing' | 'accepted' | 'ended' | 'rejected' | 'missed';
-    callType: 'audio';
+    callType: 'audio' | 'video';
+    contextId: string; // sosId or safeWalkId
+    contextType: 'sos' | 'safe_walk'; // Type of emergency context
     offer?: any;
     answer?: any;
     iceCandidates?: any[];
@@ -50,26 +52,69 @@ export class CallService {
     private remoteStream: MediaStream | null = null;
 
     private remoteStreamListener: ((stream: MediaStream) => void) | null = null;
+    private localStreamListener: ((stream: MediaStream) => void) | null = null;
 
     setRemoteStreamListener(callback: (stream: MediaStream) => void) {
         this.remoteStreamListener = callback;
     }
 
-    async startCall(caller: any, receiver: any): Promise<string> {
-        console.log("callService: Starting call to receiver UID:", receiver.uid);
+    setLocalStreamListener(callback: (stream: MediaStream) => void) {
+        this.localStreamListener = callback;
+    }
+
+    private async logToTimeline(contextId: string, contextType: 'sos' | 'safe_walk', action: string, note?: string) {
+        try {
+            const { arrayUnion } = await import('firebase/firestore');
+            const collectionName = contextType === 'sos' ? 'sos_events' : 'safe_walk';
+            const docRef = doc(db, collectionName, contextId);
+
+            await updateDoc(docRef, {
+                timeline: arrayUnion({
+                    time: Date.now(),
+                    timestamp: new Date(), // For safe_walk which uses Date objects
+                    action: action,
+                    by: 'system',
+                    note: note || ''
+                })
+            });
+        } catch (error) {
+            console.error(`callService: Error logging to ${contextType} timeline:`, error);
+        }
+    }
+
+    async startCall(
+        caller: any,
+        receiver: any,
+        contextId: string,
+        contextType: 'sos' | 'safe_walk',
+        isVideo: boolean = false
+    ): Promise<string> {
+        console.log(`callService: Starting ${isVideo ? 'video' : 'audio'} call to receiver UID:`, receiver.uid, "Context:", contextId);
         this.cleanup();
 
         this.pc = new RTCPeerConnection(servers);
 
-        // Better constraints for clean audio
-        this.localStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-            },
-            video: false
-        });
+        try {
+            this.localStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
+                video: isVideo ? {
+                    facingMode: 'user',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                } : false
+            });
+
+            if (this.localStreamListener) {
+                this.localStreamListener(this.localStream);
+            }
+        } catch (error) {
+            console.error("callService: Error accessing media devices:", error);
+            throw error;
+        }
 
         this.remoteStream = new MediaStream();
 
@@ -110,7 +155,9 @@ export class CallService {
             receiverName: receiver.name || 'Staff',
             receiverRole: receiver.role || 'warden',
             status: 'ringing',
-            callType: 'audio',
+            callType: isVideo ? 'video' : 'audio',
+            contextId,
+            contextType,
             offer: {
                 type: offerDescription.type,
                 sdp: offerDescription.sdp,
@@ -120,6 +167,9 @@ export class CallService {
         };
 
         await setDoc(callDoc, callData);
+
+        // Log call start to timeline
+        this.logToTimeline(contextId, contextType, `Call Started (${callData.callType})`, `To: ${callData.receiverName}`);
 
         // Listen for remote answer
         const unsubscribe = onSnapshot(callDoc, (snapshot) => {
@@ -156,16 +206,37 @@ export class CallService {
         console.log("callService: Joining call:", callId);
         this.cleanup();
 
+        const callDoc = doc(db, 'calls', callId);
+        const callSnapshot = await getDoc(callDoc);
+        const data = callSnapshot.data() as CallSession;
+        if (!data) return;
+
+        const isVideo = data.callType === 'video';
         this.pc = new RTCPeerConnection(servers);
 
-        this.localStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-            },
-            video: false
-        });
+        try {
+            this.localStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
+                video: isVideo ? {
+                    facingMode: 'user',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                } : false
+            });
+
+            if (this.localStreamListener) {
+                this.localStreamListener(this.localStream);
+            }
+        } catch (error) {
+            console.error("callService: Error accessing media devices:", error);
+            // Even if camera fails for receiver, let audio work if possible? 
+            // Better to throw or handle gracefully.
+            throw error;
+        }
 
         this.remoteStream = new MediaStream();
 
@@ -185,7 +256,6 @@ export class CallService {
             }
         };
 
-        const callDoc = doc(db, 'calls', callId);
         const callerCandidates = collection(callDoc, 'callerCandidates');
         const calleeCandidates = collection(callDoc, 'calleeCandidates');
 
@@ -194,10 +264,6 @@ export class CallService {
                 addDoc(calleeCandidates, event.candidate.toJSON()).catch(() => { });
             }
         };
-
-        const callSnapshot = await getDoc(callDoc);
-        const data = callSnapshot.data();
-        if (!data) return;
 
         await this.pc.setRemoteDescription(new RTCSessionDescription(data.offer));
         const answerDescription = await this.pc.createAnswer();
@@ -236,6 +302,14 @@ export class CallService {
         }
     }
 
+    toggleVideo(enabled: boolean) {
+        if (this.localStream) {
+            this.localStream.getVideoTracks().forEach(track => {
+                track.enabled = enabled;
+            });
+        }
+    }
+
 
     async endCall(callId: string, finalStatus: 'ended' | 'rejected' | 'missed' = 'ended') {
         const callDoc = doc(db, 'calls', callId);
@@ -246,6 +320,11 @@ export class CallService {
                 return;
             }
             const data = snap.data() as CallSession;
+
+            // Log termination to timeline
+            if (data.contextId && data.contextType) {
+                this.logToTimeline(data.contextId, data.contextType, `Call Finished (${data.callType})`, `Status: ${finalStatus}`);
+            }
 
             // If a caller ends a ringing call, it's a "missed call" for the receiver
             if (data && data.status === 'ringing' && finalStatus === 'ended') {
@@ -320,3 +399,4 @@ export class CallService {
 }
 
 export const callService = new CallService();
+

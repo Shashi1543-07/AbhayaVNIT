@@ -4,19 +4,38 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { securityNavItems } from '../../lib/navItems';
 import { safeWalkService, type SafeWalkSession, type SafeWalkLocation } from '../../services/safeWalkService';
+import { callService } from '../../services/callService';
+import { useAuthStore } from '../../context/authStore';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { MapPin, Clock, Shield, AlertCircle, UserPlus, MessageSquare } from 'lucide-react';
+import { MapPin, Clock, Shield, AlertCircle, UserPlus, MessageSquare, Phone, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 
 export default function SafeWalkMonitor() {
+    const { user, profile } = useAuthStore();
     const [activeWalks, setActiveWalks] = useState<SafeWalkSession[]>([]);
     const [selectedWalk, setSelectedWalk] = useState<SafeWalkSession | null>(null);
     const [liveLocation, setLiveLocation] = useState<SafeWalkLocation | null>(null);
     const [securityPersonnel, setSecurityPersonnel] = useState<any[]>([]);
     const [selectedEscort, setSelectedEscort] = useState('');
     const [message, setMessage] = useState('');
+
+    const handleCall = (isVideo: boolean = false) => {
+        if (!user || !selectedWalk) return;
+
+        const receiver = {
+            uid: selectedWalk.userId,
+            name: selectedWalk.userName,
+            role: 'student'
+        };
+
+        callService.startCall({
+            uid: user.uid,
+            name: profile?.name || 'Security',
+            role: 'security'
+        }, receiver, selectedWalk.id, 'safe_walk', isVideo);
+    };
 
     useEffect(() => {
         const unsubscribe = safeWalkService.subscribeToActiveWalks((walks) => {
@@ -202,6 +221,30 @@ export default function SafeWalkMonitor() {
                                             </p>
                                         </div>
                                     )}
+
+                                    {/* Location Info & Contact */}
+                                    <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 mb-4">
+                                        <div>
+                                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Contact Student</p>
+                                            <p className="text-sm font-semibold text-slate-800">{selectedWalk.userName}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleCall(false)}
+                                                className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 active:scale-90 transition-all hover:bg-indigo-100"
+                                                title="Voice Call"
+                                            >
+                                                <Phone className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleCall(true)}
+                                                className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 active:scale-90 transition-all hover:bg-emerald-100"
+                                                title="Video Call"
+                                            >
+                                                <Video className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
 
                                     {/* Route Info */}
                                     <div className="bg-white p-4 rounded-xl space-y-2 mb-4 border border-slate-200">

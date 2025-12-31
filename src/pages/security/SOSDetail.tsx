@@ -6,7 +6,7 @@ import LiveMap from '../../components/LiveMap';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { callService } from '../../services/callService';
 import { useAuthStore } from '../../context/authStore';
-import { Phone, MapPin, Clock, Shield, CheckCircle } from 'lucide-react';
+import { Phone, MapPin, Clock, Shield, CheckCircle, Video } from 'lucide-react';
 
 export default function SecuritySOSDetail() {
     const { id } = useParams();
@@ -15,18 +15,24 @@ export default function SecuritySOSDetail() {
     const [event, setEvent] = useState<SOSEvent | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const initiateCall = () => {
+    const handleCall = (isVideo: boolean = false) => {
         if (!user || !event) return;
+        if (!event.status.recognised) {
+            alert("Please recognise the SOS before initiating a call.");
+            return;
+        }
+
         const receiver = {
             uid: event.userId,
             name: event.userName,
             role: 'student'
         };
+
         callService.startCall({
             uid: user.uid,
             name: profile?.name || 'Security',
             role: 'security'
-        }, receiver);
+        }, receiver, event.id, 'sos', isVideo);
     };
 
     useEffect(() => {
@@ -124,17 +130,42 @@ export default function SecuritySOSDetail() {
                                 <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
                                     <Phone className="w-5 h-5 text-indigo-600" />
                                 </div>
-                                <div className="flex-1 flex justify-between items-center min-w-0">
-                                    <div className="mr-2">
-                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Contact</p>
-                                        <p className="text-sm font-semibold text-slate-800">+91 98765 43210</p>
+                                <div className="flex-1 flex flex-col gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <div className="mr-2">
+                                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Contact Student</p>
+                                            <p className="text-sm font-semibold text-slate-800">{event.userPhone || 'Not provided'}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleCall(false)}
+                                                disabled={!event.status.recognised}
+                                                className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-90 ${event.status.recognised
+                                                    ? 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'
+                                                    : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
+                                                    }`}
+                                                title="Voice Call"
+                                            >
+                                                <Phone className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleCall(true)}
+                                                disabled={!event.status.recognised}
+                                                className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-90 ${event.status.recognised
+                                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'
+                                                    : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
+                                                    }`}
+                                                title="Video Call"
+                                            >
+                                                <Video className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={initiateCall}
-                                        className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 active:scale-95 transition-transform"
-                                    >
-                                        <Phone className="w-3.5 h-3.5 fill-current" /> Web Call
-                                    </button>
+                                    {!event.status.recognised && (
+                                        <p className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100 w-fit">
+                                            RECOGNISE TO CALL
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>

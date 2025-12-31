@@ -1,46 +1,51 @@
-import { PhoneOff, User } from 'lucide-react';
+import { Phone, X, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface OutboundCallModalProps {
     receiverName: string;
     receiverRole: string;
+    callType: 'audio' | 'video';
     onCancel: () => void;
 }
 
-export default function OutboundCallModal({ receiverName, receiverRole, onCancel }: OutboundCallModalProps) {
+export default function OutboundCallModal({ receiverName, receiverRole, callType, onCancel }: OutboundCallModalProps) {
+    const isVideo = callType === 'video';
+
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="w-full max-w-sm glass-card border-white/50 p-8 flex flex-col items-center text-center shadow-2xl rounded-[2.5rem]"
+                className="glass-card w-full max-w-sm p-8 flex flex-col items-center text-center shadow-2xl border border-white/20 bg-white/80"
             >
-                {/* Receiver Avatar & Ringing Animation */}
-                <div className="relative mb-8">
-                    <motion.div
-                        animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="absolute inset-[-20px] bg-primary-200 rounded-full"
-                    />
-                    <div className="relative w-24 h-24 bg-gradient-to-br from-slate-600 to-slate-800 rounded-full flex items-center justify-center shadow-lg">
-                        <User className="w-12 h-12 text-white" />
+                <div className="relative mb-6">
+                    <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center">
+                        {isVideo ? <Video className="w-10 h-10 text-primary-600" /> : <Phone className="w-10 h-10 text-primary-600" />}
                     </div>
+                    {[...Array(3)].map((_, i) => (
+                        <motion.div
+                            key={i}
+                            initial={{ scale: 1, opacity: 0 }}
+                            animate={{ scale: 2.5, opacity: [0, 0.2, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, delay: i * 0.6 }}
+                            className="absolute inset-0 bg-primary-400 rounded-full -z-10"
+                        />
+                    ))}
                 </div>
 
-                <div className="mb-10">
-                    <p className="text-primary-500 text-xs font-bold uppercase tracking-[0.2em] mb-2">Calling...</p>
-                    <h2 className="text-2xl font-black text-slate-800 mb-1">{receiverName}</h2>
-                    <p className="text-slate-500 font-medium capitalize">{receiverRole}</p>
-                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-1">{receiverName}</h3>
+                <p className="text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">{receiverRole}</p>
+                <p className="text-primary-600 font-bold text-sm mb-12 animate-pulse">
+                    Ringing ({isVideo ? 'Video' : 'Voice'})...
+                </p>
 
-                {/* Cancel Button */}
                 <button
                     onClick={onCancel}
-                    className="w-16 h-16 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-red-200 transition-all active:scale-90"
+                    className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-200 active:scale-95 transition-all"
                 >
-                    <PhoneOff className="w-8 h-8 rotate-[135deg]" />
+                    <X className="w-8 h-8" />
                 </button>
+                <p className="text-slate-400 text-xs font-medium mt-4 uppercase tracking-widest">Cancel Call</p>
             </motion.div>
         </div>
     );

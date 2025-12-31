@@ -4,15 +4,60 @@ import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import LiveMap from '../../components/LiveMap';
 import { type SOSEvent } from '../../services/sosService';
+import { callService } from '../../services/callService';
+import { useAuthStore } from '../../context/authStore';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { MapPin, Clock, Shield, Phone, User, AlertTriangle } from 'lucide-react';
+import { MapPin, Clock, Shield, Phone, User, AlertTriangle, Video } from 'lucide-react';
 
 export default function WardenSOSDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user, profile } = useAuthStore();
     const [event, setEvent] = useState<SOSEvent | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const handleCall = (destRole: 'student' | 'security', isVideo: boolean = false) => {
+        if (!user || !event) return;
+
+        // Final guard check
+        const isWardenHostel = (profile?.hostelId || profile?.hostel) === event.hostelId || (profile?.hostelId || profile?.hostel) === event.hostel;
+        if (!isWardenHostel) {
+            alert("Security Error: You can only call participants of SOS events in your hostel.");
+            return;
+        }
+
+        if (!event.status.recognised) {
+            alert("Calling is disabled until Security has acknowledged the SOS.");
+            return;
+        }
+
+        let receiver;
+        if (destRole === 'student') {
+            receiver = {
+                uid: event.userId,
+                name: event.userName,
+                role: 'student'
+            };
+        } else {
+            // Call Security handler
+            if (!event.assignedTo) {
+                alert("No security officer is currently assigned to this SOS.");
+                return;
+            }
+            receiver = {
+                uid: event.assignedTo.id,
+                name: event.assignedTo.name,
+                role: 'security'
+            };
+        }
+
+        callService.startCall({
+            uid: user.uid,
+            name: profile?.name || 'Warden',
+            role: 'warden'
+        }, receiver, event.id, 'sos', isVideo);
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -148,18 +193,73 @@ export default function WardenSOSDetail() {
                         </div>
                     )}
 
-                    {/* Assignment Info */}
+                    {/* Assignment Info & Coordinator Calls */}
                     {event.status.recognised && event.assignedTo && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div className="flex items-center gap-2">
-                                <Shield className="w-5 h-5 text-blue-600" />
-                                <div>
-                                    <p className="text-sm font-bold text-blue-800">Assigned to Security</p>
-                                    <p className="text-xs text-blue-600">{event.assignedTo.name}</p>
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                    <Shield className="w-5 h-5 text-blue-600" />
+                                    <div>
+                                        <p className="text-sm font-bold text-blue-800">Assigned Security</p>
+                                        <p className="text-xs text-blue-600">{event.assignedTo.name}</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleCall('security', false)}
+                                        className="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg active:scale-90 transition-all hover:bg-blue-50"
+                                        title="Voice Call Security"
+                                    >
+                                        <Phone className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleCall('security', true)}
+                                        className="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg active:scale-90 transition-all hover:bg-blue-50"
+                                        title="Video Call Security"
+                                    >
+                                        <Video className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
+
+                    {/* Calling Actions */}
+                    <div className="pt-2 border-t border-surface">
+                        <div className="flex justify-between items-center bg-background p-4 rounded-xl border border-surface">
+                            <div>
+                                <p className="text-xs text-muted font-bold uppercase">Call Student</p>
+                                <p className="text-sm font-medium">{event.userName}</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleCall('student', false)}
+                                    disabled={!event.status.recognised}
+                                    className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${event.status.recognised
+                                        ? 'bg-secondary/10 text-secondary border-secondary/20 hover:bg-secondary/20'
+                                        : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
+                                        }`}
+                                >
+                                    <Phone className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleCall('student', true)}
+                                    disabled={!event.status.recognised}
+                                    className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${event.status.recognised
+                                        ? 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100'
+                                        : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
+                                        }`}
+                                >
+                                    <Video className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                        {!event.status.recognised && (
+                            <p className="text-[10px] text-center text-amber-600 font-bold mt-2">
+                                🔒 CALLING ENABLED AFTER SECURITY ACKNOWLEDGEMENT
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Timeline */}

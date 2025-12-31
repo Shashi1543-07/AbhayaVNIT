@@ -4,17 +4,48 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { wardenNavItems } from '../../lib/navItems';
 import { safeWalkService, type SafeWalkSession, type SafeWalkLocation } from '../../services/safeWalkService';
+import { callService } from '../../services/callService';
 import { useAuthStore } from '../../context/authStore';
-import { MapPin, Clock, Shield, MessageSquare, Send } from 'lucide-react';
+import { MapPin, Clock, Shield, Send, Phone, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 
 export default function WardenSafeWalk() {
-    const { profile } = useAuthStore();
+    const { user, profile } = useAuthStore();
     const [activeWalks, setActiveWalks] = useState<SafeWalkSession[]>([]);
     const [selectedWalk, setSelectedWalk] = useState<SafeWalkSession | null>(null);
     const [liveLocation, setLiveLocation] = useState<SafeWalkLocation | null>(null);
     const [message, setMessage] = useState('');
+
+    const handleCall = (destRole: 'student' | 'security', isVideo: boolean = false) => {
+        if (!user || !selectedWalk) return;
+
+        let receiver;
+        if (destRole === 'student') {
+            receiver = {
+                uid: selectedWalk.userId,
+                name: selectedWalk.userName,
+                role: 'student'
+            };
+        } else {
+            // Call Security handler
+            if (!selectedWalk.assignedEscortId) {
+                alert("No security officer is currently assigned to this walk.");
+                return;
+            }
+            receiver = {
+                uid: selectedWalk.assignedEscortId,
+                name: selectedWalk.assignedEscort,
+                role: 'security'
+            };
+        }
+
+        callService.startCall({
+            uid: user.uid,
+            name: profile?.name || 'Warden',
+            role: 'warden'
+        }, receiver, selectedWalk.id, 'safe_walk', isVideo);
+    };
 
     useEffect(() => {
         if (profile?.hostelId) {
@@ -157,6 +188,57 @@ export default function WardenSafeWalk() {
                                             </p>
                                         </div>
                                     )}
+
+                                    {/* Location Info & Contact */}
+                                    <div className="flex flex-col gap-3 bg-white p-4 rounded-xl border border-slate-200 mb-4">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Contact Student</p>
+                                                <p className="text-sm font-semibold text-slate-800">{selectedWalk.userName}</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleCall('student', false)}
+                                                    className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 active:scale-90 transition-all hover:bg-indigo-100"
+                                                    title="Voice Call Student"
+                                                >
+                                                    <Phone className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleCall('student', true)}
+                                                    className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 active:scale-90 transition-all hover:bg-emerald-100"
+                                                    title="Video Call Student"
+                                                >
+                                                    <Video className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {selectedWalk.assignedEscort && (
+                                            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                                                <div>
+                                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Security Assigned</p>
+                                                    <p className="text-sm font-semibold text-slate-800">{selectedWalk.assignedEscort}</p>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleCall('security', false)}
+                                                        className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 active:scale-90 transition-all hover:bg-blue-100"
+                                                        title="Voice Call Security"
+                                                    >
+                                                        <Phone className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleCall('security', true)}
+                                                        className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 active:scale-90 transition-all hover:bg-blue-100"
+                                                        title="Video Call Security"
+                                                    >
+                                                        <Video className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
 
                                     {/* Route Info */}
                                     <div className="bg-white p-4 rounded-xl space-y-2 mb-4 border border-slate-200">

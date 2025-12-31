@@ -1,50 +1,66 @@
-import { Phone, PhoneOff, User } from 'lucide-react';
+import { Phone, PhoneOff, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface IncomingCallModalProps {
     callerName: string;
     callerRole: string;
+    callType: 'audio' | 'video';
+    contextType?: 'sos' | 'safe_walk';
     onAccept: () => void;
     onReject: () => void;
 }
 
-export default function IncomingCallModal({ callerName, callerRole, onAccept, onReject }: IncomingCallModalProps) {
+export default function IncomingCallModal({
+    callerName,
+    callerRole,
+    callType,
+    contextType,
+    onAccept,
+    onReject
+}: IncomingCallModalProps) {
+    const isVideo = callType === 'video';
+    const isEmergency = !!contextType;
+
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="w-full max-w-sm glass-card border-white/50 p-8 flex flex-col items-center text-center shadow-2xl rounded-[2.5rem]"
+                className="glass-card w-full max-w-sm p-8 pt-10 flex flex-col items-center text-center shadow-2xl border border-white/20 bg-white/80 relative overflow-hidden"
             >
-                {/* Caller Avatar & Pulse */}
-                <div className="relative mb-8">
-                    <div className="absolute inset-0 bg-primary-200 rounded-full animate-ping opacity-25" />
-                    <div className="absolute inset-[-10px] bg-primary-100 rounded-full animate-pulse opacity-40" />
-                    <div className="relative w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shadow-lg">
-                        <User className="w-12 h-12 text-white" />
+                {isEmergency && (
+                    <div className={`absolute top-0 left-0 right-0 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white ${contextType === 'sos' ? 'bg-red-600' : 'bg-primary-600'
+                        }`}>
+                        Active {contextType === 'sos' ? 'SOS' : 'Safe Walk'} Coordination
+                    </div>
+                )}
+                <div className="relative mb-6">
+                    <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center animate-pulse">
+                        {isVideo ? <Video className="w-10 h-10 text-primary-600" /> : <Phone className="w-10 h-10 text-primary-600" />}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md">
+                        <div className="w-6 h-6 bg-emerald-500 rounded-full animate-ping" />
                     </div>
                 </div>
 
-                <div className="mb-10">
-                    <p className="text-primary-500 text-xs font-bold uppercase tracking-[0.2em] mb-2">Incoming Audio Call</p>
-                    <h2 className="text-2xl font-black text-slate-800 mb-1">{callerName}</h2>
-                    <p className="text-slate-500 font-medium capitalize">{callerRole}</p>
-                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-1">{callerName}</h3>
+                <p className="text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">{callerRole}</p>
+                <p className="text-primary-600 font-bold text-sm mb-8">
+                    Incoming {isVideo ? 'Video' : 'Voice'} Call...
+                </p>
 
-                {/* Actions */}
-                <div className="flex gap-8 w-full justify-center">
+                <div className="flex gap-6 w-full">
                     <button
                         onClick={onReject}
-                        className="w-16 h-16 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-red-200 transition-all active:scale-90"
+                        className="flex-1 py-4 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 active:scale-95 transition-all border border-red-100"
                     >
-                        <PhoneOff className="w-8 h-8 rotate-[135deg]" />
+                        <PhoneOff className="w-6 h-6" />
                     </button>
                     <button
                         onClick={onAccept}
-                        className="w-16 h-16 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-green-200 transition-all animate-bounce active:scale-90"
+                        className="flex-1 py-4 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-200 active:scale-95 transition-all"
                     >
-                        <Phone className="w-8 h-8" />
+                        {isVideo ? <Video className="w-6 h-6" /> : <Phone className="w-6 h-6" />}
                     </button>
                 </div>
             </motion.div>

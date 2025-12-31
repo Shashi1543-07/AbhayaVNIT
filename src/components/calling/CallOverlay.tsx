@@ -29,6 +29,7 @@ export default function CallOverlay() {
     const [outboundCall, setOutboundCall] = useState<CallSession | null>(null);
     const [activeCall, setActiveCall] = useState<CallSession | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 
     useEffect(() => {
         if (user) {
@@ -43,7 +44,12 @@ export default function CallOverlay() {
 
     useEffect(() => {
         callService.setRemoteStreamListener((stream) => {
+            console.log("CallOverlay: Remote stream set");
             setRemoteStream(stream);
+        });
+        callService.setLocalStreamListener((stream) => {
+            console.log("CallOverlay: Local stream set");
+            setLocalStream(stream);
         });
     }, []);
 
@@ -90,7 +96,7 @@ export default function CallOverlay() {
 
 
             const callData = { id: sortedDocs[0].id, ...sortedDocs[0].data() } as CallSession;
-            console.log("CallOverlay: [RECEIVER] Processing doc:", callData.id, "Status:", callData.status);
+            console.log("CallOverlay: [RECEIVER] Processing doc:", callData.id, "Status:", callData.status, "Type:", callData.callType);
 
             if (callData.status === 'ringing') {
                 setIncomingCall(callData);
@@ -147,7 +153,7 @@ export default function CallOverlay() {
 
 
             const callData = { id: sortedDocs[0].id, ...sortedDocs[0].data() } as CallSession;
-            console.log("CallOverlay: [CALLER] Processing doc:", callData.id, "Status:", callData.status);
+            console.log("CallOverlay: [CALLER] Processing doc:", callData.id, "Status:", callData.status, "Type:", callData.callType);
 
             if (callData.status === 'ringing') {
                 setOutboundCall(callData);
@@ -238,6 +244,7 @@ export default function CallOverlay() {
         setOutboundCall(null);
         setIncomingCall(null);
         setRemoteStream(null);
+        setLocalStream(null);
     };
 
     return (
@@ -246,6 +253,8 @@ export default function CallOverlay() {
                 <IncomingCallModal
                     callerName={incomingCall.callerName}
                     callerRole={incomingCall.callerRole}
+                    callType={incomingCall.callType}
+                    contextType={incomingCall.contextType}
                     onAccept={handleAccept}
                     onReject={handleReject}
                 />
@@ -253,9 +262,13 @@ export default function CallOverlay() {
 
             {activeCall && (
                 <InCallScreen
+                    callId={activeCall.id}
                     partnerName={user?.uid === activeCall.callerId ? activeCall.receiverName : activeCall.callerName}
                     partnerRole={user?.uid === activeCall.callerId ? activeCall.receiverRole : activeCall.callerRole}
                     remoteStream={remoteStream}
+                    localStream={localStream}
+                    callType={activeCall.callType}
+                    contextType={activeCall.contextType}
                     onEnd={handleEndCall}
                 />
             )}
@@ -264,6 +277,7 @@ export default function CallOverlay() {
                 <OutboundCallModal
                     receiverName={outboundCall.receiverName}
                     receiverRole={outboundCall.receiverRole}
+                    callType={outboundCall.callType}
                     onCancel={handleEndCall}
                 />
             )}
@@ -280,4 +294,5 @@ export default function CallOverlay() {
         </>
     );
 }
+
 
