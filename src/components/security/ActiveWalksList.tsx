@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Footprints, Clock, MapPin, Shield } from 'lucide-react';
 import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkService';
-import StatusBadge from '../ui/StatusBadge';
+import { motion } from 'framer-motion';
 
 interface ActiveWalksListProps {
     onSelectWalk: (walk: SafeWalkSession) => void;
@@ -26,7 +26,7 @@ export default function ActiveWalksList({ onSelectWalk, hostelFilter }: ActiveWa
     const filteredWalks = walks.filter(walk => {
         if (statusFilter === 'all') return true;
         if (statusFilter === 'active') return walk.status === 'active';
-        if (statusFilter === 'delayed') return walk.status === 'delayed' || walk.status === 'off-route';
+        if (statusFilter === 'delayed') return walk.status === 'delayed';
         if (statusFilter === 'danger') return walk.status === 'danger';
         if (statusFilter === 'escort') return walk.escortRequested && !walk.assignedEscort;
         return true;
@@ -36,97 +36,81 @@ export default function ActiveWalksList({ onSelectWalk, hostelFilter }: ActiveWa
         return <div className="p-4 text-center text-slate-500">Loading active walks...</div>;
     }
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'danger':
-                return <StatusBadge status="error" label="DANGER" />;
-            case 'delayed':
-            case 'off-route':
-                return <StatusBadge status="warning" label={status.toUpperCase()} />;
-            case 'paused':
-                return <StatusBadge status="neutral" label="PAUSED" />;
-            default:
-                return <StatusBadge status="success" label="ACTIVE" />;
-        }
-    };
-
-    const getBorderColor = (walk: SafeWalkSession) => {
-        if (walk.status === 'danger') return 'border-red-300 bg-red-50';
-        if (walk.status === 'delayed' || walk.status === 'off-route') return 'border-yellow-300 bg-yellow-50';
-        if (walk.escortRequested && !walk.assignedEscort) return 'border-blue-300 bg-blue-50';
-        return 'border-slate-100';
-    };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             {/* Status Filter Dropdown */}
-            <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="glass-input w-full p-2 rounded-lg text-sm font-medium border border-black/15"
-            >
-                <option value="all">All Walks ({walks.length})</option>
-                <option value="active">Active Only</option>
-                <option value="delayed">Delayed/Off-route</option>
-                <option value="danger">Danger</option>
-                <option value="escort">Escort Requested</option>
-            </select>
+            <div className="relative group">
+                <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as any)}
+                    className="w-full bg-white/20 backdrop-blur-md p-4 rounded-2xl border border-white/40 text-sm font-black text-slate-700 uppercase tracking-widest outline-none appearance-none shadow-lg cursor-pointer transition-all hover:bg-white/30"
+                >
+                    <option value="all">Live Overview ({walks.length})</option>
+                    <option value="active">Active Track</option>
+                    <option value="delayed">Delay Alerts</option>
+                    <option value="danger">Emergency</option>
+                    <option value="escort">Escort Req.</option>
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+                    <Shield className="w-4 h-4 text-slate-800" />
+                </div>
+            </div>
 
             {filteredWalks.length === 0 ? (
-                <div className="glass-card p-8 text-center rounded-xl border border-dashed border-black/20">
-                    <Footprints className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-slate-500 font-medium">No matching walks</p>
-                    <p className="text-xs text-slate-400 mt-1">Try changing the filter</p>
+                <div className="glass-card p-12 text-center rounded-[2.5rem] border border-white/50 shadow-xl bg-white/5">
+                    <Footprints className="w-10 h-10 text-slate-300 mx-auto mb-4 opacity-30" />
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No Active Missions</p>
                 </div>
             ) : (
-                filteredWalks.map((walk) => (
-                    <div
-                        key={walk.id}
-                        onClick={() => onSelectWalk(walk)}
-                        className={`glass-card p-4 rounded-xl cursor-pointer transition-all hover:shadow-md border border-black/15 ${getBorderColor(walk)}`}
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <div>
-                                <h3 className="font-bold text-slate-800">{walk.userName}</h3>
-                                <p className="text-xs text-slate-500">{walk.userHostel || 'Unknown Hostel'}</p>
+                <div className="space-y-4">
+                    {filteredWalks.map((walk) => (
+                        <motion.div
+                            key={walk.id}
+                            layoutId={walk.id}
+                            onClick={() => onSelectWalk(walk)}
+                            className={`glass-card p-6 rounded-[2.2rem] cursor-pointer transition-all border-2 shadow-xl hover:-translate-y-1 active:scale-95 ${walk.status === 'danger' ? 'border-red-500/50 bg-red-500/5' :
+                                walk.status === 'delayed' ? 'border-orange-500/50 bg-orange-500/5' :
+                                    'border-white/50 hover:border-white/80'
+                                }`}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-white/60 to-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center font-black text-slate-700 border border-white/80 shadow-sm text-lg">
+                                        {walk.userName.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black text-slate-800 text-lg leading-tight">{walk.userName}</h4>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{walk.userHostel || 'Campus'}</p>
+                                    </div>
+                                </div>
+                                <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.1em] border shadow-sm ${walk.status === 'danger' ? 'bg-red-500/10 text-red-600 border-red-500/20' :
+                                    walk.status === 'delayed' ? 'bg-orange-500/10 text-orange-600 border-orange-500/20' :
+                                        'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                    }`}>
+                                    {walk.status}
+                                </span>
                             </div>
-                            {getStatusBadge(walk.status)}
-                        </div>
 
-                        <div className="flex items-center space-x-4 text-sm text-slate-600 mb-2">
-                            <div className="flex items-center">
-                                <MapPin className="w-4 h-4 mr-1 text-primary" />
-                                <span>{walk.destination.name}</span>
-                            </div>
-                            <div className="flex items-center">
-                                <Clock className="w-4 h-4 mr-1 text-slate-400" />
-                                <span>{walk.expectedDuration} min</span>
-                            </div>
-                        </div>
+                            <div className="bg-white/30 backdrop-blur-md p-4 rounded-2xl border border-white/60 space-y-3 shadow-sm text-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 bg-emerald-100/50 rounded-lg">
+                                        <MapPin className="w-4 h-4 text-emerald-600" />
+                                    </div>
+                                    <span className="font-bold text-slate-700 truncate">{walk.destination.name}</span>
+                                </div>
 
-                        {/* Escort Request Badge */}
-                        {walk.escortRequested && !walk.assignedEscort && (
-                            <div className="flex items-center gap-2 mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
-                                <Shield className="w-4 h-4" />
-                                Escort Requested
+                                <div className="flex justify-between items-center pt-3 border-t border-white/40 text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                                    <span className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-primary opacity-60" />
+                                        {walk.expectedDuration}m limit
+                                    </span>
+                                    {walk.assignedEscort && <span className="text-emerald-600 font-black">Escort: {walk.assignedEscort}</span>}
+                                </div>
                             </div>
-                        )}
-
-                        {/* Assigned Escort Badge */}
-                        {walk.assignedEscort && (
-                            <div className="flex items-center gap-2 mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
-                                <Shield className="w-4 h-4" />
-                                Escort: {walk.assignedEscort}
-                            </div>
-                        )}
-
-                        {walk.message && (
-                            <div className="text-xs bg-slate-100 p-2 rounded-lg text-slate-600 italic mt-2">
-                                "{walk.message}"
-                            </div>
-                        )}
-                    </div>
-                ))
+                        </motion.div>
+                    ))}
+                </div>
             )}
         </div>
     );

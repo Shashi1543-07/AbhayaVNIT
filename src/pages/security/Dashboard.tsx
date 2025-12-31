@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import SOSCard from '../../components/common/SOSCard';
 import TopHeader from '../../components/layout/TopHeader';
@@ -8,8 +9,6 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, limit, deleteDoc, doc } from 'firebase/firestore';
 import { Shield, PhoneMissed, X } from 'lucide-react';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
-import WalkDetailPanel from '../../components/security/WalkDetailPanel';
-import { type SafeWalkSession } from '../../services/safeWalkService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { securityNavItems } from '../../lib/navItems';
@@ -17,8 +16,8 @@ import { useAuthStore } from '../../context/authStore';
 
 export default function SecurityDashboard() {
     const { user } = useAuthStore();
+    const navigate = useNavigate();
     const [activeEvents, setActiveEvents] = useState<SOSEvent[]>([]);
-    const [selectedWalk, setSelectedWalk] = useState<SafeWalkSession | null>(null);
     const [notifications, setNotifications] = useState<any[]>([]);
 
     useEffect(() => {
@@ -120,17 +119,9 @@ export default function SecurityDashboard() {
                         </button>
                     </div>
                     <ActiveWalksList
-                        onSelectWalk={(walk) => setSelectedWalk(walk)}
+                        onSelectWalk={(walk) => navigate(`/security/safe-walk/${walk.id}`)}
                     />
                 </motion.div>
-
-                {/* Walk Detail Panel */}
-                {selectedWalk && (
-                    <WalkDetailPanel
-                        walk={selectedWalk}
-                        onClose={() => setSelectedWalk(null)}
-                    />
-                )}
 
                 {/* Call Support Section */}
                 <motion.div variants={cardVariant} className="p-4">

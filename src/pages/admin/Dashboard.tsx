@@ -3,13 +3,15 @@ import Layout from '../../components/Layout';
 import SOSCard from '../../components/common/SOSCard';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { Users, UserPlus, FileText, Shield, UserCheck, UserX, Activity, Megaphone } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import ActiveWalksList from '../../components/security/ActiveWalksList';
 import { collection, getCountFromServer, query, where, limit, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 
 export default function AdminDashboard() {
+    const navigate = useNavigate();
     const [stats, setStats] = useState({
         totalStudents: 0,
         totalWardens: 0,
@@ -132,6 +134,19 @@ export default function AdminDashboard() {
                             ))}
                         </div>
                     )}
+                </motion.div>
+
+                {/* Live Safe Walk Monitor */}
+                <motion.div variants={cardVariant} className="glass-card p-5 rounded-xl shadow-sm border border-white/40">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                            <Activity className="w-5 h-5 text-primary" />
+                            Active Safe Walks
+                        </h3>
+                    </div>
+                    <ActiveWalksList
+                        onSelectWalk={(walk) => navigate(`/admin/safe-walk/${walk.id}`)}
+                    />
                 </motion.div>
 
                 {/* Quick Actions */}

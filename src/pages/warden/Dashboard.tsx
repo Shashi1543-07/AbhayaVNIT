@@ -7,8 +7,6 @@ import { useAuthStore } from '../../context/authStore';
 import { Users, PhoneMissed, X } from 'lucide-react';
 import WardenActiveSOS from '../../components/warden/WardenActiveSOS';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
-import SafeWalkMap from '../../components/security/SafeWalkMap';
-import { type SafeWalkSession } from '../../services/safeWalkService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { useEffect, useState } from 'react';
@@ -24,7 +22,6 @@ export default function WardenDashboard() {
     const { profile, user } = useAuthStore();
 
     const wardenHostelId = profile?.hostelId || profile?.hostel || 'H6';
-    const [selectedWalk, setSelectedWalk] = useState<SafeWalkSession | null>(null);
     const [notifications, setNotifications] = useState<any[]>([]);
     useEffect(() => {
         if (!user) return;
@@ -98,32 +95,10 @@ export default function WardenDashboard() {
                 <motion.div variants={cardVariant}>
                     <h3 className="text-sm font-bold text-primary mb-3 ml-1">Active Safe Walks</h3>
                     <ActiveWalksList
-                        hostelFilter={wardenHostelId}
-                        onSelectWalk={(walk) => setSelectedWalk(walk)}
+                        onSelectWalk={(walk) => navigate(`/warden/safe-walk/${walk.id}`)}
                     />
                 </motion.div>
 
-                {/* Map Modal */}
-                {selectedWalk && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                        <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl">
-                            <div className="p-4 border-b flex justify-between items-center">
-                                <h3 className="font-bold text-lg">Live Tracking</h3>
-                                <button
-                                    onClick={() => setSelectedWalk(null)}
-                                    className="text-muted hover:text-primary transition-colors"
-                                >
-                                    Close
-                                </button>
-                            </div>
-                            <div className="h-[400px]"><SafeWalkMap walks={[selectedWalk]} /></div>
-                            <div className="p-4 bg-primary-50">
-                                <p className="font-bold">{selectedWalk.userName}</p>
-                                <p className="text-sm text-muted">{selectedWalk.startLocation.name || 'Start'} → {selectedWalk.destination.name}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 {/* Recent Incidents Preview */}
                 <motion.div variants={cardVariant}>

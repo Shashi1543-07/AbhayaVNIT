@@ -25,6 +25,9 @@ import SystemSettings from './pages/admin/SystemSettings';
 import AuditLogs from './pages/admin/AuditLogs';
 import Broadcasts from './pages/admin/Broadcasts';
 import AdminSOSDetail from './pages/admin/SOSDetail';
+import SafeWalkMonitor from './pages/security/SafeWalkMonitor';
+import WardenSafeWalk from './pages/warden/WardenSafeWalk';
+import SafeWalkDetails from './pages/common/SafeWalkDetails';
 import ProtectedRoute from './features/auth/ProtectedRoute';
 import { useAuthListener } from './hooks/useAuthListener';
 import WardenBroadcasts from './pages/warden/Broadcasts';
@@ -66,6 +69,8 @@ function AnimatedRoutes() {
           <Route path="/warden/profile" element={<WardenProfile />} />
           <Route path="/warden/broadcasts" element={<WardenBroadcasts />} />
           <Route path="/warden/directory" element={<WardenDirectory />} />
+          <Route path="/warden/safe-walks" element={<WardenSafeWalk />} />
+          <Route path="/warden/safe-walk/:id" element={<SafeWalkDetails />} />
         </Route>
 
 
@@ -76,6 +81,8 @@ function AnimatedRoutes() {
           <Route path="/security/map" element={<SecurityMapView />} />
           <Route path="/security/patrol" element={<SecurityPatrol />} />
           <Route path="/security/profile" element={<SecurityProfile />} />
+          <Route path="/security/safe-walks" element={<SafeWalkMonitor />} />
+          <Route path="/security/safe-walk/:id" element={<SafeWalkDetails />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
@@ -85,6 +92,7 @@ function AnimatedRoutes() {
           <Route path="/admin/logs" element={<AuditLogs />} />
           <Route path="/admin/broadcasts" element={<Broadcasts />} />
           <Route path="/admin/sos/:id" element={<AdminSOSDetail />} />
+          <Route path="/admin/safe-walk/:id" element={<SafeWalkDetails />} />
         </Route>
       </Routes>
     </AnimatePresence>

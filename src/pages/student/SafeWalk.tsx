@@ -4,15 +4,16 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkService';
 import { useAuthStore } from '../../context/authStore';
-import { MapPin, Clock, Shield, Navigation, AlertCircle, Send } from 'lucide-react';
+import { MapPin, Clock, Shield, Navigation, AlertCircle, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { containerStagger, cardVariant, buttonGlow } from '../../lib/animations';
 
 const PRESET_DESTINATIONS = [
-    { name: 'Main Gate', lat: 0, lng: 0 },
-    { name: 'Library', lat: 0, lng: 0 },
-    { name: 'Department Block', lat: 0, lng: 0 },
-    { name: 'Hostel Gate', lat: 0, lng: 0 },
+    { name: 'Sarojini Bhawan (Hostel)', lat: 21.1235, lng: 79.0512 },
+    { name: 'Kunda Bhawan (Hostel)', lat: 21.1245, lng: 79.0522 },
+    { name: 'Library', lat: 21.1265, lng: 79.0492 },
+    { name: 'Academic Block', lat: 21.1275, lng: 79.0482 },
+    { name: 'Main Gate', lat: 21.1215, lng: 79.0552 },
 ];
 
 export default function SafeWalk() {
@@ -23,70 +24,114 @@ export default function SafeWalk() {
     const [duration, setDuration] = useState(15);
     const [note, setNote] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showNoMovementAlert, setShowNoMovementAlert] = useState(false);
-    const [showDelayAlert, setShowDelayAlert] = useState(false);
+
+    // Status alerting states
+    const [showNoMovementPopup, setShowNoMovementPopup] = useState(false);
+    const [showDelayPopup, setShowDelayPopup] = useState(false);
     const [remainingTime, setRemainingTime] = useState(0);
 
     const watchIdRef = useRef<number | null>(null);
     const lastLocationRef = useRef<{ lat: number; lng: number; timestamp: number } | null>(null);
-    const movementCheckRef = useRef<NodeJS.Timeout | null>(null);
+    const lastStatusUpdateRef = useRef<'active' | 'paused' | 'delayed'>('active');
 
-    // Subscribe to active session
+    // 1. Subscribe to active session
     useEffect(() => {
-        if (user) {
-            const unsubscribe = safeWalkService.subscribeToUserActiveWalk(user.uid, (session) => {
-                setActiveSession(session);
-                if (session && session.status === 'active') {
-                    startGPSTracking(session.id);
-                    startMovementCheck();
-                    startDelayCheck(session);
-                } else {
-                    stopGPSTracking();
-                }
-            });
-            return () => {
-                unsubscribe();
+        if (!user) return;
+
+        const unsubscribe = safeWalkService.subscribeToUserActiveWalk(user.uid, (session) => {
+            setActiveSession(session);
+            if (session) {
+                // Tracking started inside the session subscription to ensure walkId is available
+                startGPSTracking(session.id);
+            } else {
                 stopGPSTracking();
-            };
-        }
+            }
+        });
+
+        return () => {
+            unsubscribe();
+            stopGPSTracking();
+        };
     }, [user]);
 
-    // Countdown timer
+    // 2. Monitoring & Countdown Timers
     useEffect(() => {
         if (!activeSession) return;
 
         const interval = setInterval(() => {
+            // A. Countdown timer
             const startTime = activeSession.startTime?.toDate ? activeSession.startTime.toDate() : new Date(activeSession.startTime as any);
             const expectedEndTime = new Date(startTime.getTime() + activeSession.expectedDuration * 60000);
             const remaining = Math.max(0, Math.floor((expectedEndTime.getTime() - Date.now()) / 1000));
             setRemainingTime(remaining);
-        }, 1000);
+
+            // B. Client-side status checks
+            checkSafetyStatus(activeSession, remaining);
+        }, 3000); // Check every 3 seconds
 
         return () => clearInterval(interval);
     }, [activeSession]);
 
-    // GPS Tracking
+    const checkSafetyStatus = (session: SafeWalkSession, remaining: number) => {
+        if (session.status === 'completed' || session.status === 'danger') return;
+
+        let nextStatus: 'active' | 'paused' | 'delayed' = 'active';
+
+        // Check for delay
+        if (remaining <= 0) {
+            nextStatus = 'delayed';
+            if (!showDelayPopup) setShowDelayPopup(true);
+        }
+
+        // Check for no movement (60s)
+        if (lastLocationRef.current) {
+            const timeSinceMove = Date.now() - lastLocationRef.current.timestamp;
+            if (timeSinceMove > 60000) {
+                nextStatus = 'paused';
+                if (!showNoMovementPopup) setShowNoMovementPopup(true);
+            }
+        }
+
+        // Update database only if status changed
+        if (nextStatus !== lastStatusUpdateRef.current) {
+            lastStatusUpdateRef.current = nextStatus;
+            safeWalkService.updateWalkStatus(session.id, nextStatus);
+        }
+    };
+
+    // 3. GPS Tracking Implementation
     const startGPSTracking = (walkId: string) => {
+        if (watchIdRef.current !== null) return;
+
         if ('geolocation' in navigator) {
-            const watchId = navigator.geolocation.watchPosition(
+            watchIdRef.current = navigator.geolocation.watchPosition(
                 (position) => {
-                    const location = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        speed: position.coords.speed,
+                    const { latitude, longitude, speed } = position.coords;
+
+                    // Update RTDB for monitoring
+                    safeWalkService.updateLocation(walkId, {
+                        latitude,
+                        longitude,
+                        speed,
                         lastUpdated: Date.now()
-                    };
-                    safeWalkService.updateLocation(walkId, location);
-                    lastLocationRef.current = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                        timestamp: Date.now()
-                    };
+                    });
+
+                    // Track movement for "paused" check
+                    const prevLoc = lastLocationRef.current;
+                    if (!prevLoc || prevLoc.lat !== latitude || prevLoc.lng !== longitude) {
+                        lastLocationRef.current = { lat: latitude, lng: longitude, timestamp: Date.now() };
+                        if (showNoMovementPopup) setShowNoMovementPopup(false);
+
+                        // If we move again after being paused, reset status to active
+                        if (lastStatusUpdateRef.current === 'paused') {
+                            lastStatusUpdateRef.current = 'active';
+                            safeWalkService.updateWalkStatus(walkId, 'active');
+                        }
+                    }
                 },
-                (error) => console.error('GPS Error:', error),
+                (error) => console.error('GPS tracking error:', error),
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
-            watchIdRef.current = watchId;
         }
     };
 
@@ -95,73 +140,43 @@ export default function SafeWalk() {
             navigator.geolocation.clearWatch(watchIdRef.current);
             watchIdRef.current = null;
         }
-        if (movementCheckRef.current) {
-            clearInterval(movementCheckRef.current);
-            movementCheckRef.current = null;
-        }
+        lastLocationRef.current = null;
+        lastStatusUpdateRef.current = 'active';
+        setShowNoMovementPopup(false);
+        setShowDelayPopup(false);
     };
 
-    // No Movement Detection
-    const startMovementCheck = () => {
-        movementCheckRef.current = setInterval(() => {
-            if (lastLocationRef.current) {
-                const timeSinceLastUpdate = Date.now() - lastLocationRef.current.timestamp;
-                if (timeSinceLastUpdate > 60000) { // 60 seconds no movement
-                    setShowNoMovementAlert(true);
-                }
-            }
-        }, 30000); // Check every 30 seconds
-    };
-
-    // Delay Detection
-    const startDelayCheck = (session: SafeWalkSession) => {
-        const checkInterval = setInterval(() => {
-            if (safeWalkService.isWalkDelayed(session)) {
-                setShowDelayAlert(true);
-                clearInterval(checkInterval);
-            }
-        }, 30000);
-        return () => clearInterval(checkInterval);
-    };
-
+    // 4. Actions
     const handleStartWalk = async () => {
         if (!user || (!destination && !customDestination)) return;
         setLoading(true);
         try {
+            // Get initial location
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject);
             });
 
-            const startLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                name: 'Current Location'
-            };
+            const startCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
+            const selectedDestName = destination || customDestination;
+            const preset = PRESET_DESTINATIONS.find(d => d.name === destination);
 
-            const selectedDest = destination || customDestination;
-            const destCoords = PRESET_DESTINATIONS.find(d => d.name === destination) || {
-                lat: position.coords.latitude + 0.001,
-                lng: position.coords.longitude + 0.001
-            };
-
-            const destLocation = {
-                lat: destCoords.lat,
-                lng: destCoords.lng,
-                name: selectedDest
+            const destCoords = preset ? { lat: preset.lat, lng: preset.lng } : {
+                lat: startCoords.lat + 0.005, // Approximation for custom
+                lng: startCoords.lng + 0.005
             };
 
             await safeWalkService.startSafeWalk({
                 userId: user.uid,
                 userName: profile?.name || user.displayName || 'Student',
-                userHostel: profile?.hostelId,
-                startLocation,
-                destination: destLocation,
+                hostelId: profile?.hostelId || 'Unknown',
+                startLocation: { ...startCoords, name: 'Current Location' },
+                destination: { ...destCoords, name: selectedDestName },
                 expectedDuration: duration,
-                note: note || undefined
+                note: note || null
             });
         } catch (error) {
             console.error('Failed to start safe walk:', error);
-            alert('Failed to start Safe Walk. Please check GPS permissions.');
+            alert('Failed to start tracking. Please check GPS settings.');
         } finally {
             setLoading(false);
         }
@@ -170,31 +185,30 @@ export default function SafeWalk() {
     const handleEndWalk = async () => {
         if (!activeSession) return;
         try {
-            await safeWalkService.updateWalkStatus(activeSession.id, 'completed', 'Walk completed safely');
+            await safeWalkService.updateWalkStatus(activeSession.id, 'completed');
             stopGPSTracking();
         } catch (error) {
-            console.error('Failed to end session:', error);
+            console.error('Error ending walk:', error);
         }
     };
 
-    const handleRequestEscort = async () => {
-        if (!activeSession) return;
-        try {
-            await safeWalkService.requestEscort(activeSession.id);
-            alert('Escort request sent to security!');
-        } catch (error) {
-            console.error('Failed to request escort:', error);
-        }
-    };
+    const handleSOS = async () => {
+        if (!activeSession || !user) return;
 
-    const handleSOSTrigger = async () => {
-        if (!activeSession) return;
-        if (confirm('Are you in danger? This will trigger an emergency alert!')) {
+        const confirmMsg = "ESCALATE TO SOS? This will stop the Safe Walk and alert Security IMMEDIATELY.";
+        if (confirm(confirmMsg)) {
             try {
-                await safeWalkService.convertToSOS(activeSession.id);
-                alert('SOS triggered! Security has been notified.');
+                const currentPos = lastLocationRef.current || { lat: 0, lng: 0 };
+                await safeWalkService.convertToSOS(activeSession.id, {
+                    ...profile,
+                    uid: user.uid,
+                    displayName: profile?.name || 'Student'
+                }, { lat: currentPos.lat, lng: currentPos.lng });
+
+                stopGPSTracking();
+                alert('Emergency SOS triggered.');
             } catch (error) {
-                console.error('Failed to trigger SOS:', error);
+                console.error('SOS Escalation failed:', error);
             }
         }
     };
@@ -210,62 +224,42 @@ export default function SafeWalk() {
             <TopHeader title="Safe Walk" showBackButton={true} />
 
             <motion.main
-                className="px-4 py-6 space-y-6 pb-24 pt-24"
+                className="px-6 py-8 space-y-6 pb-24 pt-28 max-w-lg mx-auto"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
-                {/* Alerts */}
+                {/* Popups & Alerts */}
                 <AnimatePresence>
-                    {showNoMovementAlert && (
+                    {(showNoMovementPopup || showDelayPopup) && (
                         <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="glass-card p-4 rounded-xl border border-warning bg-warning/10"
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md"
                         >
-                            <div className="flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-warning mb-1">Are you safe?</h3>
-                                    <p className="text-sm text-slate-600">We haven't detected movement for a while.</p>
+                            <div className="glass-card p-6 rounded-[2rem] w-full max-w-xs text-center border-2 border-white/50 shadow-2xl">
+                                <AlertCircle className="w-12 h-12 text-warning mx-auto mb-4" />
+                                <h3 className="text-xl font-black text-slate-900 mb-2">Are you okay?</h3>
+                                <p className="text-sm text-slate-600 font-medium mb-6">
+                                    {showNoMovementPopup
+                                        ? "No movement detected for 60 seconds."
+                                        : "You have exceeded your expected duration."
+                                    }
+                                </p>
+                                <div className="space-y-3">
                                     <button
-                                        onClick={() => setShowNoMovementAlert(false)}
-                                        className="mt-2 text-sm font-bold text-primary underline"
+                                        onClick={() => { setShowNoMovementPopup(false); setShowDelayPopup(false); }}
+                                        className="w-full py-4 bg-emerald-500 text-white font-black rounded-2xl shadow-lg border border-emerald-400/30"
                                     >
-                                        I'm safe
+                                        I'M SAFE
                                     </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {showDelayAlert && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="glass-card p-4 rounded-xl border border-warning bg-warning/10"
-                        >
-                            <div className="flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-warning mb-1">Walk seems delayed</h3>
-                                    <p className="text-sm text-slate-600">Do you need help?</p>
-                                    <div className="flex gap-2 mt-2">
-                                        <button
-                                            onClick={handleRequestEscort}
-                                            className="text-sm font-bold text-primary underline"
-                                        >
-                                            Request Escort
-                                        </button>
-                                        <button
-                                            onClick={() => setShowDelayAlert(false)}
-                                            className="text-sm font-bold text-slate-600 underline"
-                                        >
-                                            I'm okay
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={handleSOS}
+                                        className="w-full py-4 bg-red-500 text-white font-black rounded-2xl shadow-lg border border-red-400/30"
+                                    >
+                                        I'M IN DANGER
+                                    </button>
                                 </div>
                             </div>
                         </motion.div>
@@ -273,189 +267,191 @@ export default function SafeWalk() {
                 </AnimatePresence>
 
                 {/* Main Card */}
-                <motion.div variants={cardVariant} className="glass-card p-6 rounded-2xl text-center relative overflow-hidden border border-white/40">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF99AC] to-[#C084FC]" />
-                    <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Navigation className="w-8 h-8 text-primary" />
+                <motion.div variants={cardVariant} className="glass-card p-8 rounded-[2.5rem] relative overflow-hidden border border-white/50 shadow-2xl">
+                    <div className={`absolute top-0 left-0 w-full h-2 ${activeSession ? (activeSession.status === 'active' ? 'bg-emerald-500' : 'bg-orange-500') : 'bg-primary'
+                        }`} />
+
+                    <div className="flex justify-between items-start mb-8">
+                        <div className="w-16 h-16 bg-white/40 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/60 shadow-sm text-primary">
+                            <Navigation className="w-8 h-8" />
+                        </div>
+                        {activeSession && (
+                            <div className="bg-white/40 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/60 shadow-sm">
+                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest text-center">Remaining</p>
+                                <p className="text-xl font-black text-primary font-mono">{formatTime(remainingTime)}</p>
+                            </div>
+                        )}
                     </div>
-                    <h2 className="text-xl font-bold text-primary mb-2">
-                        {activeSession ? 'Tracking Active' : 'Start Safe Walk'}
+
+                    <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">
+                        {activeSession ? 'Tracking Live' : 'Start Safe Walk'}
                     </h2>
-                    <p className="text-sm text-muted mb-6">
+                    <p className="text-sm text-slate-600 font-medium mb-10 leading-relaxed opacity-80">
                         {activeSession
-                            ? 'Security is monitoring your location.'
-                            : 'Share your live location with security while you walk.'}
+                            ? 'Your location is being shared with security and hostel wardens for your safety.'
+                            : 'Heading back late? Let security and your warden stay informed while you walk.'}
                     </p>
 
                     <AnimatePresence mode="wait">
                         {activeSession ? (
-                            <motion.div
-                                key="active"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="space-y-4"
-                            >
-                                <div className="glass-card p-4 rounded-xl text-left space-y-3 border border-white/30">
-                                    <div className="flex items-start gap-3">
-                                        <MapPin className="w-5 h-5 text-secondary mt-0.5" />
-                                        <div className="flex-1">
-                                            <p className="text-xs text-muted">Destination</p>
-                                            <p className="font-semibold text-primary">{activeSession.destination.name}</p>
+                            <motion.div key="active" className="space-y-8">
+                                <div className="bg-white/30 backdrop-blur-md p-6 rounded-3xl text-left border border-white/60 shadow-sm">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="p-2.5 bg-emerald-100/50 rounded-xl border border-emerald-200/50">
+                                            <MapPin className="w-5 h-5 text-emerald-600" />
                                         </div>
-                                        <div className="bg-primary/10 px-3 py-1 rounded-full">
-                                            <p className="text-sm font-bold text-primary">{formatTime(remainingTime)}</p>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Destination</p>
+                                            <p className="text-base font-bold text-slate-800">{activeSession.destination.name}</p>
                                         </div>
                                     </div>
 
-                                    {activeSession.note && (
-                                        <div className="bg-surface-card p-2 rounded-lg">
-                                            <p className="text-xs text-slate-600">{activeSession.note}</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
+                                            <Clock className="w-5 h-5 text-primary" />
                                         </div>
-                                    )}
+                                        <div className="flex-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Status</p>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-3 h-3 rounded-full animate-pulse shadow-sm ${activeSession.status === 'active' ? 'bg-emerald-500' :
+                                                    activeSession.status === 'paused' ? 'bg-yellow-500' : 'bg-orange-500'
+                                                    }`} />
+                                                <p className="text-base font-black capitalize text-slate-800 tracking-tight">{activeSession.status}</p>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                    {activeSession.assignedEscort && (
-                                        <div className="flex items-center gap-2 bg-success/10 p-2 rounded-lg">
-                                            <Shield className="w-4 h-4 text-success" />
-                                            <p className="text-xs text-success font-medium">Escort: {activeSession.assignedEscort}</p>
+                                    {/* Security Communications */}
+                                    {activeSession.timeline && activeSession.timeline.some(e => e.type === 'message') && (
+                                        <div className="pt-4 border-t border-white/40">
+                                            <div className="flex items-center gap-2 mb-3 ml-1">
+                                                <MessageCircle className="w-4 h-4 text-primary" />
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Security Guidance</p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {activeSession.timeline
+                                                    .filter(e => e.type === 'message')
+                                                    .slice(-3) // Show last 3 messages for context
+                                                    .map((msg, idx) => (
+                                                        <motion.div
+                                                            key={idx}
+                                                            initial={{ x: -10, opacity: 0 }}
+                                                            animate={{ x: 0, opacity: 1 }}
+                                                            transition={{ delay: idx * 0.1 }}
+                                                            className="p-4 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 border border-white/20"
+                                                        >
+                                                            <p className="text-sm font-bold leading-relaxed italic">
+                                                                "{msg.details.split(': ')[1] || msg.details}"
+                                                            </p>
+                                                            <div className="flex justify-between items-center mt-2 opacity-60">
+                                                                <p className="text-[8px] font-black uppercase">Official Protocol</p>
+                                                                <p className="text-[8px] font-black uppercase">
+                                                                    {msg.timestamp ? (typeof msg.timestamp === 'string' ? msg.timestamp.split('T')[1].split('.')[0] : new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : 'Now'}
+                                                                </p>
+                                                            </div>
+                                                        </motion.div>
+                                                    ))
+                                                }
+                                            </div>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <motion.button
-                                        onClick={handleRequestEscort}
-                                        whileTap={{ scale: 0.95 }}
-                                        disabled={activeSession.escortRequested}
-                                        className="bg-primary/10 text-primary font-bold py-2 px-4 rounded-xl text-sm border border-primary/30 disabled:opacity-50"
+                                <div className="grid grid-cols-2 gap-4 pt-4">
+                                    <button
+                                        onClick={handleEndWalk}
+                                        className="py-5 bg-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all text-sm tracking-widest border border-emerald-400/20"
                                     >
-                                        {activeSession.escortRequested ? 'Escort Requested' : 'Request Escort'}
-                                    </motion.button>
-
-                                    <motion.button
-                                        onMouseDown={(e) => {
-                                            const timeout = setTimeout(() => handleSOSTrigger(), 1000);
-                                            const onUp = () => {
-                                                clearTimeout(timeout);
-                                                document.removeEventListener('mouseup', onUp);
-                                                document.removeEventListener('touchend', onUp);
-                                            };
-                                            document.addEventListener('mouseup', onUp);
-                                            document.addEventListener('touchend', onUp);
-                                        }}
-                                        whileTap={{ scale: 0.95 }}
-                                        className="bg-emergency text-white font-bold py-2 px-4 rounded-xl text-sm shadow-lg"
+                                        ARRIVED
+                                    </button>
+                                    <button
+                                        onClick={handleSOS}
+                                        className="py-5 bg-red-500 text-white font-black rounded-2xl shadow-xl shadow-red-500/20 active:scale-95 transition-all text-sm tracking-widest border border-red-400/20"
                                     >
-                                        SOS (Hold)
-                                    </motion.button>
+                                        SOS
+                                    </button>
                                 </div>
-
-                                <motion.button
-                                    onClick={handleEndWalk}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="w-full bg-success text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition-all"
-                                >
-                                    I've Arrived Safely
-                                </motion.button>
                             </motion.div>
                         ) : (
-                            <motion.div
-                                key="inactive"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="space-y-4"
-                            >
-                                <label className="block text-left text-sm font-medium text-slate-700">Destination</label>
-                                <select
-                                    value={destination}
-                                    onChange={(e) => {
-                                        setDestination(e.target.value);
-                                        if (e.target.value) setCustomDestination('');
-                                    }}
-                                    className="glass-input w-full px-4 py-3 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                                >
-                                    <option value="">Select preset location</option>
-                                    {PRESET_DESTINATIONS.map((dest) => (
-                                        <option key={dest.name} value={dest.name}>{dest.name}</option>
-                                    ))}
-                                </select>
-
-                                <div className="relative">
-                                    <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-slate-600" />
-                                    <input
-                                        type="text"
-                                        placeholder="Or type custom destination..."
-                                        value={customDestination}
-                                        onChange={(e) => {
-                                            setCustomDestination(e.target.value);
-                                            if (e.target.value) setDestination('');
-                                        }}
-                                        className="glass-input w-full pl-10 pr-4 py-3 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                                    />
+                            <motion.div key="setup" className="space-y-6">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Destination</label>
+                                    <select
+                                        value={destination}
+                                        onChange={(e) => { setDestination(e.target.value); if (e.target.value) setCustomDestination(''); }}
+                                        className="w-full px-5 py-4 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none font-bold text-slate-700 transition-all appearance-none shadow-sm"
+                                    >
+                                        <option value="">Select preset destination</option>
+                                        {PRESET_DESTINATIONS.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
+                                    </select>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Or enter custom place..."
+                                            value={customDestination}
+                                            onChange={(e) => { setCustomDestination(e.target.value); if (e.target.value) setDestination(''); }}
+                                            className="w-full px-5 py-4 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none font-bold text-slate-700 transition-all shadow-sm placeholder:text-slate-400"
+                                        />
+                                    </div>
                                 </div>
 
-                                {/* Duration Slider */}
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600 font-medium">Expected Duration</span>
-                                        <span className="text-primary font-bold">{duration} mins</span>
+                                <div className="space-y-5 pt-2">
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Walk Duration</span>
+                                        <span className="text-sm font-black text-primary bg-primary/10 px-3 py-1 rounded-xl border border-primary/20">{duration} mins</span>
                                     </div>
                                     <input
-                                        type="range"
-                                        min="5"
-                                        max="30"
-                                        step="5"
+                                        type="range" min="5" max="30" step="5"
                                         value={duration}
                                         onChange={(e) => setDuration(Number(e.target.value))}
-                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        className="w-full h-2.5 bg-slate-200/50 rounded-full appearance-none accent-primary cursor-pointer border border-white/20"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-400">
-                                        <span>5m</span>
-                                        <span>15m</span>
-                                        <span>30m</span>
+                                    <div className="flex justify-between px-1">
+                                        <span className="text-[9px] text-slate-400 font-black">5M</span>
+                                        <span className="text-[9px] text-slate-400 font-black">15M</span>
+                                        <span className="text-[9px] text-slate-400 font-black">30M</span>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-left text-sm font-medium text-slate-700 mb-1">Note (Optional)</label>
-                                    <textarea
-                                        value={note}
-                                        onChange={(e) => setNote(e.target.value)}
-                                        placeholder="e.g., Feels unsafe, Low visibility area..."
-                                        rows={2}
-                                        className="glass-input w-full px-4 py-2 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none text-sm"
-                                    />
-                                </div>
+                                <textarea
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    placeholder="Add an optional note..."
+                                    className="w-full p-5 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none text-sm font-bold text-slate-700 transition-all resize-none h-28 shadow-sm placeholder:text-slate-400"
+                                />
 
                                 <motion.button
                                     variants={buttonGlow}
                                     animate="animate"
-                                    whileTap={{ scale: 0.95 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={handleStartWalk}
-                                    disabled={(!destination && !customDestination) || loading}
-                                    className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={loading || (!destination && !customDestination)}
+                                    className="w-full py-3 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white font-bold rounded-2xl shadow-lg hover:opacity-90 transition-all text-sm tracking-[0.1em] flex items-center justify-center gap-2 border border-white/20 mt-6 disabled:opacity-50"
                                 >
-                                    {loading ? 'Starting...' : 'Start Walking'}
+                                    {loading ? 'STARTING...' : 'START SAFE WALK'}
                                 </motion.button>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </motion.div>
 
-                {/* Info Cards */}
-                <motion.div variants={cardVariant} className="grid grid-cols-2 gap-4">
-                    <div className="glass-card p-4 rounded-xl text-center border border-white/30">
-                        <Shield className="w-6 h-6 text-secondary mx-auto mb-2" />
-                        <h3 className="font-bold text-sm text-primary">24/7 Monitored</h3>
-                        <p className="text-[10px] text-muted">Security is watching</p>
+                {/* Features Info - Glassy Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="glass-card p-6 rounded-[2rem] border border-white/50 flex flex-col items-center text-center shadow-xl">
+                        <div className="p-3 bg-secondary/10 rounded-2xl mb-3 border border-secondary/5">
+                            <Shield className="w-8 h-8 text-secondary" />
+                        </div>
+                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">Monitored</h4>
+                        <p className="text-[10px] text-slate-500 font-black opacity-60">Synced with Security</p>
                     </div>
-                    <div className="glass-card p-4 rounded-xl text-center border border-white/30">
-                        <Navigation className="w-6 h-6 text-secondary mx-auto mb-2" />
-                        <h3 className="font-bold text-sm text-primary">Live Tracking</h3>
-                        <p className="text-[10px] text-muted">Real-time updates</p>
+                    <div className="glass-card p-6 rounded-[2rem] border border-white/50 flex flex-col items-center text-center shadow-xl">
+                        <div className="p-3 bg-secondary/10 rounded-2xl mb-3 border border-secondary/5">
+                            <Navigation className="w-8 h-8 text-secondary" />
+                        </div>
+                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">Live GPS</h4>
+                        <p className="text-[10px] text-slate-500 font-black opacity-60">Real-time tracking</p>
                     </div>
-                </motion.div>
+                </div>
             </motion.main>
 
             <BottomNav />

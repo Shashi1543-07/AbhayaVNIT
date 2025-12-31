@@ -1,7 +1,5 @@
 {
     "rules": {
-        ".read": "auth != null",
-        ".write": "auth != null",
         "safe_walk_locations": {
             "$walkId": {
                 ".read": "auth != null",

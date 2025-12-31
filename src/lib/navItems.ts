@@ -15,3 +15,9 @@ export const securityNavItems = [
     { icon: Shield, label: 'Patrol', path: '/security/patrol' },
     { icon: User, label: 'Profile', path: '/security/profile' },
 ];
+export const adminNavItems = [
+    { icon: Home, label: 'Dashboard', path: '/admin/dashboard' },
+    { icon: User, label: 'Users', path: '/admin/users' },
+    { icon: Megaphone, label: 'Broadcast', path: '/admin/broadcasts' },
+    { icon: FileText, label: 'Logs', path: '/admin/logs' },
+];

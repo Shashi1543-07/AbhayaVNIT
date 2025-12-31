@@ -8,7 +8,7 @@ import {
     onSnapshot,
     serverTimestamp,
     Timestamp,
-    getDoc
+    arrayUnion
 } from "firebase/firestore";
 import {
     ref,
@@ -16,6 +16,7 @@ import {
     onValue
 } from "firebase/database";
 import { db, rtdb } from "../lib/firebase";
+import { sosService } from "./sosService";
 
 export interface SafeWalkLocation {
     latitude: number;
@@ -27,22 +28,24 @@ export interface SafeWalkLocation {
 export interface SafeWalkRequest {
     userId: string;
     userName: string;
-    userHostel?: string; // For warden filtering
+    hostelId: string;
     startLocation: { lat: number; lng: number; name?: string };
     destination: { lat: number; lng: number; name: string };
     expectedDuration: number; // in minutes
-    note?: string;
+    note?: string | null;
 }
 
 export interface SafeWalkSession extends SafeWalkRequest {
     id: string;
     startTime: Timestamp;
-    status: 'active' | 'delayed' | 'paused' | 'danger' | 'completed' | 'off-route';
-    assignedEscort?: string | null;
-    assignedEscortId?: string | null;
+    status: 'active' | 'paused' | 'delayed' | 'completed' | 'danger';
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
     escortRequested?: boolean;
-    messages?: Array<{ from: string; fromId: string; text: string; timestamp: Date }>;
-    timeline: any[];
+    assignedEscort?: string;
+    timeline?: { timestamp: any; details: string; type: string }[];
+    userHostel?: string;
+    message?: string; // Student note
 }
 
 const COLLECTION_NAME = "safe_walk";
@@ -55,13 +58,9 @@ export const safeWalkService = {
             const docRef = await addDoc(collection(db, COLLECTION_NAME), {
                 ...data,
                 startTime: serverTimestamp(),
-                status: 'active',
-                assignedEscort: null,
-                timeline: [{
-                    status: 'started',
-                    timestamp: new Date(),
-                    details: 'Safe Walk started'
-                }]
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                status: 'active'
             });
 
             // Initialize location in RTDB
@@ -80,23 +79,13 @@ export const safeWalkService = {
         }
     },
 
-    // Update Walk Status (e.g., complete, danger)
-    updateWalkStatus: async (walkId: string, status: SafeWalkSession['status'], details?: string) => {
+    // Update Walk Status (active | paused | delayed | completed | danger)
+    updateWalkStatus: async (walkId: string, status: SafeWalkSession['status']) => {
         try {
             const walkRef = doc(db, COLLECTION_NAME, walkId);
-            const walkDoc = await getDoc(walkRef);
-
-            if (!walkDoc.exists()) throw new Error("Walk not found");
-
-            const currentTimeline = walkDoc.data().timeline || [];
-
             await updateDoc(walkRef, {
                 status,
-                timeline: [...currentTimeline, {
-                    status,
-                    timestamp: new Date(),
-                    details: details || `Status changed to ${status}`
-                }]
+                updatedAt: serverTimestamp()
             });
         } catch (error) {
             console.error("Error updating walk status:", error);
@@ -104,14 +93,13 @@ export const safeWalkService = {
         }
     },
 
-    // Update Real-time Location
+    // Update Real-time Location to RTDB
     updateLocation: async (walkId: string, location: SafeWalkLocation) => {
         try {
             const locationRef = ref(rtdb, `${RTDB_NODE}/${walkId}`);
             await set(locationRef, location);
         } catch (error) {
             console.error("Error updating location:", error);
-            // Don't throw here to avoid disrupting the user flow for minor network blips
         }
     },
 
@@ -123,7 +111,7 @@ export const safeWalkService = {
         );
 
         if (hostelFilter) {
-            q = query(q, where("userHostel", "==", hostelFilter));
+            q = query(q, where("hostelId", "==", hostelFilter));
         }
 
         return onSnapshot(q, (snapshot) => {
@@ -146,11 +134,12 @@ export const safeWalkService = {
         });
     },
 
+    // Subscribe to current user's active session
     subscribeToUserActiveWalk: (userId: string, callback: (walk: SafeWalkSession | null) => void) => {
         const q = query(
             collection(db, COLLECTION_NAME),
             where("userId", "==", userId),
-            where("status", "in", ["active", "delayed", "paused", "danger"])
+            where("status", "in", ["active", "delayed", "paused"])
         );
 
         return onSnapshot(q, (snapshot) => {
@@ -162,49 +151,56 @@ export const safeWalkService = {
         });
     },
 
-    // Request Escort
-    requestEscort: async (walkId: string) => {
+    // Escalation to SOS
+    convertToSOS: async (walkId: string, user: any, location: { lat: number; lng: number }) => {
         try {
             const walkRef = doc(db, COLLECTION_NAME, walkId);
-            const walkDoc = await getDoc(walkRef);
 
-            if (!walkDoc.exists()) throw new Error("Walk not found");
-
-            const currentTimeline = walkDoc.data().timeline || [];
-
+            // 1. Mark walk as danger/escalated
             await updateDoc(walkRef, {
-                escortRequested: true,
-                timeline: [...currentTimeline, {
-                    status: 'escort_requested',
-                    timestamp: new Date(),
-                    details: 'Student requested escort'
-                }]
+                status: 'danger',
+                updatedAt: serverTimestamp()
             });
+
+            // 2. Trigger SOS using sosService
+            // This will create the SOS event and notify everyone properly
+            const sosResult = await sosService.triggerSOS(
+                user,
+                location,
+                'other',
+                'button'
+            );
+
+            return sosResult;
         } catch (error) {
-            console.error("Error requesting escort:", error);
+            console.error("Error escalating Safe Walk to SOS:", error);
             throw error;
         }
     },
 
-    // Assign Escort (Security action)
-    assignEscort: async (walkId: string, escortName: string, securityId: string) => {
+    // Check if walk is delayed (used for client-side monitoring)
+    isWalkDelayed: (walk: SafeWalkSession): boolean => {
+        if (!walk.startTime) return false;
+
+        const startTime = walk.startTime.toDate ? walk.startTime.toDate() : new Date(walk.startTime as any);
+        const expectedEndTime = new Date(startTime.getTime() + walk.expectedDuration * 60000);
+        const now = new Date();
+
+        return now.getTime() > expectedEndTime.getTime();
+    },
+
+    // Assign Escort (Security Only)
+    assignEscort: async (walkId: string, escortName: string) => {
         try {
             const walkRef = doc(db, COLLECTION_NAME, walkId);
-            const walkDoc = await getDoc(walkRef);
-
-            if (!walkDoc.exists()) throw new Error("Walk not found");
-
-            const currentTimeline = walkDoc.data().timeline || [];
-
             await updateDoc(walkRef, {
                 assignedEscort: escortName,
-                assignedEscortId: securityId,
-                timeline: [...currentTimeline, {
-                    status: 'escort_assigned',
-                    timestamp: new Date(),
-                    details: `Escort assigned: ${escortName}`,
-                    by: securityId
-                }]
+                updatedAt: serverTimestamp(),
+                timeline: arrayUnion({
+                    timestamp: new Date().toISOString(),
+                    details: `Escort ${escortName} assigned by security`,
+                    type: 'system'
+                })
             });
         } catch (error) {
             console.error("Error assigning escort:", error);
@@ -212,120 +208,21 @@ export const safeWalkService = {
         }
     },
 
-    // Send Message to Student
-    sendMessageToStudent: async (walkId: string, message: string, senderId: string, senderName: string) => {
+    // Send Message to Student (Security Only)
+    sendMessageToStudent: async (walkId: string, message: string, senderName: string) => {
         try {
             const walkRef = doc(db, COLLECTION_NAME, walkId);
-            const walkDoc = await getDoc(walkRef);
-
-            if (!walkDoc.exists()) throw new Error("Walk not found");
-
-            const currentTimeline = walkDoc.data().timeline || [];
-            const currentMessages = walkDoc.data().messages || [];
-
             await updateDoc(walkRef, {
-                messages: [...currentMessages, {
-                    from: senderName,
-                    fromId: senderId,
-                    text: message,
-                    timestamp: new Date()
-                }],
-                timeline: [...currentTimeline, {
-                    status: 'message_sent',
-                    timestamp: new Date(),
+                updatedAt: serverTimestamp(),
+                timeline: arrayUnion({
+                    timestamp: new Date().toISOString(),
                     details: `Message from ${senderName}: ${message}`,
-                    by: senderId
-                }]
+                    type: 'message'
+                })
             });
         } catch (error) {
             console.error("Error sending message:", error);
             throw error;
         }
-    },
-
-    // Check if walk is delayed
-    isWalkDelayed: (walk: SafeWalkSession): boolean => {
-        if (!walk.startTime) return false;
-
-        const startTime = walk.startTime.toDate ? walk.startTime.toDate() : new Date(walk.startTime as any);
-        const expectedEndTime = new Date(startTime.getTime() + walk.expectedDuration * 60000);
-        const bufferTime = 5 * 60000; // 5 minutes buffer
-        const now = new Date();
-
-        return now.getTime() > expectedEndTime.getTime() + bufferTime;
-    },
-
-    // Check if walk appears off-route (distance to destination increasing)
-    checkOffRoute: (currentLat: number, currentLng: number, destLat: number, destLng: number, previousDistance?: number): { isOffRoute: boolean; currentDistance: number } => {
-        const distance = calculateDistance(currentLat, currentLng, destLat, destLng);
-
-        if (previousDistance !== undefined && distance > previousDistance + 50) {
-            // Moving away from destination by more than 50 meters
-            return { isOffRoute: true, currentDistance: distance };
-        }
-
-        return { isOffRoute: false, currentDistance: distance };
-    },
-
-    // Get walk history for a user
-    getWalkHistory: async (userId: string, limit: number = 10) => {
-        const q = query(
-            collection(db, COLLECTION_NAME),
-            where("userId", "==", userId),
-            where("status", "==", "completed")
-        );
-
-        return new Promise<SafeWalkSession[]>((resolve) => {
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                const walks = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() } as SafeWalkSession))
-                    .slice(0, limit);
-                resolve(walks);
-                unsubscribe();
-            });
-        });
-    },
-
-    // Convert Safe Walk to SOS Event
-    convertToSOS: async (walkId: string) => {
-        try {
-            const walkRef = doc(db, COLLECTION_NAME, walkId);
-            const walkDoc = await getDoc(walkRef);
-
-            if (!walkDoc.exists()) throw new Error("Walk not found");
-
-            const currentTimeline = walkDoc.data().timeline || [];
-
-            // Update status to danger
-            await updateDoc(walkRef, {
-                status: 'danger',
-                timeline: [...currentTimeline, {
-                    status: 'sos_triggered',
-                    timestamp: new Date(),
-                    details: 'SOS triggered during Safe Walk - escalated to emergency'
-                }]
-            });
-
-            return walkDoc.data();
-        } catch (error) {
-            console.error("Error converting to SOS:", error);
-            throw error;
-        }
     }
 };
-
-// Helper function for distance calculation
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371e3; // metres
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-        Math.cos(φ1) * Math.cos(φ2) *
-        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
-}
