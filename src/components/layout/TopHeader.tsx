@@ -20,26 +20,26 @@ export default function TopHeader({ title, showBackButton = false }: TopHeaderPr
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 mx-auto w-full max-w-[480px] z-40 glass-nav border-b px-4 py-4 flex items-center justify-between shrink-0">
+        <header className="fixed top-0 left-0 right-0 mx-auto w-full max-w-[480px] z-40 glass-nav border-b border-white/20 rounded-b-[32px] px-6 py-5 flex items-center justify-between shrink-0 shadow-xl backdrop-blur-xl">
             <div className="flex items-center gap-3">
                 {showBackButton && (
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-2 -ml-2 rounded-full hover:bg-primary-50 text-slate-700 transition-colors"
+                        className="p-2.5 -ml-2 rounded-full bg-white/40 hover:bg-white/60 text-slate-700 transition-all shadow-sm border border-white/20 active:scale-90"
                     >
-                        <ArrowLeft size={24} />
+                        <ArrowLeft size={20} />
                     </button>
                 )}
-                <h1 className="text-xl font-heading font-bold text-primary truncate max-w-[200px]">{title}</h1>
+                <h1 className="text-xl font-heading font-extrabold text-primary-dark tracking-tight truncate max-w-[220px]">{title}</h1>
             </div>
 
             <div className="flex items-center">
                 <button
                     onClick={handleLogout}
-                    className="p-2 rounded-full hover:bg-red-50 text-red-500 transition-colors"
+                    className="p-2.5 rounded-full bg-red-50/50 hover:bg-red-100 text-red-500 transition-all shadow-sm border border-red-100 active:scale-90"
                     title="Logout"
                 >
-                    <LogOut size={24} />
+                    <LogOut size={20} />
                 </button>
             </div>
         </header>

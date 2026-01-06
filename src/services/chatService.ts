@@ -11,8 +11,7 @@ import {
     serverTimestamp,
     updateDoc,
     getDoc,
-    limit,
-    Timestamp
+    limit
 } from 'firebase/firestore';
 
 export interface ChatMessage {
@@ -29,10 +28,10 @@ export interface Conversation {
     type: 'sos' | 'safe_walk' | 'manual';
     participants: { [uid: string]: boolean };
     participantRoles: {
-        student?: string;
-        warden?: string;
-        security?: string;
-        [key: string]: string | undefined;
+        [uid: string]: string;
+    };
+    participantNames: {
+        [uid: string]: string;
     };
     lastMessage: string;
     lastMessageAt: any;
@@ -43,17 +42,25 @@ export const chatService = {
     /**
      * Create or Get existing conversation
      * @param type - Type of chat
-     * @param participants - Map of UIDs to true
-     * @param participantRoles - Roles map for UI display
+     * @param participants - List of profile objects {uid, name, role}
      * @param customId - Optional deterministic ID (e.g. sos_123)
      */
     createConversation: async (
         type: 'sos' | 'safe_walk' | 'manual',
-        participants: { [uid: string]: boolean },
-        participantRoles: { [role: string]: string },
+        participantProfiles: { uid: string; name: string; role: string }[],
         customId?: string
     ) => {
         try {
+            const participants: { [uid: string]: boolean } = {};
+            const participantRoles: { [uid: string]: string } = {};
+            const participantNames: { [uid: string]: string } = {};
+
+            participantProfiles.forEach(p => {
+                participants[p.uid] = true;
+                participantRoles[p.uid] = p.role;
+                participantNames[p.uid] = p.name;
+            });
+
             // Generate deterministic ID for manual chats if not provided
             let finalId = customId;
             if (!finalId && type === 'manual') {
@@ -62,7 +69,6 @@ export const chatService = {
                 finalId = `manual_${uids.join('_')}`;
             }
 
-            // Use custom ID if provided (for SOS/Walk/Manual), otherwise auto-gen (fallback)
             const conversationId = finalId || doc(collection(db, 'conversations')).id;
             const conversationRef = doc(db, 'conversations', conversationId);
 
@@ -70,53 +76,23 @@ export const chatService = {
                 type,
                 participants,
                 participantRoles,
+                participantNames,
                 lastMessage: 'Chat started',
                 lastMessageAt: serverTimestamp(),
                 createdAt: serverTimestamp()
             };
 
-            if (!customId) {
-                // Manual chat: Create directly.
+            const docSnap = await getDoc(conversationRef);
+
+            if (!docSnap.exists()) {
                 await setDoc(conversationRef, initialData);
-                return conversationId;
-            }
-
-            // For Custom IDs (SOS/Walk), we must check if it exists to merge/update
-            try {
-                const docSnap = await getDoc(conversationRef);
-
-                if (!docSnap.exists()) {
-                    await setDoc(conversationRef, initialData);
-                } else {
-                    // Update existing
-                    await updateDoc(conversationRef, {
-                        participants: participants,
-                        participantRoles: participantRoles
-                    });
-                }
-            } catch (error: any) {
-                // If getDoc fails (e.g. permission denied because we aren't in it yet), try to set/merge
-                // If it doesn't exist, setDoc works (create)
-                // If it does exist, we might be trying to join. 
-                // However, without 'merge', setDoc overwrites. With 'merge', it updates.
-                // Safest for 'Join' flow without read permission is setDoc with merge, BUT we don't want to overwrite createdAt.
-
-                // For now, let's assume if we can't read it, we try to Create/Overwrite it if it's SOS (re-trigger)
-                // Or use updateDoc to join?
-
-                if (error.code === 'permission-denied') {
-                    console.log("Permission denied reading chat, attempting to create/join blindly...");
-                    // Try setting with merge = true to add ourselves without destroying data
-                    await setDoc(conversationRef, {
-                        ...initialData,
-                        // Don't overwrite createdAt if it exists (merge handles this? No, setDoc merge overwrites provided fields)
-                        // We only really want to update participants.
-                        participants,
-                        participantRoles
-                    }, { merge: true });
-                } else {
-                    throw error;
-                }
+            } else {
+                // If it exists, update metadata in case names/roles changed
+                await updateDoc(conversationRef, {
+                    participantRoles,
+                    participantNames,
+                    participants // Ensure all participants are added
+                });
             }
 
             return conversationId;
@@ -136,6 +112,7 @@ export const chatService = {
             const messageData = {
                 senderId: user.uid,
                 senderRole: user.role || 'student',
+                senderName: user.name || user.displayName || 'Unknown',
                 text: text.trim(),
                 timestamp: serverTimestamp(),
                 readBy: { [user.uid]: true }
