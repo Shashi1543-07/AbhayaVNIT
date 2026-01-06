@@ -5,10 +5,9 @@ import BottomNav from '../../components/layout/BottomNav';
 import SOSButton from '../../components/student/SOSButton';
 import ActionCard from '../../components/ui/ActionCard';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { Footprints, Shield, AlertTriangle, MapPin, Home, Video } from 'lucide-react';
+import { Footprints, Shield, AlertTriangle, MapPin, Home, Video, Newspaper } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { broadcastService, type Broadcast } from '../../services/broadcastService';
 import { callService } from '../../services/callService';
 import { userService, type UserProfile } from '../../services/userService';
 import { safeWalkService } from '../../services/safeWalkService';
@@ -16,13 +15,16 @@ import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { useSOS } from '../../features/sos/useSOS';
 
+import BroadcastViewer from '../../components/shared/BroadcastViewer';
+import { Megaphone } from 'lucide-react';
+
 export default function StudentDashboard() {
     const navigate = useNavigate();
     const { user, profile } = useAuthStore();
     const { activeSOS } = useSOS();
-    const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [staff, setStaff] = useState<UserProfile[]>([]);
     const [activeWalk, setActiveWalk] = useState<any>(null);
+    const [showBroadcasts, setShowBroadcasts] = useState(false);
 
     useEffect(() => {
         userService.getStaff().then(data => {
@@ -39,14 +41,9 @@ export default function StudentDashboard() {
         return () => unsubscribe();
     }, [user]);
 
-    useEffect(() => {
-        if (profile?.hostelId) {
-            const unsubscribe = broadcastService.subscribeToBroadcasts(profile.hostelId, (data) => {
-                setBroadcasts(data);
-            });
-            return () => unsubscribe();
-        }
-    }, [profile?.hostelId]);
+    // Removed the automatic subscription to hostel broadcasts for the dashboard view to avoid duplication
+    // We will use the BroadcastViewer for admin broadcasts.
+    // Hostel specific broadcasts (if any) can remain if needed, but for now focusing on Admin Broadcasts.
 
     const handleSOS = () => {
         // Just vibrate, the button handles the API call
@@ -62,6 +59,12 @@ export default function StudentDashboard() {
             <TopHeader
                 title={profile?.name ? `Welcome, ${profile.name.split(' ')[0]}!` : 'Welcome!'}
                 showBackButton={true}
+            />
+
+            <BroadcastViewer
+                isOpen={showBroadcasts}
+                onClose={() => setShowBroadcasts(false)}
+                role="student"
             />
 
             <motion.main
@@ -155,10 +158,11 @@ export default function StudentDashboard() {
                 {/* Quick Actions */}
                 <motion.div variants={cardVariant}>
                     <h3 className="text-sm font-bold text-primary mb-3 ml-1">Quick Actions</h3>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-4 gap-3">
                         <ActionCard icon={Footprints} label="Safe Walk" onClick={() => navigate('/student/safewalk')} />
                         <ActionCard icon={Shield} label="Escort" onClick={() => navigate('/student/escort')} />
                         <ActionCard icon={AlertTriangle} label="Report" onClick={() => navigate('/student/report')} />
+                        <ActionCard icon={Newspaper} label="Feed" onClick={() => navigate('/feed')} />
                     </div>
                 </motion.div>
 
@@ -285,39 +289,37 @@ export default function StudentDashboard() {
                 </motion.div>
 
                 {/* Bottom Spacer */}
+                <div className="h-6" />
+
+                {/* Admin Broadcast Button - Moved to Bottom */}
+                <motion.button
+                    variants={cardVariant}
+                    onClick={() => setShowBroadcasts(true)}
+                    className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] p-1 rounded-2xl shadow-lg active:scale-95 transition-all mb-6"
+                >
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/30 p-2 rounded-full">
+                                <Megaphone className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="text-left">
+                                <h3 className="font-bold text-white text-sm">Announcements</h3>
+                                <p className="text-xs text-white/90">View admin broadcasts</p>
+                            </div>
+                        </div>
+                        <div className="bg-white/30 px-3 py-1 rounded-full text-xs font-bold text-white">
+                            View
+                        </div>
+                    </div>
+                </motion.button>
+
                 <div className="h-20" />
 
                 {/* Alerts / Broadcasts */}
-                {broadcasts.length > 0 && (
-                    <motion.div variants={cardVariant} className="space-y-3">
-                        {broadcasts.map((broadcast) => (
-                            <div
-                                key={broadcast.id}
-                                className={`glass-card rounded-2xl p-4 border ${broadcast.priority === 'urgent' ? 'bg-emergency-pulse border-emergency/30' : broadcast.priority === 'warning' ? 'bg-warning/10 border-warning/30' : 'bg-surface border-secondary/30'}`}
-                            >
-                                <h3 className={`text-sm font-bold mb-1 flex items-center ${broadcast.priority === 'urgent' ? 'text-emergency' : broadcast.priority === 'warning' ? 'text-warning' : 'text-secondary'}`}>
-                                    <AlertTriangle className="w-4 h-4 mr-2" />
-                                    {broadcast.title}
-                                </h3>
-                                <p className={`text-xs ${broadcast.priority === 'urgent' ? 'text-emergency' : broadcast.priority === 'warning' ? 'text-warning' : 'text-secondary'}`}>{broadcast.message}</p>
-                                <p className="text-[10px] text-muted mt-2 text-right">
-                                    {new Date(broadcast.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()} • {new Date(broadcast.createdAt?.seconds * 1000 || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                            </div>
-                        ))}
-                    </motion.div>
-                )}
+                {/* Alerts / Broadcasts - Replaced by BroadcastViewer */}
 
                 {/* My Reports Preview */}
-                <motion.div variants={cardVariant}>
-                    <div className="flex justify-between items-center mb-3 ml-1">
-                        <h3 className="text-sm font-bold text-primary">My Reports</h3>
-                        <button onClick={() => navigate('/student/reports')} className="text-xs text-primary font-medium">
-                            View All
-                        </button>
-                    </div>
-                    {/* Placeholder for report cards - can be populated later */}
-                </motion.div>
+
             </motion.main>
 
             <BottomNav />

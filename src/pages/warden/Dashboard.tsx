@@ -4,7 +4,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import ActionCard from '../../components/ui/ActionCard';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { useAuthStore } from '../../context/authStore';
-import { Users, PhoneMissed, X } from 'lucide-react';
+import { Users, PhoneMissed, X, Newspaper } from 'lucide-react';
 import WardenActiveSOS from '../../components/warden/WardenActiveSOS';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import { motion } from 'framer-motion';
@@ -14,30 +14,48 @@ import { collection, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { wardenNavItems } from '../../lib/navItems';
 import { doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
+import { incidentService, type Incident } from '../../services/incidentService';
 
 import { useNavigate } from 'react-router-dom';
+
+import BroadcastViewer from '../../components/shared/BroadcastViewer';
+import { Megaphone } from 'lucide-react';
 
 export default function WardenDashboard() {
     const navigate = useNavigate();
     const { profile, user } = useAuthStore();
+    const [showBroadcasts, setShowBroadcasts] = useState(false);
 
     const wardenHostelId = profile?.hostelId || profile?.hostel || 'H6';
     const [notifications, setNotifications] = useState<any[]>([]);
+    const [incidents, setIncidents] = useState<Incident[]>([]);
+
     useEffect(() => {
         if (!user) return;
+
+        // Notifications subscription
         const q = query(
             collection(db, 'notifications'),
             where('toUserId', '==', user.uid),
             limit(10)
         );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribeNotif = onSnapshot(q, (snapshot) => {
             const sorted = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
                 .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
             setNotifications(sorted);
         });
-        return () => unsubscribe();
-    }, [user]);
+
+        // Incidents subscription
+        const unsubscribeIncidents = incidentService.subscribeToIncidents(wardenHostelId, (data) => {
+            setIncidents(data.slice(0, 3)); // Show top 3 recent
+        });
+
+        return () => {
+            unsubscribeNotif();
+            unsubscribeIncidents();
+        };
+    }, [user, wardenHostelId]);
 
     const dismissNotification = async (id: string) => {
         await deleteDoc(doc(db, 'notifications', id));
@@ -49,6 +67,12 @@ export default function WardenDashboard() {
     return (
         <MobileWrapper>
             <TopHeader title={`Hostel ${wardenHostelId} Warden`} showBackButton={true} />
+
+            <BroadcastViewer
+                isOpen={showBroadcasts}
+                onClose={() => setShowBroadcasts(false)}
+                role="warden"
+            />
 
             <motion.main
                 className="px-4 py-6 space-y-6 pb-20 pt-24"
@@ -107,25 +131,35 @@ export default function WardenDashboard() {
                         <button className="text-xs text-primary font-medium">View All</button>
                     </div>
                     <div className="space-y-3">
-                        <div className="glass-card-soft rounded-2xl p-4 flex justify-between items-center">
-                            <div>
-                                <p className="font-bold text-sm text-primary">Water Supply Issue</p>
-                                <p className="text-xs text-muted">Room 204 • 2 hrs ago</p>
+                        {incidents.length === 0 ? (
+                            <div className="text-center py-4 text-muted text-xs">
+                                No recent incidents reported.
                             </div>
-                            <StatusBadge status="warning" label="Pending" />
-                        </div>
-                        <div className="glass-card-soft rounded-2xl p-4 flex justify-between items-center">
-                            <div>
-                                <p className="font-bold text-sm text-primary">Late Entry Request</p>
-                                <p className="text-xs text-muted">Priya Sharma • 5 hrs ago</p>
-                            </div>
-                            <StatusBadge status="success" label="Approved" />
-                        </div>
+                        ) : (
+                            incidents.map((incident) => (
+                                <div key={incident.id} className="glass-card-soft rounded-2xl p-4 flex justify-between items-center" onClick={() => navigate('/warden/reports')}>
+                                    <div>
+                                        <p className="font-bold text-sm text-primary">{incident.category}</p>
+                                        <p className="text-xs text-muted">
+                                            {incident.reporterName || 'Student'} • {incident.createdAt?.seconds ? new Date(incident.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                                        </p>
+                                    </div>
+                                    <StatusBadge
+                                        status={
+                                            incident.status === 'resolved' ? 'success' :
+                                                incident.status === 'open' ? 'warning' : 'neutral'
+                                        }
+                                        label={incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
+                                    />
+                                </div>
+                            ))
+                        )}
                     </div>
                 </motion.div>
 
                 {/* Directory Link */}
-                <motion.div variants={cardVariant}>
+                {/* Directory Link and Feed */}
+                <motion.div variants={cardVariant} className="space-y-3">
                     <ActionCard
                         icon={Users}
                         label="Student Directory"
@@ -133,7 +167,39 @@ export default function WardenDashboard() {
                         className="w-full flex-row justify-start px-6 py-4 gap-4"
                         onClick={() => navigate('/warden/directory')}
                     />
+                    <ActionCard
+                        icon={Newspaper}
+                        label="Campus Feed"
+                        variant="default"
+                        className="w-full flex-row justify-start px-6 py-4 gap-4 border-blue-200 bg-blue-50/50"
+                        onClick={() => navigate('/feed')}
+                    />
                 </motion.div>
+
+                {/* Bottom Spacer */}
+                <div className="h-4" />
+
+                {/* Admin Broadcast Button - Moved to Bottom */}
+                <motion.button
+                    variants={cardVariant}
+                    onClick={() => setShowBroadcasts(true)}
+                    className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] p-1 rounded-2xl shadow-lg active:scale-95 transition-all mb-4"
+                >
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/30 p-2 rounded-full">
+                                <Megaphone className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="text-left">
+                                <h3 className="font-bold text-white text-sm">Admin Broadcasts</h3>
+                                <p className="text-xs text-white/90">Click to view official alerts</p>
+                            </div>
+                        </div>
+                        <div className="bg-white/30 px-3 py-1 rounded-full text-xs font-bold text-white">
+                            View
+                        </div>
+                    </div>
+                </motion.button>
 
             </motion.main>
 

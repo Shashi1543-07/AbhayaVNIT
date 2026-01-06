@@ -5,6 +5,8 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { adminService } from '../../services/adminService';
 
+import TopHeader from '../../components/layout/TopHeader';
+
 export default function SystemSettings() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -98,15 +100,17 @@ export default function SystemSettings() {
 
     return (
         <Layout role="admin">
-            <div className="mb-8 flex justify-between items-center">
+            <TopHeader title="System Configuration" showBackButton={true} />
+
+            <div className="mb-8 flex justify-between items-center pt-16">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">System Configuration</h1>
+                    {/* Title removed, managed by TopHeader - but description might be useful? Keeping desc only if needed, or removing block */}
                     <p className="text-slate-600">Manage global app settings and resources.</p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-md disabled:opacity-50"
                 >
                     <Save className="w-5 h-5" />
                     {saving ? 'Saving...' : 'Save Changes'}
@@ -115,8 +119,8 @@ export default function SystemSettings() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* General Settings */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-4">
+                <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 space-y-6">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200/50 pb-4">
                         <Settings className="w-5 h-5 text-indigo-600" />
                         General Preferences
                     </h2>
@@ -133,7 +137,7 @@ export default function SystemSettings() {
                                 checked={settings.allowAnonymousReporting}
                                 onChange={e => setSettings({ ...settings, allowAnonymousReporting: e.target.checked })}
                             />
-                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
                         </label>
                     </div>
 
@@ -144,7 +148,7 @@ export default function SystemSettings() {
                             type="number"
                             min="5"
                             max="60"
-                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full p-3 bg-white/50 border border-white/40 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none backdrop-blur-sm"
                             value={settings.safeWalkTimeoutMinutes}
                             onChange={e => setSettings({ ...settings, safeWalkTimeoutMinutes: parseInt(e.target.value) })}
                         />
@@ -152,20 +156,20 @@ export default function SystemSettings() {
                 </div>
 
                 {/* Emergency Contacts */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-4">
+                <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 space-y-6">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200/50 pb-4">
                         <Phone className="w-5 h-5 text-red-600" />
                         Emergency Contacts
                     </h2>
 
                     <div className="space-y-3">
                         {settings.emergencyContacts.map((contact, index) => (
-                            <div key={index} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                            <div key={index} className="flex justify-between items-center p-3 bg-white/40 rounded-lg border border-white/40">
                                 <div>
                                     <p className="font-bold text-slate-800">{contact.name}</p>
                                     <p className="text-sm text-slate-600">{contact.phone}</p>
                                 </div>
-                                <button onClick={() => removeContact(index)} className="text-red-500 hover:text-red-700">
+                                <button onClick={() => removeContact(index)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-full transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
@@ -176,20 +180,20 @@ export default function SystemSettings() {
                         <input
                             type="text"
                             placeholder="Name (e.g. Fire Station)"
-                            className="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none"
+                            className="flex-1 p-2 bg-white/50 border border-white/40 rounded-lg text-sm outline-none backdrop-blur-sm focus:ring-2 focus:ring-purple-500"
                             value={newContact.name}
                             onChange={e => setNewContact({ ...newContact, name: e.target.value })}
                         />
                         <input
                             type="tel"
                             placeholder="Phone"
-                            className="w-32 p-2 border border-slate-300 rounded-lg text-sm outline-none"
+                            className="w-32 p-2 bg-white/50 border border-white/40 rounded-lg text-sm outline-none backdrop-blur-sm focus:ring-2 focus:ring-purple-500"
                             value={newContact.phone}
                             onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
                         />
                         <button
                             onClick={addContact}
-                            className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700"
+                            className="bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white p-2 rounded-lg hover:opacity-90 transition-opacity shadow-md"
                         >
                             <Plus className="w-5 h-5" />
                         </button>
@@ -197,15 +201,15 @@ export default function SystemSettings() {
                 </div>
 
                 {/* Hostel Management */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-4">
+                <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 space-y-6">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200/50 pb-4">
                         <MapPin className="w-5 h-5 text-emerald-600" />
                         Manage Hostels
                     </h2>
 
                     <div className="flex flex-wrap gap-2">
                         {settings.hostels.map(hostel => (
-                            <div key={hostel} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full flex items-center gap-2">
+                            <div key={hostel} className="bg-emerald-50/80 backdrop-blur-sm text-emerald-700 px-3 py-1 rounded-full flex items-center gap-2 border border-emerald-100">
                                 <span className="font-medium">{hostel}</span>
                                 <button onClick={() => removeHostel(hostel)} className="hover:text-emerald-900">
                                     <Trash2 className="w-3 h-3" />
@@ -218,13 +222,13 @@ export default function SystemSettings() {
                         <input
                             type="text"
                             placeholder="New Hostel Name"
-                            className="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none"
+                            className="flex-1 p-2 bg-white/50 border border-white/40 rounded-lg text-sm outline-none backdrop-blur-sm focus:ring-2 focus:ring-emerald-500"
                             value={newHostel}
                             onChange={e => setNewHostel(e.target.value)}
                         />
                         <button
                             onClick={addHostel}
-                            className="bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-700"
+                            className="bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white p-2 rounded-lg hover:opacity-90 transition-opacity shadow-md"
                         >
                             <Plus className="w-5 h-5" />
                         </button>

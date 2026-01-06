@@ -26,10 +26,7 @@ export default function Layout({ children, role }: LayoutProps) {
     if (role === 'admin') {
         return (
             <div className="min-h-screen bg-transparent pb-20">
-                {/* Standard Top Header for Admin */}
-                <TopHeader title="VNIT Admin" showBackButton={false} />
-
-                <main className="pt-24 p-4 lg:p-8 max-w-3xl mx-auto">
+                <main className="pt-4 p-4 lg:p-8 max-w-3xl mx-auto">
                     {children}
                 </main>
 

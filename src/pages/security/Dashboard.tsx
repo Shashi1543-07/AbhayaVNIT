@@ -7,18 +7,22 @@ import BottomNav from '../../components/layout/BottomNav';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, limit, deleteDoc, doc } from 'firebase/firestore';
-import { Shield, PhoneMissed, X } from 'lucide-react';
+import { Shield, PhoneMissed, X, Newspaper } from 'lucide-react';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { securityNavItems } from '../../lib/navItems';
 import { useAuthStore } from '../../context/authStore';
 
+import BroadcastViewer from '../../components/shared/BroadcastViewer';
+import { Megaphone } from 'lucide-react';
+
 export default function SecurityDashboard() {
     const { user } = useAuthStore();
     const navigate = useNavigate();
     const [activeEvents, setActiveEvents] = useState<SOSEvent[]>([]);
     const [notifications, setNotifications] = useState<any[]>([]);
+    const [showBroadcasts, setShowBroadcasts] = useState(false);
 
     useEffect(() => {
         const unsubscribe = sosService.subscribeToActiveSOS((events) => {
@@ -50,6 +54,12 @@ export default function SecurityDashboard() {
     return (
         <MobileWrapper>
             <TopHeader title="Security Control" showBackButton={true} />
+
+            <BroadcastViewer
+                isOpen={showBroadcasts}
+                onClose={() => setShowBroadcasts(false)}
+                role="security"
+            />
 
             <motion.main
                 className="pb-20 pt-24"
@@ -126,7 +136,7 @@ export default function SecurityDashboard() {
                 {/* Call Support Section */}
                 <motion.div variants={cardVariant} className="p-4">
                     <h3 className="text-sm font-bold text-primary mb-3 ml-1">Communication</h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                         <button
                             onClick={() => {
                                 // Security can call any online warden
@@ -150,8 +160,44 @@ export default function SecurityDashboard() {
                             </div>
                             <span className="text-[10px] font-bold uppercase text-primary">Dispatch</span>
                         </button>
+                        <button
+                            onClick={() => navigate('/feed')}
+                            className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-blue-500/10 active:scale-95 transition-all"
+                        >
+                            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
+                                <Newspaper className="w-5 h-5 text-blue-500" />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase text-blue-500">Campus Feed</span>
+                        </button>
                     </div>
                 </motion.div>
+
+                {/* Bottom Spacer */}
+                <div className="h-4" />
+
+                {/* Admin Broadcast Button - Moved to Bottom */}
+                <div className="px-4 mb-4">
+                    <motion.button
+                        variants={cardVariant}
+                        onClick={() => setShowBroadcasts(true)}
+                        className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] p-1 rounded-2xl shadow-lg active:scale-95 transition-all"
+                    >
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/30 p-2 rounded-full">
+                                    <Megaphone className="w-5 h-5 text-white" />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="font-bold text-white text-sm">Priority Broadcasts</h3>
+                                    <p className="text-xs text-white/90">View admin alerts</p>
+                                </div>
+                            </div>
+                            <div className="bg-white/30 px-3 py-1 rounded-full text-xs font-bold text-white">
+                                Check
+                            </div>
+                        </div>
+                    </motion.button>
+                </div>
             </motion.main>
 
             <BottomNav items={securityNavItems} />

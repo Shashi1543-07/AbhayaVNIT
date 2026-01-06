@@ -6,6 +6,8 @@ import { db } from '../../lib/firebase';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 
+import TopHeader from '../../components/layout/TopHeader';
+
 export default function AuditLogs() {
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -69,21 +71,19 @@ export default function AuditLogs() {
 
     return (
         <Layout role="admin">
+            <TopHeader title="Audit Logs" showBackButton={true} />
+
             <motion.div
-                className="mb-8 flex justify-between items-center"
+                className="mb-8 flex justify-between items-center pt-16"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
-                <motion.div variants={cardVariant}>
-                    <h1 className="text-2xl font-bold text-slate-800">Audit Logs</h1>
-                    <p className="text-slate-600">Track all administrative actions and system events.</p>
-                </motion.div>
                 <motion.button
                     variants={cardVariant}
                     whileTap={{ scale: 0.95 }}
                     onClick={downloadLogs}
-                    className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50 font-medium"
+                    className="flex items-center gap-2 bg-white/50 border border-purple-200 text-purple-700 px-4 py-2 rounded-xl hover:bg-white/80 font-bold shadow-sm transition-all"
                 >
                     <Download className="w-4 h-4" />
                     Export CSV
@@ -96,13 +96,13 @@ export default function AuditLogs() {
                 animate="visible"
                 className="glass-card rounded-xl shadow-sm border border-white/40 overflow-hidden"
             >
-                <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/30 backdrop-blur-md">
                     <div className="relative w-full sm:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             type="text"
                             placeholder="Search logs..."
-                            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full pl-10 pr-4 py-2 bg-white/50 border border-white/40 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none backdrop-blur-sm placeholder:text-slate-400"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -110,7 +110,7 @@ export default function AuditLogs() {
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <Filter className="w-4 h-4 text-slate-500" />
                         <select
-                            className="p-2 border border-slate-300 rounded-lg outline-none text-sm"
+                            className="p-2 bg-white/50 border border-white/40 rounded-lg outline-none text-sm backdrop-blur-sm"
                             value={actionFilter}
                             onChange={(e) => setActionFilter(e.target.value)}
                         >
@@ -125,7 +125,7 @@ export default function AuditLogs() {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                        <thead className="bg-white/30 text-slate-600 font-medium border-b border-white/40 backdrop-blur-md">
                             <tr>
                                 <th className="p-4">Timestamp</th>
                                 <th className="p-4">Action</th>
@@ -141,7 +141,7 @@ export default function AuditLogs() {
                                 <tr><td colSpan={5} className="p-8 text-center text-slate-500">No logs found.</td></tr>
                             ) : (
                                 logs.map(log => (
-                                    <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                                    <tr key={log.id} className="hover:bg-white/40 transition-colors">
                                         <td className="p-4 text-slate-500 whitespace-nowrap">
                                             {log.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'N/A'}
                                         </td>

@@ -34,6 +34,9 @@ import WardenBroadcasts from './pages/warden/Broadcasts';
 import WardenSOSDetail from './pages/warden/WardenSOSDetail';
 import WardenDirectory from './pages/warden/Directory';
 import CallOverlay from './components/calling/CallOverlay';
+import Feed from './pages/common/Feed';
+
+import CreatePost from './pages/student/CreatePost';
 
 
 function AnimatedRoutes() {
@@ -49,6 +52,7 @@ function AnimatedRoutes() {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/change-password" element={<ChangePassword />} />
+          <Route path="/feed" element={<Feed />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
@@ -58,6 +62,7 @@ function AnimatedRoutes() {
           <Route path="/student/messages" element={<Messages />} />
           <Route path="/student/reports" element={<Reports />} />
           <Route path="/student/profile" element={<Profile />} />
+          <Route path="/student/create-post" element={<CreatePost />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['warden']} />}>

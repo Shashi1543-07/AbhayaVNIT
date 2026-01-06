@@ -160,6 +160,16 @@ service cloud.firestore {
       allow update: if hasRole('admin') || hasRole('warden');
     }
 
+    // Posts Collection (Public Feed)
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && hasRole('student')
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorRole == 'student'
+        && request.resource.data.text.size() <= 280;
+      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.authorId;
+    }
+
     // Default catch-all (restrictive)
     match /{document=**} {
       allow read, write: if false;
