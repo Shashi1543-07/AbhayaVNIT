@@ -4,7 +4,9 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { useAuthStore } from '../../context/authStore';
 import { broadcastService, type Broadcast } from '../../services/broadcastService';
-import { Megaphone, Send, AlertTriangle, FileText, Home, User } from 'lucide-react';
+import { Megaphone, Send } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { containerStagger } from '../../lib/animations';
 import { wardenNavItems } from '../../lib/navItems';
 
 export default function WardenBroadcasts() {
@@ -16,8 +18,9 @@ export default function WardenBroadcasts() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const unsubscribe = broadcastService.subscribeToBroadcasts(wardenHostelId, (data) => {
-            setBroadcasts(data);
+        const unsubscribe = broadcastService.subscribeToAllBroadcasts((data: Broadcast[]) => {
+            // Filter hostel-specific or campus-wide broadcasts for the history list
+            setBroadcasts(data.filter(b => b.hostelId === wardenHostelId || b.hostelId === 'all'));
         });
         return () => unsubscribe();
     }, [wardenHostelId]);
@@ -27,10 +30,11 @@ export default function WardenBroadcasts() {
         setLoading(true);
         try {
             await broadcastService.sendBroadcast({
-                title: priority === 'urgent' ? 'Urgent Alert' : priority === 'warning' ? 'Important Notice' : 'Announcement',
+                title: priority === 'urgent' ? `Emergency Alert - ${wardenHostelId}` : priority === 'warning' ? 'Important Notice' : 'Hostel Announcement',
                 message: newBroadcast,
                 priority,
                 hostelId: wardenHostelId,
+                senderRole: 'warden',
                 createdBy: profile?.uid || 'warden'
             });
             setNewBroadcast('');
@@ -44,12 +48,16 @@ export default function WardenBroadcasts() {
         }
     };
 
-
     return (
         <MobileWrapper>
-            <TopHeader title="Broadcasts" showBackButton={true} showProfile={true} />
+            <TopHeader title="Broadcasts" showBackButton={true} />
 
-            <main className="px-4 py-6 space-y-6 pb-24 pt-24">
+            <motion.main
+                className="px-4 pt-28 pb-24"
+                variants={containerStagger}
+                initial="hidden"
+                animate="show"
+            >
                 {/* Create Broadcast */}
                 <div className="glass-card rounded-2xl p-4 space-y-4 border-2 border-black/15">
                     <h2 className="font-bold text-slate-800 flex items-center gap-2">
@@ -61,37 +69,33 @@ export default function WardenBroadcasts() {
                         value={newBroadcast}
                         onChange={(e) => setNewBroadcast(e.target.value)}
                         placeholder={`Message for ${wardenHostelId} students...`}
-                        className="glass-input w-full p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[100px]"
+                        className="glass-input w-full p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 min-h-[100px]"
                     />
 
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex gap-2">
-                            <button
-                                onClick={() => setPriority('info')}
-                                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${priority === 'info' ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-500' : 'bg-white/30 backdrop-blur text-slate-700'}`}
-                            >
-                                Info
-                            </button>
-                            <button
-                                onClick={() => setPriority('warning')}
-                                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${priority === 'warning' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500' : 'bg-white/30 backdrop-blur text-slate-700'}`}
-                            >
-                                Warning
-                            </button>
-                            <button
-                                onClick={() => setPriority('urgent')}
-                                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${priority === 'urgent' ? 'bg-red-100 text-red-700 ring-2 ring-red-500' : 'bg-white/30 backdrop-blur text-slate-700'}`}
-                            >
-                                Urgent
-                            </button>
+                            {['info', 'warning', 'urgent'].map((p) => (
+                                <button
+                                    key={p}
+                                    onClick={() => setPriority(p as any)}
+                                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors capitalize ${priority === p
+                                        ? p === 'urgent' ? 'bg-red-100 text-red-700 ring-2 ring-red-500' :
+                                            p === 'warning' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500' :
+                                                'bg-blue-100 text-blue-700 ring-2 ring-blue-500'
+                                        : 'bg-white/30 backdrop-blur text-slate-700'
+                                        }`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
                         </div>
 
                         <button
                             onClick={handleSend}
                             disabled={loading || !newBroadcast.trim()}
-                            className="bg-primary text-white p-3 rounded-xl shadow-lg shadow-primary/30 disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all"
+                            className="bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white p-3 rounded-xl shadow-lg hover:opacity-90 hover:shadow-purple-200/50 disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all border border-white/20"
                         >
-                            <Send className="w-5 h-5 text-green-500" />
+                            <Send className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
@@ -124,7 +128,7 @@ export default function WardenBroadcasts() {
                         )}
                     </div>
                 </div>
-            </main>
+            </motion.main>
 
             <BottomNav items={wardenNavItems} />
         </MobileWrapper>

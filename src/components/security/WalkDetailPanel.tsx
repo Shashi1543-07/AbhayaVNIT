@@ -30,7 +30,7 @@ export default function WalkDetailPanel({ walk, onClose }: WalkDetailPanelProps)
         try {
             const escort = SECURITY_PERSONNEL.find(p => p.id === selectedEscort);
             if (escort) {
-                await safeWalkService.assignEscort(walk.id, escort.name, user.uid);
+                await safeWalkService.assignEscort(walk.id, escort.name);
                 alert(`Escort ${escort.name} assigned successfully!`);
                 setSelectedEscort('');
             }
@@ -49,7 +49,6 @@ export default function WalkDetailPanel({ walk, onClose }: WalkDetailPanelProps)
             await safeWalkService.sendMessageToStudent(
                 walk.id,
                 message.trim(),
-                user.uid,
                 profile?.name || user.displayName || 'Security'
             );
             setMessage('');
@@ -65,7 +64,7 @@ export default function WalkDetailPanel({ walk, onClose }: WalkDetailPanelProps)
     const handleMarkCompleted = async () => {
         if (!confirm("Mark this walk as completed?")) return;
         try {
-            await safeWalkService.updateWalkStatus(walk.id, 'completed', 'Marked as completed by security');
+            await safeWalkService.updateWalkStatus(walk.id, 'completed');
             alert("Walk marked as completed");
             onClose();
         } catch (error) {
@@ -88,8 +87,8 @@ export default function WalkDetailPanel({ walk, onClose }: WalkDetailPanelProps)
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center bg-black/50 p-0 sm:p-4">
-            <div className="bg-white w-full sm:max-w-2xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] min-h-[60vh] flex flex-col">
+        <div className="fixed inset-x-0 mx-auto w-full max-w-[480px] inset-y-0 z-50 flex items-end bg-black/50 p-0">
+            <div className="bg-white w-full rounded-t-3xl overflow-hidden shadow-2xl max-h-[90vh] min-h-[60vh] flex flex-col border-x border-white/20">
                 {/* Header */}
                 <div className="p-4 border-b flex justify-between items-center bg-background">
                     <div>

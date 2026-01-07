@@ -3,7 +3,6 @@ import {
     collection,
     addDoc,
     query,
-    where,
     onSnapshot,
     serverTimestamp
 } from 'firebase/firestore';
@@ -13,7 +12,9 @@ export interface Broadcast {
     title: string;
     message: string;
     priority: 'info' | 'warning' | 'urgent';
-    hostelId: string;
+    hostelId?: string; // Optinal for campus-wide
+    targetGroup?: 'student' | 'warden' | 'security' | 'all';
+    senderRole: 'admin' | 'warden' | 'security';
     createdBy: string;
     createdAt: any;
 }
@@ -32,13 +33,11 @@ export const broadcastService = {
         }
     },
 
-    // 2. Subscribe to Broadcasts (Student/Warden)
-    subscribeToBroadcasts: (hostelId: string, callback: (broadcasts: Broadcast[]) => void) => {
+    // 2. Subscribe to Broadcasts (All roles)
+    // We subscribe to all and filter client-side to avoid complex index requirements for mixed queries
+    subscribeToAllBroadcasts: (callback: (broadcasts: Broadcast[]) => void) => {
         const q = query(
-            collection(db, 'broadcasts'),
-            where('hostelId', 'in', [hostelId, 'all'])
-            // orderBy('createdAt', 'desc'), // Removed to avoid index requirement
-            // limit(20)
+            collection(db, 'broadcasts')
         );
 
         return onSnapshot(q, (snapshot) => {

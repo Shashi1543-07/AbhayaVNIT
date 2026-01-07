@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Image, Loader, ChevronLeft } from 'lucide-react';
+import { X, Image, Loader } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { postService } from '../../services/postService';
 import { useAuthStore } from '../../context/authStore';
@@ -93,10 +93,14 @@ export default function CreatePost() {
         <MobileWrapper>
             <TopHeader title="Create Post" showBackButton={true} />
 
-            <main className="px-6 pt-24 pb-12">
+            <motion.main
+                className="px-4 pt-28 pb-24"
+                // Assuming containerStagger is defined elsewhere or meant to be added
+                // variants={containerStagger}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+            >
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
                     className="glass-card p-6 rounded-[2rem] border-2 border-white/50 shadow-xl"
                 >
                     {/* Error */}
@@ -175,7 +179,7 @@ export default function CreatePost() {
                         </div>
                     </form>
                 </motion.div>
-            </main>
+            </motion.main>
         </MobileWrapper>
     );
 }

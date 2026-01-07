@@ -115,7 +115,7 @@ export default function SafeWalkDetails() {
             <TopHeader title="Walk Intelligence" showBackButton={true} />
 
             <motion.main
-                className="px-6 py-8 pb-32 pt-28 space-y-8 max-w-lg mx-auto"
+                className="px-4 pt-28 pb-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

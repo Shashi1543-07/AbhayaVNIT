@@ -1,6 +1,7 @@
 import { ArrowLeft, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../lib/firebase';
+import { useAuthStore } from '../../context/authStore';
 
 interface TopHeaderProps {
     title: string;
@@ -9,18 +10,19 @@ interface TopHeaderProps {
 
 export default function TopHeader({ title, showBackButton = false }: TopHeaderProps) {
     const navigate = useNavigate();
+    const { role } = useAuthStore();
 
     const handleLogout = async () => {
         try {
             await auth.signOut();
-            navigate('/login');
+            navigate(`/login?role=${role || 'student'}`);
         } catch (error) {
             console.error('Logout error:', error);
         }
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 mx-auto w-full max-w-[480px] z-40 glass-nav border-b border-white/20 rounded-b-[32px] px-6 py-5 flex items-center justify-between shrink-0 shadow-xl backdrop-blur-xl">
+        <header className="fixed top-0 left-0 right-0 mx-auto w-full max-w-[480px] z-40 glass-nav border-b border-white/20 px-6 py-5 flex items-center justify-between shrink-0 shadow-xl backdrop-blur-xl">
             <div className="flex items-center gap-3">
                 {showBackButton && (
                     <button

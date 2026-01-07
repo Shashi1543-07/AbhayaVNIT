@@ -83,10 +83,10 @@ export default function IncidentReports({ hostelId }: IncidentReportsProps) {
         : incidents.filter(i => i.status === filter);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)] relative overflow-hidden">
+        <div className="flex flex-col 2xl:grid 2xl:grid-cols-3 gap-6 h-[calc(100vh-250px)] relative overflow-hidden">
             {/* List View - Hidden on mobile if incident selected */}
-            <div className={`lg:col-span-1 glass-card-soft bg-white/20 backdrop-blur-xl rounded-3xl shadow-soft border border-white/40 overflow-hidden flex flex-col 
-                ${selectedIncident ? 'hidden lg:flex' : 'flex'}`}>
+            <div className={`2xl:col-span-1 glass-card-soft bg-white/20 backdrop-blur-xl rounded-3xl shadow-soft border border-white/40 overflow-hidden flex flex-col 
+                ${selectedIncident ? 'hidden 2xl:flex' : 'flex'}`}>
 
                 <div className="p-5 border-b border-white/20 flex justify-between items-center bg-gradient-to-br from-white/30 to-white/10">
                     <h2 className="font-bold text-slate-800">Complaints</h2>
@@ -142,15 +142,15 @@ export default function IncidentReports({ hostelId }: IncidentReportsProps) {
             </div>
 
             {/* Detail View - Full screen on mobile if selected */}
-            <div className={`lg:col-span-2 glass-card-soft bg-white/10 backdrop-blur-2xl rounded-3xl shadow-soft border border-white/40 overflow-hidden flex flex-col
-                ${selectedIncident ? 'flex fixed inset-0 z-50 lg:relative lg:inset-auto lg:z-0 lg:flex' : 'hidden lg:flex'}`}>
+            <div className={`2xl:col-span-2 glass-card-soft bg-white/10 backdrop-blur-2xl rounded-3xl shadow-soft border border-white/40 overflow-hidden flex flex-col
+                ${selectedIncident ? 'flex fixed inset-x-0 mx-auto w-full max-w-[480px] h-full inset-y-0 z-50 2xl:relative 2xl:inset-auto 2xl:z-0 2xl:flex' : 'hidden 2xl:flex'}`}>
                 {selectedIncident ? (
                     <div className="flex flex-col h-full bg-transparent">
                         {/* Fixed Header */}
-                        <div className="p-4 lg:p-6 border-b border-white/40 glass-nav backdrop-blur-md shrink-0 flex items-center gap-4 z-20">
+                        <div className="p-4 2xl:p-6 border-b border-white/40 glass-nav backdrop-blur-md shrink-0 flex items-center gap-4 z-20">
                             <button
                                 onClick={() => setSelectedIncident(null)}
-                                className="lg:hidden p-2 rounded-xl bg-white/60 text-slate-700 shadow-sm border border-white active:scale-95 transition-all"
+                                className="2xl:hidden p-2 rounded-xl bg-white/60 text-slate-700 shadow-sm border border-white active:scale-95 transition-all"
                             >
                                 <ArrowLeft size={20} />
                             </button>
@@ -186,7 +186,7 @@ export default function IncidentReports({ hostelId }: IncidentReportsProps) {
                         </div>
 
                         {/* Scrollable Content */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar z-10 px-4 lg:px-6 bg-transparent">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar z-10 px-4 2xl:px-6 bg-transparent">
                             <div className="py-6 space-y-6 pb-40"> {/* pb-40 ensures content stays above bottom nav */}
                                 {/* Description Card */}
                                 <div className="glass-card p-6 shadow-soft relative overflow-hidden">
@@ -197,8 +197,8 @@ export default function IncidentReports({ hostelId }: IncidentReportsProps) {
                                     </p>
                                 </div>
 
-                                {/* Detail Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Detail Grid - One by one for app feel */}
+                                <div className="grid grid-cols-1 gap-4">
                                     <DetailItem icon={<MapPin size={14} />} label="Location" value={typeof selectedIncident.location === 'string' ? selectedIncident.location : 'See Map'} />
                                     {reporterProfile && (
                                         <>
@@ -235,7 +235,7 @@ export default function IncidentReports({ hostelId }: IncidentReportsProps) {
                         </div>
 
                         {/* Fixed Actions Footer */}
-                        <div className="p-4 lg:p-6 glass-nav shrink-0 z-20 pb-28 lg:pb-6">
+                        <div className="p-4 2xl:p-6 glass-nav shrink-0 z-20 pb-28 2xl:pb-6">
                             <form onSubmit={handleAddComment} className="flex gap-3">
                                 <input
                                     type="text"

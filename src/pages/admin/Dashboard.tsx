@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import SOSCard from '../../components/common/SOSCard';
 import { sosService, type SOSEvent } from '../../services/sosService';
-import { Users, Shield, UserCheck, UserX, Activity, ArrowRight } from 'lucide-react';
+import { Users, Shield, UserCheck, UserX, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import { collection, getCountFromServer, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
@@ -85,11 +85,11 @@ export default function AdminDashboard() {
         <Layout role="admin">
             <TopHeader title="Admin Dashboard" showBackButton={false} />
 
-            <motion.div
+            <motion.main
+                className="px-4 pt-28 pb-24 space-y-6"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
-                className="space-y-6 pt-16"
             >
                 {/* Stats Grid - Responsive */}
                 <div className="grid grid-cols-2 gap-3">
@@ -197,7 +197,7 @@ export default function AdminDashboard() {
                         )}
                     </div>
                 </motion.div>
-            </motion.div>
+            </motion.main>
         </Layout>
     );
 }

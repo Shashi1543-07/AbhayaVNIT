@@ -72,7 +72,7 @@ export default function InCallScreen({
     };
 
     return (
-        <div className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center justify-between font-outfit text-white overflow-hidden">
+        <div className="fixed inset-x-0 mx-auto w-full max-w-[480px] inset-y-0 z-[1000] bg-slate-950 flex flex-col items-center justify-between font-outfit text-white overflow-hidden shadow-2xl">
             {/* Background Aesthetic for Audio Calls */}
             {!isVideoCall && (
                 <div className="absolute inset-0 opacity-20">

@@ -7,6 +7,8 @@ import { sosService, type SOSEvent } from '../../services/sosService';
 import { callService } from '../../services/callService';
 import { useAuthStore } from '../../context/authStore';
 import { Phone, MapPin, Clock, Shield, CheckCircle, Video } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { containerStagger } from '../../lib/animations';
 
 export default function SecuritySOSDetail() {
     const { id } = useParams();
@@ -84,7 +86,12 @@ export default function SecuritySOSDetail() {
         <MobileWrapper>
             <TopHeader title="Emergency Details" showBackButton={true} />
 
-            <main className="flex-1 flex flex-col h-full pt-24">
+            <motion.main
+                className="flex-1 flex flex-col h-full pt-28 pb-24"
+                variants={containerStagger}
+                initial="hidden"
+                animate="visible"
+            >
                 {/* Map Section */}
                 <div className="h-1/2 w-full bg-slate-100 relative shadow-inner shrink-0">
                     <LiveMap sosEvents={[event]} />
@@ -229,7 +236,7 @@ export default function SecuritySOSDetail() {
                         </div>
                     </div>
                 </div>
-            </main>
+            </motion.main>
         </MobileWrapper>
     );
 }

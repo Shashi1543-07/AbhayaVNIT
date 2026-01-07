@@ -111,7 +111,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }: CreatePo
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.9, opacity: 0 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="glass-card p-8 rounded-[2.5rem] w-full max-w-lg border-2 border-white/50 shadow-2xl relative"
+                        className="glass-card p-8 rounded-[2.5rem] w-full max-w-[440px] border-2 border-white/50 shadow-2xl relative mx-auto"
                     >
                         {/* Close Button */}
                         <button

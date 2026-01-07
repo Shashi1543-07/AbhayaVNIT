@@ -20,7 +20,7 @@ export const securityNavItems = [
     { icon: Bell, label: 'Dashboard', path: '/security/dashboard' },
     { icon: MessageCircle, label: 'Messages', path: '/security/messages' },
     { icon: MapIcon, label: 'Map', path: '/security/map' },
-    { icon: MapIcon, label: 'Patrol', path: '/security/patrol' },
+    { icon: Megaphone, label: 'Broadcast', path: '/security/broadcasts' },
     { icon: User, label: 'Profile', path: '/security/profile' },
 ];
 export const adminNavItems = [

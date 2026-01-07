@@ -42,7 +42,7 @@ export default function Feed() {
             <TopHeader title="Campus Feed" showBackButton={true} />
 
             <motion.main
-                className="px-6 py-8 pb-32 pt-28 space-y-6 max-w-lg mx-auto"
+                className="px-4 pt-28 pb-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -90,16 +90,20 @@ export default function Feed() {
 
             {/* Floating Action Button (Students Only) */}
             {isStudent && (
-                <motion.button
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate('/student/create-post')}
-                    className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white rounded-2xl shadow-2xl flex items-center justify-center z-40 border border-white/20"
-                >
-                    <Plus className="w-6 h-6" strokeWidth={3} />
-                </motion.button>
+                <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+                    <div className="max-w-[480px] mx-auto relative h-screen">
+                        <motion.button
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => navigate('/student/create-post')}
+                            className="absolute bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white rounded-2xl shadow-2xl flex items-center justify-center pointer-events-auto border border-white/20"
+                        >
+                            <Plus className="w-6 h-6" strokeWidth={3} />
+                        </motion.button>
+                    </div>
+                </div>
             )}
 
             <BottomNav items={getNavItems()} />

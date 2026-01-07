@@ -68,7 +68,7 @@ export default function StudentDashboard() {
             />
 
             <motion.main
-                className="px-4 py-6 space-y-6 pt-24"
+                className="px-4 pt-28 pb-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -158,9 +158,8 @@ export default function StudentDashboard() {
                 {/* Quick Actions */}
                 <motion.div variants={cardVariant}>
                     <h3 className="text-sm font-bold text-primary mb-3 ml-1">Quick Actions</h3>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                         <ActionCard icon={Footprints} label="Safe Walk" onClick={() => navigate('/student/safewalk')} />
-                        <ActionCard icon={Shield} label="Escort" onClick={() => navigate('/student/escort')} />
                         <ActionCard icon={AlertTriangle} label="Report" onClick={() => navigate('/student/report')} />
                         <ActionCard icon={Newspaper} label="Feed" onClick={() => navigate('/feed')} />
                     </div>

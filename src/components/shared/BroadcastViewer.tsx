@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Megaphone, Clock } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { Megaphone, Clock, X } from 'lucide-react';
+import { useAuthStore } from '../../context/authStore';
+import { broadcastService } from '../../services/broadcastService';
 
 interface BroadcastViewerProps {
     isOpen: boolean;
@@ -14,32 +14,45 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
     const [broadcasts, setBroadcasts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const { profile } = useAuthStore();
+    const userHostel = profile?.hostelId || profile?.hostel || '';
+
     useEffect(() => {
         if (!isOpen) return;
 
         setLoading(true);
-        // We use client-side filtering for 'OR' logic (targetGroup == 'all' OR targetGroup == role)
-        // to avoid complex composite index requirements for now, assuming low volume of broadcasts.
-        // Fetching last 20 broadcasts.
-        const q = query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(20));
+        // Using the updated service method to get all broadcasts
+        const unsubscribe = broadcastService.subscribeToAllBroadcasts((allBroadcasts) => {
+            // Filter relevant broadcasts based on role and hostel
+            const relevant = allBroadcasts.filter((b: any) => {
+                // Admin broadcasts: check targetGroup
+                if (b.senderRole === 'admin') {
+                    return b.targetGroup === 'all' || b.targetGroup === role;
+                }
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const allBroadcasts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Warden broadcasts: check hostel match
+                if (b.senderRole === 'warden') {
+                    // Students only see theirs, wardens/security see all for transparency or can be filtered further
+                    if (role === 'student') return b.hostelId === userHostel;
+                    return true;
+                }
 
-            // Filter relevant broadcasts
-            const relevant = allBroadcasts.filter((b: any) =>
-                b.targetGroup === 'all' || b.targetGroup === role
-            );
+                // Security broadcasts: visible to all
+                if (b.senderRole === 'security') return true;
+
+                // Fallback for older broadcasts (optional but safe)
+                if (!b.senderRole && b.targetGroup === 'all') return true;
+                if (!b.senderRole && b.targetGroup === role) return true;
+
+                return false;
+            });
 
             setBroadcasts(relevant);
-            setLoading(false);
-        }, (error) => {
-            console.error("Error fetching broadcasts:", error);
             setLoading(false);
         });
 
         return () => unsubscribe();
-    }, [isOpen, role]);
+    }, [isOpen, role, userHostel]);
 
     return (
         <AnimatePresence>
@@ -54,12 +67,11 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                     />
 
-                    {/* Modal */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-lg glass-card bg-white/90 rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col"
+                        className="relative w-full max-w-[400px] sm:max-w-[440px] glass-card bg-white/90 rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col mx-auto"
                     >
                         {/* Header */}
                         <div className="p-6 border-b border-slate-200/50 flex justify-between items-center bg-white/40">
@@ -68,8 +80,8 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
                                     <Megaphone className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-slate-800">Admin Broadcasts</h2>
-                                    <p className="text-xs text-slate-500"> Official Announcements</p>
+                                    <h2 className="text-xl font-bold text-slate-800">Campus Announcements</h2>
+                                    <p className="text-xs text-slate-500">Official alerts and updates</p>
                                 </div>
                             </div>
                             <button
@@ -106,12 +118,12 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
                                             : item.priority === 'warning'
                                                 ? 'bg-orange-50/80 border-orange-200 shadow-orange-100'
                                                 : 'bg-white/60 border-indigo-100 shadow-sm'
-                                            } shadow-md transition-all hover:scale-[1.01]`}
+                                            } shadow-md transition-all hover:shadow-lg`}
                                     >
                                         {/* Priority Badge */}
                                         <div className="flex justify-between items-start mb-3">
                                             <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
-                                                ${item.priority === 'emergency'
+                                                ${item.priority === 'urgent'
                                                     ? 'bg-red-100 text-red-700'
                                                     : item.priority === 'warning'
                                                         ? 'bg-orange-100 text-orange-700'
@@ -139,10 +151,14 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
                                         </div>
 
                                         <div className="mt-4 pt-3 border-t border-slate-200/50 flex items-center justify-between">
-                                            <span className="text-[10px] text-slate-400 font-medium uppercase">
-                                                Sent by Admin
+                                            <span className={`text-[10px] font-bold uppercase py-1 px-2 rounded-md ${item.senderRole === 'admin' ? 'bg-indigo-50 text-indigo-600' :
+                                                item.senderRole === 'security' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-blue-50 text-blue-600'
+                                                }`}>
+                                                From: {item.senderRole}
+                                                {item.senderRole === 'warden' && ` (Hostel ${item.hostelId})`}
                                             </span>
-                                            {item.targetGroup !== 'all' && (
+                                            {item.targetGroup && item.targetGroup !== 'all' && (
                                                 <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded">
                                                     Target: {item.targetGroup}
                                                 </span>

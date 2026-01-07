@@ -12,7 +12,15 @@ service cloud.firestore {
     }
     
     function hasRole(role) {
-      return isAuthenticated() && getUserData().role == role;
+      return isAuthenticated() && (
+        getUserData().role == role || 
+        getUserData().role == 'admin' || 
+        getUserData().role == 'Admin' ||
+        getUserData().role == 'Security' ||
+        getUserData().role == 'security' ||
+        getUserData().role == 'Warden' ||
+        getUserData().role == 'warden'
+      );
     }
     
     function isOwner(userId) {
@@ -77,7 +85,7 @@ service cloud.firestore {
     // Broadcasts
     match /broadcasts/{broadcastId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if hasRole('admin') || hasRole('warden');
+      allow create, update, delete: if hasRole('security') || hasRole('warden') || hasRole('admin');
     }
 
     // Audit Logs

@@ -62,7 +62,7 @@ export default function SecurityDashboard() {
             />
 
             <motion.main
-                className="pb-20 pt-24"
+                className="px-4 pt-28 pb-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

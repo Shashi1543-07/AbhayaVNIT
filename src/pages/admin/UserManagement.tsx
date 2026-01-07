@@ -5,7 +5,7 @@ import { adminService, type CreateUserData, validateUser } from '../../services/
 import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { motion } from 'framer-motion';
-import { containerStagger, cardVariant, buttonGlow } from '../../lib/animations';
+import { containerStagger, cardVariant } from '../../lib/animations';
 
 import TopHeader from '../../components/layout/TopHeader';
 
@@ -207,7 +207,7 @@ export default function UserManagement() {
             <TopHeader title="User Management" showBackButton={true} />
 
             <motion.div
-                className="mb-8 pt-16"
+                className="px-4 pt-28 pb-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

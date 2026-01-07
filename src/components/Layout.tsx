@@ -4,7 +4,6 @@ import { useAuthStore } from '../context/authStore';
 import { auth } from '../lib/firebase';
 import { Menu, X, LogOut } from 'lucide-react';
 import { cn } from '../lib/utils';
-import TopHeader from './layout/TopHeader';
 import AdminBottomNav from './layout/AdminBottomNav';
 
 interface LayoutProps {
@@ -19,14 +18,14 @@ export default function Layout({ children, role }: LayoutProps) {
 
     const handleLogout = async () => {
         await auth.signOut();
-        navigate('/login');
+        navigate(`/login?role=${role || 'student'}`);
     };
 
     // For Admin, we now use a mobile-first bottom nav approach similar to other roles
     if (role === 'admin') {
         return (
             <div className="min-h-screen bg-transparent pb-20">
-                <main className="pt-4 p-4 lg:p-8 max-w-3xl mx-auto">
+                <main className="pt-4 p-4 lg:p-8 max-w-4xl mx-auto">
                     {children}
                 </main>
 

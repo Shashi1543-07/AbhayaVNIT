@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import LiveMap from '../../components/LiveMap';
+import { motion } from 'framer-motion';
+import { containerStagger } from '../../lib/animations';
 import { type SOSEvent } from '../../services/sosService';
 import { callService } from '../../services/callService';
 import { useAuthStore } from '../../context/authStore';
@@ -110,7 +112,10 @@ export default function WardenSOSDetail() {
         <MobileWrapper>
             <TopHeader title="SOS Event Details" showBackButton={true} />
 
-            <main className="px-4 py-4 space-y-4 pb-20 pt-24">
+            <motion.main
+                className="px-4 pt-28 pb-24"
+                variants={containerStagger}
+            >
                 {/* Map Section */}
                 <div className="h-64 rounded-xl overflow-hidden border-2 border-surface shadow-lg">
                     <LiveMap sosEvents={[event]} />
@@ -292,7 +297,7 @@ export default function WardenSOSDetail() {
                         <strong>Warden View:</strong> You are viewing this SOS in read-only mode. Only Security personnel can take action on SOS events.
                     </p>
                 </div>
-            </main>
+            </motion.main>
         </MobileWrapper>
     );
 }

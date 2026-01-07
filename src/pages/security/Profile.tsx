@@ -1,5 +1,7 @@
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
+import { motion } from 'framer-motion';
+import { containerStagger } from '../../lib/animations';
 import BottomNav from '../../components/layout/BottomNav';
 import { useAuthStore } from '../../context/authStore';
 import { securityNavItems } from '../../lib/navItems';
@@ -12,7 +14,12 @@ export default function SecurityProfile() {
     return (
         <MobileWrapper>
             <TopHeader title="Security Profile" showBackButton={true} />
-            <main className="px-4 py-6 pb-20 space-y-4 pt-24">
+            <motion.main
+                className="px-4 pt-28 pb-24"
+                variants={containerStagger}
+                initial="hidden"
+                animate="show"
+            >
                 <div className="glass-card rounded-2xl p-6 flex flex-col items-center border border-black/15">
                     <div className="w-20 h-20 bg-white/40 rounded-full flex items-center justify-center mb-4">
                         <Shield className="w-10 h-10 text-slate-700" />
@@ -24,7 +31,7 @@ export default function SecurityProfile() {
                     </div>
                 </div>
 
-            </main>
+            </motion.main>
             <BottomNav items={securityNavItems} />
         </MobileWrapper>
     );

@@ -38,6 +38,7 @@ export default function Broadcasts() {
                 message,
                 targetGroup,
                 priority,
+                senderRole: 'admin',
                 createdAt: serverTimestamp(),
                 createdBy: 'Admin' // In real app, use auth.currentUser.email
             });
@@ -61,23 +62,23 @@ export default function Broadcasts() {
         <Layout role="admin">
             <TopHeader title="Broadcasts & Alerts" showBackButton={true} />
 
-            <motion.div
-                className="mb-8 pt-16"
+            <motion.main
+                className="px-4 pt-28 pb-24"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
 
                 <motion.div
-                    className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+                    className="flex flex-col items-center space-y-8"
                     variants={containerStagger}
                     initial="hidden"
                     animate="visible"
                 >
                     {/* Send Form */}
-                    <motion.div variants={cardVariant} className="lg:col-span-2 glass-card p-6 rounded-xl shadow-sm border border-white/40">
-                        <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            <Megaphone className="w-5 h-5 text-indigo-600" />
+                    <motion.div variants={cardVariant} className="w-full max-w-2xl glass-card p-6 rounded-xl shadow-sm border border-white/40">
+                        <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 text-indigo-700">
+                            <Megaphone className="w-5 h-5" />
                             New Announcement
                         </h2>
 
@@ -138,7 +139,7 @@ export default function Broadcasts() {
                             <button
                                 type="submit"
                                 disabled={sending}
-                                className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-4 rounded-xl font-bold hover:opacity-90 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
                             >
                                 <Send className="w-5 h-5" />
                                 {sending ? 'Sending...' : 'Send Broadcast'}
@@ -147,35 +148,37 @@ export default function Broadcasts() {
                     </motion.div>
 
                     {/* History Sidebar */}
-                    <div className="lg:col-span-1">
-                        <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 h-full">
-                            <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                <Clock className="w-5 h-5 text-slate-500" />
+                    <div className="w-full max-w-2xl">
+                        <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 flex flex-col">
+                            <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 flex-shrink-0 text-slate-600">
+                                <Clock className="w-5 h-5" />
                                 Recent History
                             </h2>
 
-                            <div className="space-y-4">
+                            <div className="space-y-4 pr-1">
                                 {history.length === 0 ? (
-                                    <p className="text-slate-500 text-sm italic">No broadcasts sent yet.</p>
+                                    <p className="text-slate-500 text-sm italic py-4 text-center">No broadcasts sent yet.</p>
                                 ) : (
                                     history.map(item => (
-                                        <div key={item.id} className="p-4 rounded-xl border border-white/30 bg-white/20 hover:bg-white/30 transition-all backdrop-blur-sm shadow-sm group">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full capitalize tracking-wide shadow-sm
+                                        <div key={item.id} className="p-5 rounded-2xl border border-white/30 bg-white/40 hover:bg-white/50 transition-all backdrop-blur-sm shadow-sm group break-words">
+                                            <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize tracking-wide shadow-sm
                                                 ${item.priority === 'emergency' ? 'bg-red-500/20 text-red-700 border border-red-200/50' :
                                                         item.priority === 'warning' ? 'bg-orange-500/20 text-orange-700 border border-orange-200/50' :
                                                             'bg-blue-500/20 text-blue-700 border border-blue-200/50'}`}>
                                                     {item.priority}
                                                 </span>
-                                                <span className="text-[10px] text-slate-500 font-medium bg-white/40 px-2 py-0.5 rounded-full">
+                                                <span className="text-[10px] text-slate-500 font-bold bg-white/40 px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm">
                                                     {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
                                                 </span>
                                             </div>
-                                            <h3 className="font-bold text-slate-800 text-sm mb-1 group-hover:text-indigo-700 transition-colors">{item.title}</h3>
-                                            <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{item.message}</p>
-                                            <div className="mt-3 flex items-center gap-1 text-[10px] text-slate-500 font-medium">
-                                                <Users className="w-3 h-3" />
-                                                <span className="capitalize">To: {item.targetGroup}</span>
+                                            <h3 className="font-bold text-slate-800 text-base mb-1 group-hover:text-indigo-700 transition-colors leading-tight">{item.title}</h3>
+                                            <p className="text-sm text-slate-600 leading-relaxed opacity-90">{item.message}</p>
+                                            <div className="mt-4 pt-3 border-t border-white/20 flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                                <div className="bg-slate-100 p-1 rounded-md">
+                                                    <Users className="w-3 h-3" />
+                                                </div>
+                                                <span>Sent To: {item.targetGroup}</span>
                                             </div>
                                         </div>
                                     ))
@@ -184,7 +187,7 @@ export default function Broadcasts() {
                         </div>
                     </div>
                 </motion.div>
-            </motion.div>
+            </motion.main>
         </Layout>
     );
 }
