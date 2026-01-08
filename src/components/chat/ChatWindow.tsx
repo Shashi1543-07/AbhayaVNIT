@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, User as UserIcon, Shield, Search } from 'lucide-react';
+import { X, Send, User as UserIcon, Shield, Search, Mic, MicOff } from 'lucide-react';
 import { chatService } from '../../services/chatService';
 import type { ChatMessage, Conversation } from '../../services/chatService';
 import { useAuthStore } from '../../context/authStore';
@@ -20,48 +20,79 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
     const [loading, setLoading] = useState(true);
     const [msgSearchTerm, setMsgSearchTerm] = useState('');
     const [showSearch, setShowSearch] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [isVoiceTyping, setIsVoiceTyping] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    // Cache key for messages
-    const CACHE_KEY = `messages_${chatId}`;
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const recognitionRef = useRef<any>(null);
 
     // Subscribe to Chat & Messages
     useEffect(() => {
         if (!chatId) return;
 
-        // Load messages from cache for instant display
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-            try {
-                setMessages(JSON.parse(cached));
-                setLoading(false); // Show something immediate
-            } catch (e) {
-                console.warn("Failed to parse cached messages", e);
-            }
-        }
-
         const unsubscribeChat = chatService.subscribeToConversationDetails(chatId, (room) => {
             setChatRoom(room);
         });
 
-        const unsubscribeMessages = chatService.subscribeToMessages(chatId, (msgs) => {
+        const unsubscribeMessages = chatService.subscribeToMessages(chatId, async (msgs) => {
             setMessages(msgs);
             setLoading(false);
-            // Persistence
-            localStorage.setItem(CACHE_KEY, JSON.stringify(msgs));
             scrollToBottom();
+
+            if (!user) return;
+
+            // 1. Mark undelivered messages as delivered (messages sent by others that aren't delivered yet)
+            const undeliveredMessages = msgs.filter(
+                msg => msg.senderId !== user.uid && msg.status === 'sent'
+            );
+            if (undeliveredMessages.length > 0) {
+                await chatService.updateMessageStatus(
+                    chatId,
+                    undeliveredMessages.map(m => m.id),
+                    'delivered'
+                );
+            }
+
+            // 2. Mark delivered messages as seen (when chat is open)
+            await chatService.markMessagesAsSeen(chatId, msgs, user.uid);
+        });
+
+        // Subscribe to typing status
+        const unsubscribeTyping = chatService.subscribeToTypingStatus(chatId, user?.uid || '', (typing) => {
+            setIsTyping(typing);
         });
 
         return () => {
             unsubscribeChat();
             unsubscribeMessages();
+            unsubscribeTyping();
         };
-    }, [chatId, CACHE_KEY]);
+    }, [chatId, user]);
 
     const scrollToBottom = () => {
         setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
+    };
+
+    const handleTyping = () => {
+        if (!user) return;
+
+        // Set typing status to true
+        chatService.setTypingStatus(chatId, user.uid, true);
+
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        // Set timeout to clear typing status
+        typingTimeoutRef.current = setTimeout(() => {
+            chatService.setTypingStatus(chatId, user.uid, false);
+        }, 3000);
     };
 
     const handleSend = async (e?: React.FormEvent) => {
@@ -71,10 +102,78 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
         try {
             await chatService.sendMessage(chatId, newMessage.trim(), user);
             setNewMessage('');
+            chatService.setTypingStatus(chatId, user.uid, false);
             scrollToBottom();
         } catch (error) {
             console.error("Failed to send", error);
         }
+    };
+
+    const startVoiceRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunksRef.current.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const duration = audioChunksRef.current.length; // Approximate
+
+                if (user) {
+                    await chatService.sendVoiceNote(chatId, audioBlob, duration, user);
+                }
+
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+        } catch (error) {
+            console.error("Failed to start recording:", error);
+        }
+    };
+
+    const stopVoiceRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const startVoiceTyping = () => {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+            alert('Voice typing not supported in this browser');
+            return;
+        }
+
+        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setNewMessage(prev => prev + ' ' + transcript);
+            setIsVoiceTyping(false);
+        };
+
+        recognition.onerror = () => {
+            setIsVoiceTyping(false);
+        };
+
+        recognition.onend = () => {
+            setIsVoiceTyping(false);
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+        setIsVoiceTyping(true);
     };
 
     const getOtherParticipantName = () => {
@@ -111,17 +210,17 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
 
     return (
         <div className="fixed inset-0 z-[110] flex flex-col font-sans overflow-hidden pointer-events-none">
-            {/* Background Backdrop for better modal focus */}
+            {/* Background Backdrop */}
             <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px]" onClick={onClose} />
 
-            {/* Main Window Container - Constrained for "App-like" feel */}
+            {/* Main Window Container */}
             <div className="relative w-full max-w-[480px] mx-auto h-full flex flex-col shadow-2xl pointer-events-auto border-x border-white/20 transition-all overflow-hidden">
-                {/* Background Gradient - Global Theme Integration */}
+                {/* Background Gradient */}
                 <div className="absolute inset-0 pointer-events-none" style={{
                     background: 'linear-gradient(20deg, #FF99AC 0%, #C084FC 35%, #89CFF0 70%, #FFFFFF 100%)'
                 }} />
 
-                {/* Header - Glassy & Rounded Bottom Edges */}
+                {/* Header */}
                 <div className="relative bg-white/30 backdrop-blur-xl border-b border-white/20 p-4 pt-safe-top flex flex-col gap-3 shadow-sm z-10 rounded-b-[32px]">
                     <div className="flex justify-between items-center w-full">
                         <div className="flex items-center gap-3">
@@ -138,8 +237,17 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                                     {getOtherParticipantName()}
                                 </h3>
                                 <div className="flex items-center gap-1.5 font-black text-[9px] uppercase tracking-widest">
-                                    <span className={`w-2 h-2 rounded-full ${chatRoom?.type === 'sos' ? 'bg-red-500' : 'bg-green-500'} animate-pulse shadow-sm`} />
-                                    <span className="opacity-60">{getOtherParticipantRole()}</span>
+                                    {isTyping ? (
+                                        <>
+                                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-sm" />
+                                            <span className="text-green-600">typing...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className={`w-2 h-2 rounded-full ${chatRoom?.type === 'sos' ? 'bg-red-500' : 'bg-green-500'} animate-pulse shadow-sm`} />
+                                            <span className="opacity-60">{getOtherParticipantRole()}</span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -151,7 +259,7 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                         </button>
                     </div>
 
-                    {/* Expandable Search Input */}
+                    {/* Search Input */}
                     {showSearch && (
                         <div className="px-1 pb-1 animate-in slide-in-from-top duration-300">
                             <div className="relative">
@@ -169,7 +277,7 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                     )}
                 </div>
 
-                {/* Messages Area - Transparent to show gradient */}
+                {/* Messages Area */}
                 <div className="relative flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide bg-transparent">
                     {loading && messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -197,24 +305,48 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                                     key={msg.id}
                                     message={msg}
                                     isMe={msg.senderId === user?.uid}
+                                    conversationId={chatId}
                                 />
                             ))
                     )}
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input Area - Floating Glass Card */}
+                {/* Input Area */}
                 <div className="relative p-6 pb-safe-bottom bg-transparent">
                     <form onSubmit={handleSend} className="bg-white/30 backdrop-blur-2xl border border-white/60 rounded-[32px] p-2 shadow-2xl shadow-primary/10 flex items-center gap-2">
+                        {/* Voice Note Button */}
+                        <button
+                            type="button"
+                            onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                            className={`p-3 ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-white/40 hover:bg-white/60'} rounded-2xl transition-all active:scale-95 border border-white/30 flex items-center justify-center`}
+                        >
+                            {isRecording ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-slate-700" />}
+                        </button>
+
+                        {/* Input Field */}
                         <div className="flex-1 bg-white/40 rounded-2xl flex items-center px-4 py-2 border border-white/40">
                             <input
                                 type="text"
                                 value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
+                                onChange={(e) => {
+                                    setNewMessage(e.target.value);
+                                    handleTyping();
+                                }}
                                 placeholder="Write a secure message..."
                                 className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 placeholder:text-slate-500 text-slate-800 font-bold"
                             />
+                            {/* Voice Typing Button */}
+                            <button
+                                type="button"
+                                onClick={startVoiceTyping}
+                                className={`ml-2 p-1.5 rounded-lg ${isVoiceTyping ? 'bg-red-500 animate-pulse' : 'bg-white/40 hover:bg-white/60'} transition-all`}
+                            >
+                                <Mic className={`w-4 h-4 ${isVoiceTyping ? 'text-white' : 'text-slate-700'}`} />
+                            </button>
                         </div>
+
+                        {/* Send Button */}
                         <button
                             type="submit"
                             disabled={!newMessage.trim()}
