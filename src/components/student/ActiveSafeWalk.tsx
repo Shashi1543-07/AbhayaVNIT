@@ -254,13 +254,15 @@ export default function ActiveSafeWalk({ walkId, initialData, onWalkEnded }: Act
                     )}
 
                     {/* Messages from Security */}
-                    {walkData?.messages && walkData.messages.length > 0 && (
+                    {walkData?.timeline && walkData.timeline.filter(t => t.type === 'message').length > 0 && (
                         <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
                             <div className="flex items-center mb-2">
                                 <MessageCircle className="w-4 h-4 text-amber-600 mr-2" />
                                 <p className="text-xs text-amber-700 uppercase font-bold">Message from Security</p>
                             </div>
-                            <p className="text-sm text-amber-900">{walkData.messages[walkData.messages.length - 1].text}</p>
+                            <p className="text-sm text-amber-900">
+                                {walkData.timeline.filter(t => t.type === 'message')[walkData.timeline.filter(t => t.type === 'message').length - 1].details}
+                            </p>
                         </div>
                     )}
                 </div>

@@ -38,7 +38,7 @@ export interface SafeWalkRequest {
 export interface SafeWalkSession extends SafeWalkRequest {
     id: string;
     startTime: Timestamp;
-    status: 'active' | 'paused' | 'delayed' | 'completed' | 'danger';
+    status: 'active' | 'paused' | 'delayed' | 'completed' | 'danger' | 'off-route';
     createdAt: Timestamp;
     updatedAt: Timestamp;
     escortRequested?: boolean;
@@ -79,14 +79,24 @@ export const safeWalkService = {
         }
     },
 
-    // Update Walk Status (active | paused | delayed | completed | danger)
-    updateWalkStatus: async (walkId: string, status: SafeWalkSession['status']) => {
+    // Update Walk Status (active | paused | delayed | completed | danger | off-route)
+    updateWalkStatus: async (walkId: string, status: SafeWalkSession['status'], note?: string) => {
         try {
             const walkRef = doc(db, COLLECTION_NAME, walkId);
-            await updateDoc(walkRef, {
+            const updateData: any = {
                 status,
                 updatedAt: serverTimestamp()
-            });
+            };
+
+            if (note) {
+                updateData.timeline = arrayUnion({
+                    timestamp: new Date().toISOString(),
+                    details: note,
+                    type: 'system'
+                });
+            }
+
+            await updateDoc(walkRef, updateData);
         } catch (error) {
             console.error("Error updating walk status:", error);
             throw error;
@@ -222,6 +232,61 @@ export const safeWalkService = {
             });
         } catch (error) {
             console.error("Error sending message:", error);
+            throw error;
+        }
+    },
+
+    // Check if user is off-route
+    checkOffRoute: (
+        currentLat: number,
+        currentLng: number,
+        destLat: number,
+        destLng: number,
+        previousDistance?: number
+    ) => {
+        // Simple Haversine for distance
+        const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+            const R = 6371e3; // metres
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        };
+
+        const currentDistance = calculateDistance(currentLat, currentLng, destLat, destLng);
+
+        // If distance increased by more than 10 meters compared to previous known distance, 
+        // and we are still more than 20m away from destination
+        const isOffRoute = previousDistance ? (currentDistance > previousDistance + 10 && currentDistance > 20) : false;
+
+        return {
+            currentDistance,
+            isOffRoute
+        };
+    },
+
+    // Request Escort (Student Only)
+    requestEscort: async (walkId: string) => {
+        try {
+            const walkRef = doc(db, COLLECTION_NAME, walkId);
+            await updateDoc(walkRef, {
+                escortRequested: true,
+                updatedAt: serverTimestamp(),
+                timeline: arrayUnion({
+                    timestamp: new Date().toISOString(),
+                    details: "Student requested a security escort",
+                    type: 'request'
+                })
+            });
+        } catch (error) {
+            console.error("Error requesting escort:", error);
             throw error;
         }
     }

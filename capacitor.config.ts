@@ -3,11 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
     appId: 'com.vnit.girlsafety',
     appName: 'vnit-girls-safety',
-    webDir: 'dist',
-    server: {
-        url: 'https://192.168.249.95:5173',
-        cleartext: true
-    }
+    webDir: 'dist'
 };
 
 

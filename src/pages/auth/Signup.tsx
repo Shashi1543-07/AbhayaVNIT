@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../../lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { Shield, ArrowRight, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function Signup() {
@@ -21,7 +21,51 @@ export default function Signup() {
         confirmPassword: ''
     });
 
-    // ... (rest of the component logic until handleSignup)
+    const [verifiedUser, setVerifiedUser] = useState<any>(null);
+
+    // Step 1: Verify Identity (Mock)
+    const verifyIdentity = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            // In a real app, this would query an academic database
+            // Mocking a successful response for demonstration
+            setTimeout(() => {
+                const mockStudent = {
+                    name: "VNIT Student",
+                    email: `${formData.rollNo.toLowerCase()}@students.vnit.ac.in`,
+                    phone: "9876543210",
+                    hostelId: "G-1",
+                    roomNo: "101"
+                };
+                setVerifiedUser(mockStudent);
+                setStep(2);
+                setLoading(false);
+            }, 1000);
+        } catch (err: any) {
+            setError("Identity verification failed. Please check your Roll No and DOB.");
+            setLoading(false);
+        }
+    };
+
+    // Step 2: Verify OTP (Mock)
+    const verifyOTP = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        if (formData.otp === '123456') {
+            setTimeout(() => {
+                setStep(3);
+                setLoading(false);
+            }, 800);
+        } else {
+            setError("Invalid OTP. Try '123456' for testing.");
+            setLoading(false);
+        }
+    };
 
     // Step 3: Create Account
     const handleSignup = async (e: React.FormEvent) => {

@@ -11,8 +11,8 @@ export default function StudentNotifications() {
         const userHostelId = (user as any)?.hostelId;
         if (!userHostelId) return;
 
-        const unsubscribe = broadcastService.subscribeToBroadcasts(userHostelId, (data) => {
-            setNotifications(data);
+        const unsubscribe = broadcastService.subscribeToAllBroadcasts((data: Broadcast[]) => {
+            setNotifications(data.filter(b => b.hostelId === userHostelId || b.hostelId === 'all'));
         });
         return () => unsubscribe();
     }, [user]);
@@ -41,7 +41,7 @@ export default function StudentNotifications() {
                     recentNotifications.map(note => (
                         <div key={note.id} className="bg-surface p-4 rounded-xl border border-surface shadow-sm flex gap-3 hover:shadow-md transition-shadow">
                             <div className="mt-1 flex-shrink-0">
-                                {note.priority === 'urgent' ? (
+                                {note.priority === 'emergency' ? (
                                     <AlertCircle className="w-5 h-5 text-red-500" />
                                 ) : note.priority === 'warning' ? (
                                     <AlertTriangle className="w-5 h-5 text-amber-500" />

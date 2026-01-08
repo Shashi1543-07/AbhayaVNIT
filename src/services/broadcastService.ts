@@ -11,7 +11,7 @@ export interface Broadcast {
     id: string;
     title: string;
     message: string;
-    priority: 'info' | 'warning' | 'urgent';
+    priority: 'info' | 'warning' | 'emergency';
     hostelId?: string; // Optinal for campus-wide
     targetGroup?: 'student' | 'warden' | 'security' | 'all';
     senderRole: 'admin' | 'warden' | 'security';

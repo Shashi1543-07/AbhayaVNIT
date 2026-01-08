@@ -123,7 +123,7 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
                                         {/* Priority Badge */}
                                         <div className="flex justify-between items-start mb-3">
                                             <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
-                                                ${item.priority === 'urgent'
+                                                ${item.priority === 'emergency'
                                                     ? 'bg-red-100 text-red-700'
                                                     : item.priority === 'warning'
                                                         ? 'bg-orange-100 text-orange-700'

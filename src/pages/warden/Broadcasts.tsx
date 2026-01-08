@@ -14,7 +14,7 @@ export default function WardenBroadcasts() {
     const wardenHostelId = profile?.hostelId || profile?.hostel || 'H6';
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [newBroadcast, setNewBroadcast] = useState('');
-    const [priority, setPriority] = useState<'info' | 'warning' | 'urgent'>('info');
+    const [priority, setPriority] = useState<'info' | 'warning' | 'emergency'>('info');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -30,7 +30,7 @@ export default function WardenBroadcasts() {
         setLoading(true);
         try {
             await broadcastService.sendBroadcast({
-                title: priority === 'urgent' ? `Emergency Alert - ${wardenHostelId}` : priority === 'warning' ? 'Important Notice' : 'Hostel Announcement',
+                title: priority === 'emergency' ? `Emergency Alert - ${wardenHostelId}` : priority === 'warning' ? 'Important Notice' : 'Hostel Announcement',
                 message: newBroadcast,
                 priority,
                 hostelId: wardenHostelId,
@@ -74,12 +74,12 @@ export default function WardenBroadcasts() {
 
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex gap-2">
-                            {['info', 'warning', 'urgent'].map((p) => (
+                            {['info', 'warning', 'emergency'].map((p) => (
                                 <button
                                     key={p}
                                     onClick={() => setPriority(p as any)}
                                     className={`px-3 py-1 rounded-full text-xs font-bold transition-colors capitalize ${priority === p
-                                        ? p === 'urgent' ? 'bg-red-100 text-red-700 ring-2 ring-red-500' :
+                                        ? p === 'emergency' ? 'bg-red-100 text-red-700 ring-2 ring-red-500' :
                                             p === 'warning' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500' :
                                                 'bg-blue-100 text-blue-700 ring-2 ring-blue-500'
                                         : 'bg-white/30 backdrop-blur text-slate-700'
@@ -109,10 +109,10 @@ export default function WardenBroadcasts() {
                         ) : (
                             broadcasts.map(broadcast => (
                                 <div key={broadcast.id} className="glass-card rounded-xl p-4 border-l-4" style={{
-                                    borderLeftColor: broadcast.priority === 'urgent' ? '#ef4444' : broadcast.priority === 'warning' ? '#f59e0b' : '#3b82f6'
+                                    borderLeftColor: broadcast.priority === 'emergency' ? '#ef4444' : broadcast.priority === 'warning' ? '#f59e0b' : '#3b82f6'
                                 }}>
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${broadcast.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${broadcast.priority === 'emergency' ? 'bg-red-100 text-red-700' :
                                             broadcast.priority === 'warning' ? 'bg-amber-100 text-amber-700' :
                                                 'bg-blue-100 text-blue-700'
                                             }`}>

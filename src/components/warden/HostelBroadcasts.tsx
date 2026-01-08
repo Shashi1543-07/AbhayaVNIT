@@ -12,12 +12,12 @@ export default function HostelBroadcasts({ hostelId }: HostelBroadcastsProps) {
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
-    const [priority, setPriority] = useState<'info' | 'warning' | 'urgent'>('info');
+    const [priority, setPriority] = useState<'info' | 'warning' | 'emergency'>('info');
     const [isSending, setIsSending] = useState(false);
 
     useEffect(() => {
-        const unsubscribe = broadcastService.subscribeToBroadcasts(hostelId, (data) => {
-            setBroadcasts(data);
+        const unsubscribe = broadcastService.subscribeToAllBroadcasts((data: Broadcast[]) => {
+            setBroadcasts(data.filter(b => b.hostelId === hostelId));
         });
         return () => unsubscribe();
     }, [hostelId]);
@@ -33,7 +33,8 @@ export default function HostelBroadcasts({ hostelId }: HostelBroadcastsProps) {
                 message,
                 priority,
                 hostelId,
-                createdBy: user.uid
+                createdBy: user.uid,
+                senderRole: 'warden'
             });
             setTitle('');
             setMessage('');
@@ -72,14 +73,14 @@ export default function HostelBroadcasts({ hostelId }: HostelBroadcastsProps) {
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
                         <div className="flex gap-2">
-                            {(['info', 'warning', 'urgent'] as const).map((p) => (
+                            {(['info', 'warning', 'emergency'] as const).map((p) => (
                                 <button
                                     key={p}
                                     type="button"
                                     onClick={() => setPriority(p)}
                                     className={`flex-1 py-2 rounded-lg text-sm font-bold capitalize border transition-all
                                         ${priority === p
-                                            ? p === 'urgent' ? 'bg-red-100 border-red-300 text-red-700'
+                                            ? p === 'emergency' ? 'bg-red-100 border-red-300 text-red-700'
                                                 : p === 'warning' ? 'bg-amber-100 border-amber-300 text-amber-700'
                                                     : 'bg-blue-100 border-blue-300 text-blue-700'
                                             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}
@@ -132,13 +133,13 @@ export default function HostelBroadcasts({ hostelId }: HostelBroadcastsProps) {
                             <div key={broadcast.id} className="border border-slate-100 rounded-lg p-4 hover:bg-slate-50 transition-colors">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2">
-                                        {broadcast.priority === 'urgent' ? <AlertCircle className="w-5 h-5 text-red-600" /> :
+                                        {broadcast.priority === 'emergency' ? <AlertCircle className="w-5 h-5 text-red-600" /> :
                                             broadcast.priority === 'warning' ? <AlertTriangle className="w-5 h-5 text-amber-500" /> :
                                                 <Info className="w-5 h-5 text-blue-500" />}
                                         <h3 className="font-bold text-slate-800">{broadcast.title}</h3>
                                     </div>
                                     <span className="text-xs text-slate-400">
-                                        {new Date(broadcast.createdAt?.seconds * 1000).toLocaleString()}
+                                        {broadcast.createdAt?.seconds ? new Date(broadcast.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
                                     </span>
                                 </div>
                                 <p className="text-slate-600 text-sm whitespace-pre-wrap pl-7">

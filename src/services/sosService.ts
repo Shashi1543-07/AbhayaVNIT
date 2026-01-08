@@ -65,7 +65,7 @@ export interface SOSEvent {
     }[];
 
     // Emergency details
-    emergencyType: 'medical' | 'harassment' | 'other';
+    emergencyType: 'medical' | 'harassment' | 'other' | 'general';
     triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button';
     description?: string;
     optionalMessage?: string;
@@ -80,7 +80,7 @@ export const sosService = {
     triggerSOS: async (
         user: any,
         location: { lat: number; lng: number },
-        emergencyType: 'medical' | 'harassment' | 'other' = 'other',
+        emergencyType: 'medical' | 'harassment' | 'other' | 'general' = 'other',
         triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button' = 'manual_gesture',
         audioUrl?: string
     ) => {
@@ -142,15 +142,12 @@ export const sosService = {
             // 2. Create Conversation with Deterministic ID: "sos_{sosId}"
             const { chatService } = await import('./chatService');
 
-            // Participants: Student (creator)
-            const participants = { [user.uid]: true };
-            const participantRoles = { student: user.uid };
-
             // We use 'sos' as type, and sos_{sosId} as the custom conversation ID
             const chatId = await chatService.createConversation(
                 'sos',
-                participants,
-                participantRoles,
+                [
+                    { uid: user.uid, name: user.name || user.displayName || 'Student', role: user.role || 'student' }
+                ],
                 `sos_${sosId}`
             );
 

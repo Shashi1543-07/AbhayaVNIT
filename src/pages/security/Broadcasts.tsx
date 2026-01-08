@@ -13,7 +13,7 @@ export default function SecurityBroadcasts() {
     const { user } = useAuthStore();
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [message, setMessage] = useState('');
-    const [priority, setPriority] = useState<'info' | 'warning' | 'urgent'>('info');
+    const [priority, setPriority] = useState<'info' | 'warning' | 'emergency'>('info');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -29,7 +29,7 @@ export default function SecurityBroadcasts() {
         setLoading(true);
         try {
             await broadcastService.sendBroadcast({
-                title: priority === 'urgent' ? 'Security Emergency' : priority === 'warning' ? 'Security Notice' : 'Security Update',
+                title: priority === 'emergency' ? 'Security Emergency' : priority === 'warning' ? 'Security Notice' : 'Security Update',
                 message: message,
                 priority,
                 hostelId: 'all', // Security broadcasts are campus-wide
@@ -77,12 +77,12 @@ export default function SecurityBroadcasts() {
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority:</span>
                             <div className="flex gap-2 flex-1">
-                                {['info', 'warning', 'urgent'].map((p) => (
+                                {['info', 'warning', 'emergency'].map((p) => (
                                     <button
                                         key={p}
                                         onClick={() => setPriority(p as any)}
                                         className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex-1 border ${priority === p
-                                            ? p === 'urgent' ? 'bg-red-500 text-white border-red-600' :
+                                            ? p === 'emergency' ? 'bg-red-500 text-white border-red-600' :
                                                 p === 'warning' ? 'bg-amber-500 text-white border-amber-600' :
                                                     'bg-indigo-600 text-white border-indigo-700'
                                             : 'bg-white/50 text-slate-400 border-slate-100'
@@ -121,10 +121,10 @@ export default function SecurityBroadcasts() {
                         ) : (
                             broadcasts.map(b => (
                                 <div key={b.id} className="glass-card rounded-2xl p-5 border-l-8 shadow-sm transition-all hover:bg-white/60" style={{
-                                    borderLeftColor: b.priority === 'urgent' ? '#fe3559' : b.priority === 'warning' ? '#f59e0b' : '#6366f1'
+                                    borderLeftColor: b.priority === 'emergency' ? '#fe3559' : b.priority === 'warning' ? '#f59e0b' : '#6366f1'
                                 }}>
                                     <div className="flex justify-between items-start mb-3">
-                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${b.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${b.priority === 'emergency' ? 'bg-red-100 text-red-700' :
                                             b.priority === 'warning' ? 'bg-amber-100 text-amber-700' :
                                                 'bg-indigo-100 text-indigo-700'
                                             }`}>

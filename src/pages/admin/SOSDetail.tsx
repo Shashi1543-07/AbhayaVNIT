@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import LiveMap from '../../components/LiveMap';
-import { sosService, type SOSEvent } from '../../services/sosService';
+import { type SOSEvent } from '../../services/sosService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { MapPin, Clock, Shield, Phone, User, AlertTriangle, ArrowLeft } from 'lucide-react';

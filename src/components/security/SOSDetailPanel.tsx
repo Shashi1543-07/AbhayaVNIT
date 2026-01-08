@@ -22,7 +22,7 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
             name: event.userName,
             role: 'student'
         };
-        callService.startCall(user, receiver);
+        callService.startCall(user, receiver, event.id, 'sos');
     };
 
     return (

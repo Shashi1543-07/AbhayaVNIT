@@ -24,7 +24,7 @@ function ParticleField(props: any) {
     const ref = useRef<any>(null);
     const sphere = useMemo(() => generateParticles(5000, 1.5), []);
 
-    useFrame((state, delta) => {
+    useFrame((_state, delta) => {
         if (ref.current) {
             ref.current.rotation.x -= delta / 10;
             ref.current.rotation.y -= delta / 15;

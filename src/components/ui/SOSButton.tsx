@@ -12,7 +12,6 @@ interface SOSButtonProps {
 const SOSButton: React.FC<SOSButtonProps> = ({ onActivate, className = '', disabled = false }) => {
     const [isPressing, setIsPressing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [dragY, setDragY] = useState(0);
     const [sosType, setSosType] = useState<'medical' | 'harassment' | 'general'>('general');
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,13 +37,11 @@ const SOSButton: React.FC<SOSButtonProps> = ({ onActivate, className = '', disab
     const handleStart = () => setIsPressing(true);
     const handleEnd = () => {
         setIsPressing(false);
-        setDragY(0);
         setSosType('general');
     };
 
     const handleMove = (info: any) => {
         const y = info.offset.y;
-        setDragY(y);
 
         if (y < -50) setSosType('medical');
         else if (y > 50) setSosType('harassment');
