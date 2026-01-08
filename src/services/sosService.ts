@@ -85,6 +85,18 @@ export const sosService = {
         audioUrl?: string
     ) => {
         try {
+            // Check if user already has an active (unresolved) SOS
+            const { getDocs } = await import('firebase/firestore');
+            const activeQuery = query(
+                collection(db, 'sos_events'),
+                where('userId', '==', user.uid),
+                where('status.resolved', '==', false)
+            );
+            const activeSnapshot = await getDocs(activeQuery);
+            if (!activeSnapshot.empty) {
+                throw new Error("You already have an active SOS. Please wait for it to be resolved.");
+            }
+
             // 1. Create SOS Event Doc first to get ID
             const sosData = {
                 // Student information

@@ -58,7 +58,7 @@ export default function Reports() {
             <TopHeader title="My Reports" showBackButton={true} />
 
             <motion.main
-                className="px-4 pt-28 pb-24"
+                className="px-4 pb-24 main-content-safe"
                 variants={containerStagger}
                 animate="visible"
             >

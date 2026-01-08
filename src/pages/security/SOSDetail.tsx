@@ -87,31 +87,32 @@ export default function SecuritySOSDetail() {
             <TopHeader title="Emergency Details" showBackButton={true} />
 
             <motion.main
-                className="flex-1 flex flex-col h-full pt-28 pb-24"
+                className="flex-1 flex flex-col h-full pb-24 main-content-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
                 {/* Map Section */}
-                <div className="h-1/2 w-full bg-slate-100 relative shadow-inner shrink-0">
+                <div className="h-1/2 w-full relative shadow-inner shrink-0">
+                    <div className="absolute inset-0 bg-transparent z-0" />
                     <LiveMap sosEvents={[event]} />
                 </div>
 
                 {/* Details Card */}
-                <div className="flex-1 bg-gradient-to-b from-indigo-50/50 to-white p-0 overflow-y-auto rounded-t-3xl -mt-6 relative z-10">
+                <div className="flex-1 bg-white/20 backdrop-blur-xl p-0 overflow-y-auto rounded-t-[2.5rem] -mt-8 relative z-10 border-t border-white/40">
                     <div className="p-6 space-y-6">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h2 className="text-2xl font-bold font-heading text-slate-800">{event.userName}</h2>
-                                <p className="text-slate-500 font-medium text-sm mt-1">Student ID: {event.userId.slice(0, 8)}...</p>
+                                <h2 className="text-2xl font-bold font-heading text-slate-800 tracking-tight">{event.userName}</h2>
+                                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-wider mt-1 opacity-70">Student ID: {event.userId.slice(0, 8)}...</p>
                             </div>
-                            <span className="bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm">
+                            <span className="bg-red-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-200">
                                 {event.emergencyType || 'Critical'}
                             </span>
                         </div>
 
                         <div className="space-y-4">
-                            <div className="p-4 bg-white/60 rounded-2xl border border-white/50 shadow-sm flex items-center gap-4">
+                            <div className="glass-card p-4 rounded-2xl border border-white/50 shadow-sm flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
                                     <MapPin className="w-5 h-5 text-indigo-600" />
                                 </div>
@@ -121,7 +122,7 @@ export default function SecuritySOSDetail() {
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-white/60 rounded-2xl border border-white/50 shadow-sm flex items-center gap-4">
+                            <div className="glass-card p-4 rounded-2xl border border-white/50 shadow-sm flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
                                     <Clock className="w-5 h-5 text-indigo-600" />
                                 </div>
@@ -133,7 +134,7 @@ export default function SecuritySOSDetail() {
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-white/60 rounded-2xl border border-white/50 shadow-sm flex items-center gap-4">
+                            <div className="glass-card p-4 rounded-2xl border border-white/50 shadow-sm flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
                                     <Phone className="w-5 h-5 text-indigo-600" />
                                 </div>
@@ -194,7 +195,7 @@ export default function SecuritySOSDetail() {
                                             }
                                         }
                                     }}
-                                    className="col-span-2 flex items-center justify-center gap-2 bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-indigo-200 active:scale-95 transition-all w-full"
+                                    className="col-span-2 flex items-center justify-center gap-2 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 active:scale-95 transition-all w-full border border-white/20"
                                 >
                                     <Shield className="w-6 h-6" />
                                     Recognise SOS
@@ -218,7 +219,7 @@ export default function SecuritySOSDetail() {
                                             }
                                         }
                                     }}
-                                    className="col-span-2 flex items-center justify-center gap-2 bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-indigo-200 active:scale-95 transition-all w-full"
+                                    className="col-span-2 flex items-center justify-center gap-2 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 active:scale-95 transition-all w-full border border-white/20"
                                 >
                                     <CheckCircle className="w-6 h-6" />
                                     Resolve

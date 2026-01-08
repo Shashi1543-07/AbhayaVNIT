@@ -22,7 +22,7 @@ export default function TopHeader({ title, showBackButton = false }: TopHeaderPr
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 mx-auto w-full max-w-[480px] z-40 glass-nav border-b border-white/20 px-6 py-5 flex items-center justify-between shrink-0 shadow-xl backdrop-blur-xl">
+        <header className="fixed top-0 left-0 right-0 mx-auto w-full max-w-[480px] z-40 glass-nav border-b border-white/20 px-6 pb-6 pt-0 flex items-end justify-between shrink-0 shadow-xl backdrop-blur-xl safe-top">
             <div className="flex items-center gap-3">
                 {showBackButton && (
                     <button

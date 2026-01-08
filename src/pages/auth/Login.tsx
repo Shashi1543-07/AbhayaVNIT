@@ -83,17 +83,15 @@ export default function Login() {
             <div className="absolute -bottom-32 left-20 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
 
 
-            <div className="absolute top-6 left-6 z-20">
+
+            <div className="p-8 glass-card-auth w-full max-w-md relative z-10 pt-16">
                 <Link
                     to="/"
-                    className="flex items-center gap-2 px-4 py-2 glass-button-secondary hover:bg-white/40 transition-all text-sm font-semibold"
+                    className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/40 hover:bg-white/60 text-slate-700 transition-all text-xs font-bold border border-white/20 active:scale-95 shadow-sm"
                 >
-                    <Home className="w-4 h-4" />
+                    <Home className="w-3.5 h-3.5" />
                     Back to Home
                 </Link>
-            </div>
-
-            <div className="p-8 glass-card-auth w-full max-w-md relative z-10">
                 <h2 className="text-2xl font-bold mb-6 text-center text-primary">{displayRole} Login</h2>
 
                 {error && (

@@ -26,8 +26,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ items }) => {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
-            <div className="w-full max-w-[480px] glass-nav border-t pointer-events-auto">
-                <div className="flex justify-around items-center h-16 relative">
+            <div className="w-full max-w-[480px] glass-nav border-t border-white/20 pointer-events-auto safe-bottom">
+                <div className="flex justify-around items-start pt-4 relative h-20">
                     {navItems.map((item) => {
                         const active = isActive(item.path);
                         return (

@@ -224,7 +224,7 @@ export default function SafeWalk() {
             <TopHeader title="Safe Walk" showBackButton={true} />
 
             <motion.main
-                className="px-6 py-8 space-y-6 pb-24 pt-28 max-w-[480px] mx-auto"
+                className="px-6 py-8 space-y-6 pb-24 main-content-safe max-w-[480px] mx-auto"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

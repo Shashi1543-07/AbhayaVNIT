@@ -25,6 +25,41 @@ export default function StudentDashboard() {
     const [staff, setStaff] = useState<UserProfile[]>([]);
     const [activeWalk, setActiveWalk] = useState<any>(null);
     const [showBroadcasts, setShowBroadcasts] = useState(false);
+    const [locationName, setLocationName] = useState('Locating...');
+    const [gpsOn, setGpsOn] = useState(true);
+
+    useEffect(() => {
+        if (!navigator.geolocation) {
+            setGpsOn(false);
+            setLocationName('GPS Not Supported');
+            return;
+        }
+
+        const watchId = navigator.geolocation.watchPosition(
+            async (pos) => {
+                setGpsOn(true);
+                const { latitude, longitude } = pos.coords;
+
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18`);
+                    const data = await res.json();
+                    const area = data.address.road || data.address.suburb || data.address.neighbourhood || data.address.city || 'VNIT Campus';
+                    setLocationName(area);
+                } catch (err) {
+                    console.error("Dashboard: Geocoding failed:", err);
+                    setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                }
+            },
+            (err) => {
+                console.error("Dashboard: Geolocation failed:", err);
+                setGpsOn(false);
+                setLocationName('GPS Disabled');
+            },
+            { enableHighAccuracy: true }
+        );
+
+        return () => navigator.geolocation.clearWatch(watchId);
+    }, []);
 
     useEffect(() => {
         userService.getStaff().then(data => {
@@ -68,75 +103,88 @@ export default function StudentDashboard() {
             />
 
             <motion.main
-                className="px-4 pt-28 pb-24"
+                className="px-4 pb-24 main-content-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
                 {/* SOS Section */}
-                <motion.div variants={cardVariant} className="flex flex-col items-center justify-center py-4">
-                    <SOSButton onActivate={handleSOS} />
-                    <p className="text-muted text-xs mt-4">Long press to activate emergency</p>
+                <motion.div variants={cardVariant} className="flex flex-col items-center justify-center py-4 relative z-20">
+                    <SOSButton
+                        onActivate={handleSOS}
+                        disabled={!!(activeSOS && !activeSOS.status?.resolved)}
+                    />
+                    <p className={`text-[10px] mt-4 font-black uppercase tracking-widest transition-all duration-500 ${activeSOS && !activeSOS.status?.resolved ? "text-amber-500 animate-pulse" : "text-slate-400 opacity-60"}`}>
+                        {activeSOS && !activeSOS.status?.resolved ? "Trigger Restricted: SOS Active" : "Long press to activate emergency"}
+                    </p>
                 </motion.div>
 
-                {/* Active SOS Status */}
+                {/* Active SOS Status Card - Restored with Robust Visibility */}
                 {activeSOS && (
-                    <motion.div
-                        variants={cardVariant}
-                        className="glass-card rounded-2xl p-5 border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 to-white"
-                    >
+                    <div className="glass-card rounded-3xl p-6 border-2 border-emerald-500/30 bg-white/60 shadow-2xl mb-8 relative z-30 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
                         <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                                    <Shield className="w-5 h-5 text-emerald-600" />
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center shadow-inner">
+                                    <Shield className="w-6 h-6 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-emerald-800">SOS Active</h3>
-                                    <p className="text-xs text-emerald-600">
-                                        {new Date(activeSOS.triggeredAt).toLocaleTimeString()}
+                                    <h3 className="font-extrabold text-slate-800 text-base">Current SOS State</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">
+                                        Triggered: {activeSOS.triggeredAt ? new Date(activeSOS.triggeredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'}
                                     </p>
                                 </div>
                             </div>
-                            <span className={`px-3 py-1 rounded-lg text-xs font-bold
-                                ${!activeSOS.status.recognised ? 'bg-amber-100 text-amber-700 animate-pulse' :
-                                    !activeSOS.status.resolved ? 'bg-blue-100 text-blue-700' :
+                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md border border-white/40
+                                ${!activeSOS.status?.recognised ? 'bg-amber-100 text-amber-700 animate-pulse' :
+                                    !activeSOS.status?.resolved ? 'bg-blue-100 text-blue-700' :
                                         'bg-green-100 text-green-700'}
                             `}>
-                                {!activeSOS.status.recognised ? 'Pending' :
-                                    !activeSOS.status.resolved ? 'Security Responding' :
+                                {!activeSOS.status?.recognised ? 'Pending' :
+                                    !activeSOS.status?.resolved ? 'Security Responding' :
                                         'Resolved'}
                             </span>
                         </div>
 
-                        {activeSOS.status.recognised && activeSOS.assignedTo && (
-                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 mb-3">
-                                <p className="text-sm font-bold text-blue-800">Security Personnel Assigned</p>
-                                <p className="text-xs text-blue-600">{activeSOS.assignedTo.name}</p>
-                            </div>
-                        )}
+                        {/* Status Details */}
+                        <div className="space-y-3">
+                            {activeSOS.status?.recognised ? (
+                                <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200/50 backdrop-blur-sm shadow-sm">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Security Action Taken</p>
+                                    </div>
+                                    <p className="text-sm font-bold text-blue-900 leading-tight">
+                                        {activeSOS.assignedTo?.name || 'Security Team'} is responding to your location.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200/50 backdrop-blur-sm shadow-sm">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                        <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Alert Status</p>
+                                    </div>
+                                    <p className="text-sm font-bold text-amber-900 leading-tight">
+                                        Waiting for security to recognise the signal.
+                                    </p>
+                                    <p className="text-[10px] text-amber-600 font-medium mt-1">
+                                        Your emergency alert has been broadcasted to all nearby guards.
+                                    </p>
+                                </div>
+                            )}
 
-                        {!activeSOS.status.recognised && (
-                            <div className="text-center py-3">
-                                <p className="text-sm text-amber-700 font-medium">
-                                    ⏳ Awaiting security response...
-                                </p>
-                                <p className="text-xs text-muted mt-1">
-                                    Your emergency signal has been sent. Help is on the way.
-                                </p>
-                            </div>
-                        )}
-
-                        {activeSOS.status.resolved && (
-                            <div className="text-center py-3 bg-green-50 rounded-lg">
-                                <p className="text-sm text-green-700 font-bold">
-                                    ✓ Emergency Resolved
-                                </p>
-                                <p className="text-xs text-muted mt-1">
-                                    Resolved at {activeSOS.resolvedAt ? new Date(activeSOS.resolvedAt).toLocaleTimeString() : 'N/A'}
-                                </p>
-                            </div>
-                        )}
-                    </motion.div>
+                            {activeSOS.status?.resolved && (
+                                <div className="p-4 bg-green-50/80 rounded-2xl border border-green-200/50 backdrop-blur-sm shadow-sm">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                                        <p className="text-[10px] font-black text-green-800 uppercase tracking-widest">Incident Resolved</p>
+                                    </div>
+                                    <p className="text-sm font-bold text-green-900 leading-tight">
+                                        This alert has been marked as resolved by security.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
 
                 {/* Location Info */}
@@ -147,11 +195,11 @@ export default function StudentDashboard() {
                         </div>
                         <div>
                             <p className="text-xs text-muted font-medium">Nearby Area</p>
-                            <p className="font-semibold text-primary">Workshop Road</p>
+                            <p className="font-semibold text-primary">{locationName}</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-1">
-                        <StatusBadge status="success" label="GPS: ON" />
+                        <StatusBadge status={gpsOn ? "success" : "error"} label={gpsOn ? "GPS: ON" : "GPS: OFF"} />
                     </div>
                 </motion.div>
 
@@ -166,7 +214,7 @@ export default function StudentDashboard() {
                 </motion.div>
 
                 {/* Calling Section */}
-                <motion.div variants={cardVariant} className={!isEmergencyActive ? 'opacity-60' : ''}>
+                <motion.div variants={cardVariant} className={`mt-10 ${!isEmergencyActive ? 'opacity-60' : ''}`}>
                     <div className="flex justify-between items-end mb-3 ml-1">
                         <h3 className="text-sm font-bold text-primary">Emergency Calling</h3>
                         {!isEmergencyActive && (

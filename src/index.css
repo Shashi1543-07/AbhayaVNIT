@@ -164,6 +164,19 @@ button {
   background: linear-gradient(135deg, #FFB7C5, #C084FC);
 }
 
+/* Safe Area Utilities for Mobile Status Bar */
+.safe-top {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.25rem);
+}
+
+.main-content-safe {
+  padding-top: calc(7.5rem + env(safe-area-inset-top, 0px));
+}
+
+.safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+}
+
 .animation-delay-2000 {
   animation-delay: 2s;
 }

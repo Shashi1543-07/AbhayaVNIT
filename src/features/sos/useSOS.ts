@@ -17,8 +17,7 @@ export const useSOS = () => {
         try {
             const q = query(
                 collection(db, 'sos_events'),
-                where('userId', '==', user.uid),
-                where('status.resolved', '==', false)
+                where('userId', '==', user.uid)
             );
 
             const unsubscribe = onSnapshot(q,

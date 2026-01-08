@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, MapPin, Loader2, Plus, Skull } from 'lucide-react';
+import { MapPin, Loader2, Plus, Skull } from 'lucide-react';
 import { sosService } from '../../services/sosService';
 import { useAuthStore } from '../../context/authStore';
 import gsap from 'gsap';
@@ -16,7 +16,6 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
     const [isLongPressing, setIsLongPressing] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isActive, setIsActive] = useState(false);
-    const [audioEnabled, setAudioEnabled] = useState(false);
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [locationStatus, setLocationStatus] = useState('Locating...');
     const [sosId, setSosId] = useState<string | null>(null);
@@ -201,7 +200,7 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
                 finalLocation,
                 finalType === 'general' ? 'other' : finalType,
                 'manual_gesture',
-                audioEnabled ? 'audio-placeholder-url' : undefined
+                undefined
             );
 
             if (typeof result === 'object') {
@@ -298,28 +297,20 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
                 )}
 
                 <div className="text-center text-white z-10 select-none">
-                    <span className="text-4xl font-black tracking-wider block mb-1">SOS</span>
+                    <span className="text-4xl font-black tracking-wider block mb-1">
+                        {disabled ? 'WAIT' : 'SOS'}
+                    </span>
                     <span className="text-xs font-bold uppercase tracking-wide">
-                        {isActive ? 'SENT' : dragType === 'medical' ? 'MEDICAL' : dragType === 'harassment' ? 'THREAT' : 'HOLD'}
+                        {isActive ? 'SENT' : disabled ? 'ACTIVE' : dragType === 'medical' ? 'MEDICAL' : dragType === 'harassment' ? 'THREAT' : 'HOLD'}
                     </span>
                 </div>
             </button>
 
             {/* Controls */}
-            <div className="mt-8 flex items-center gap-6 z-10">
-                <button
-                    onClick={() => setAudioEnabled(!audioEnabled)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors
-                        ${audioEnabled ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}
-                    `}
-                >
-                    {audioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                    {audioEnabled ? 'Audio On' : 'Audio Off'}
-                </button>
-
+            <div className="mt-8 flex items-center justify-center w-full z-10">
                 <div className="flex items-center gap-2 text-slate-500 text-sm">
-                    {locationStatus === 'Locating...' ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                    <span>{locationStatus}</span>
+                    {locationStatus === 'Locating...' ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4 text-emerald-500" />}
+                    <span className="font-medium tracking-wide">{locationStatus}</span>
                 </div>
             </div>
 
