@@ -38,6 +38,7 @@ import Feed from './pages/common/Feed';
 
 import CreatePost from './pages/student/CreatePost';
 import EventMapPage from './pages/common/EventMapPage';
+import LiveTrackingManager from './components/common/LiveTrackingManager';
 
 
 function AnimatedRoutes() {
@@ -118,6 +119,7 @@ function App() {
     <Router>
       <AnimatedRoutes />
       <CallOverlay />
+      <LiveTrackingManager />
     </Router>
   );
 }

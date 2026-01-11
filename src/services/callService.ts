@@ -45,6 +45,8 @@ const servers = {
                 'stun:stun2.l.google.com:19302',
                 'stun:stun3.l.google.com:19302',
                 'stun:stun4.l.google.com:19302',
+                'stun:stun.l.google.com:19302',
+                'stun:global.stun.twilio.com:3478',
             ],
         },
     ],
@@ -55,6 +57,7 @@ export class CallService {
     private pc: RTCPeerConnection | null = null;
     private localStream: MediaStream | null = null;
     private remoteStream: MediaStream | null = null;
+    private currentFacingMode: 'user' | 'environment' = 'user';
 
     private remoteStreamListener: ((stream: MediaStream) => void) | null = null;
     private localStreamListener: ((stream: MediaStream) => void) | null = null;
@@ -98,6 +101,7 @@ export class CallService {
         this.cleanup();
 
         this.pc = new RTCPeerConnection(servers);
+        this.currentFacingMode = 'user';
 
         try {
             this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -107,7 +111,7 @@ export class CallService {
                     autoGainControl: true
                 },
                 video: isVideo ? {
-                    facingMode: 'user',
+                    facingMode: this.currentFacingMode,
                     width: { ideal: 640 },
                     height: { ideal: 480 }
                 } : false
@@ -218,6 +222,7 @@ export class CallService {
 
         const isVideo = data.callType === 'video';
         this.pc = new RTCPeerConnection(servers);
+        this.currentFacingMode = 'user';
 
         try {
             this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -227,7 +232,7 @@ export class CallService {
                     autoGainControl: true
                 },
                 video: isVideo ? {
-                    facingMode: 'user',
+                    facingMode: this.currentFacingMode,
                     width: { ideal: 640 },
                     height: { ideal: 480 }
                 } : false
@@ -238,8 +243,6 @@ export class CallService {
             }
         } catch (error) {
             console.error("callService: Error accessing media devices:", error);
-            // Even if camera fails for receiver, let audio work if possible? 
-            // Better to throw or handle gracefully.
             throw error;
         }
 
@@ -313,6 +316,47 @@ export class CallService {
                 track.enabled = enabled;
             });
         }
+    }
+
+    async switchCamera() {
+        if (!this.localStream || !this.pc) return;
+
+        const videoTrack = this.localStream.getVideoTracks()[0];
+        if (!videoTrack) return;
+
+        this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+
+        try {
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: this.currentFacingMode }
+            });
+
+            const newTrack = newStream.getVideoTracks()[0];
+
+            // Replace track in peer connection
+            const sender = this.pc.getSenders().find(s => s.track?.kind === 'video');
+            if (sender) {
+                await sender.replaceTrack(newTrack);
+            }
+
+            // Stop old track and update local stream
+            videoTrack.stop();
+            this.localStream.removeTrack(videoTrack);
+            this.localStream.addTrack(newTrack);
+
+            if (this.localStreamListener) {
+                this.localStreamListener(this.localStream);
+            }
+        } catch (error) {
+            console.error("callService: Error switching camera:", error);
+        }
+    }
+
+    async setSpeakerMode(enabled: boolean) {
+        // speakerphone switching is not largely supported in browsers directly via an API like setSinkId in all cases
+        // but we can try to use setSinkId on the audio element if available.
+        // For mobile browsers, this often relies on the user's OS defaults.
+        console.log("callService: Speaker mode requested:", enabled);
     }
 
 

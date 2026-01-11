@@ -1,13 +1,16 @@
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { mapService, type LocationData, type LocationStatus } from '../../services/mapService';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, forwardRef } from 'react';
 
+interface MapMarkerProps {
+    location: LocationData;
+    type: 'SOS' | 'SAFEWALK';
+    userName: string;
+    description?: string;
+    onClick?: () => void;
+}
 
-// Setup default icon
-// Default Icon removed
-
-// Custom Icons
 const ActiveSOSIcon = L.divIcon({
     className: 'custom-div-icon',
     html: `<div style="background-color: #ef4444; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4); animation: pulse 1.5s infinite;"></div>`,
@@ -29,26 +32,14 @@ const StaleIcon = L.divIcon({
     iconAnchor: [6, 6]
 });
 
-interface MapMarkerProps {
-    location: LocationData;
-    type: 'SOS' | 'SAFEWALK';
-    userName: string;
-    description?: string;
-    onClick?: () => void;
-}
-
-export default function MapMarker({ location, type, userName, description, onClick }: MapMarkerProps) {
+const MapMarker = forwardRef<L.Marker, MapMarkerProps>(({ location, type, userName, description, onClick }, ref) => {
     const [status, setStatus] = useState<LocationStatus>('active');
 
     useEffect(() => {
-        // Initial check
         setStatus(mapService.calculateLocationStatus(location.lastUpdated));
-
-        // Periodic check to update status even if location doesn't change
         const interval = setInterval(() => {
             setStatus(mapService.calculateLocationStatus(location.lastUpdated));
         }, 5000);
-
         return () => clearInterval(interval);
     }, [location.lastUpdated]);
 
@@ -62,6 +53,7 @@ export default function MapMarker({ location, type, userName, description, onCli
             position={[location.latitude, location.longitude]}
             icon={getIcon()}
             eventHandlers={onClick ? { click: onClick } : undefined}
+            ref={ref}
         >
             <Popup className="rounded-xl overflow-hidden p-0">
                 <div className="p-3 min-w-[200px]">
@@ -87,4 +79,9 @@ export default function MapMarker({ location, type, userName, description, onCli
             </Popup>
         </Marker>
     );
-}
+});
+
+MapMarker.displayName = 'MapMarker';
+
+export default MapMarker;
+

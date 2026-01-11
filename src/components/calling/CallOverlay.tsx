@@ -204,18 +204,20 @@ export default function CallOverlay() {
 
     const handleAccept = async () => {
         if (!incomingCall) return;
+        console.log("CallOverlay: [ACTION] Accept call", incomingCall.id);
         try {
             await callService.joinCall(incomingCall.id);
             setActiveCall(incomingCall);
             setIncomingCall(null);
         } catch (error) {
-            console.error("Failed to accept call:", error);
+            console.error("CallOverlay: Failed to accept call:", error);
             handleReject();
         }
     };
 
     const handleReject = async () => {
         if (!incomingCall) return;
+        console.log("CallOverlay: [ACTION] Reject call", incomingCall.id);
         await callService.endCall(incomingCall.id, 'rejected');
         setIncomingCall(null);
     };
@@ -223,7 +225,7 @@ export default function CallOverlay() {
     const handleEndCall = async () => {
         const callToEnd = activeCall || outboundCall || incomingCall;
         if (callToEnd) {
-            // Notifications are now handled in callService.endCall
+            console.log("CallOverlay: [ACTION] End call", callToEnd.id);
             await callService.endCall(callToEnd.id, 'ended');
             handleCleanup();
         }

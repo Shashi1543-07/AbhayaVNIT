@@ -8,18 +8,30 @@ import { MapPin, Clock, Shield, Navigation, AlertCircle, MessageCircle } from 'l
 import { motion, AnimatePresence } from 'framer-motion';
 import { containerStagger, cardVariant, buttonGlow } from '../../lib/animations';
 
-const PRESET_DESTINATIONS = [
-    { name: 'Sarojini Bhawan (Hostel)', lat: 21.1235, lng: 79.0512 },
-    { name: 'Kunda Bhawan (Hostel)', lat: 21.1245, lng: 79.0522 },
-    { name: 'Library', lat: 21.1265, lng: 79.0492 },
-    { name: 'Academic Block', lat: 21.1275, lng: 79.0482 },
-    { name: 'Main Gate', lat: 21.1215, lng: 79.0552 },
+const CAMPUS_LOCATIONS = [
+    { name: 'Main Gate (South Ambazari Rd)', lat: 21.1262, lng: 79.0511, category: 'Gates' },
+    { name: 'Bajaj Nagar Gate', lat: 21.1285, lng: 79.0560, category: 'Gates' },
+    { name: 'Yashwant Nagar Gate', lat: 21.1240, lng: 79.0470, category: 'Gates' },
+    { name: 'Kalpana Chawla Hall (GIRLS)', lat: 21.1255, lng: 79.0495, category: 'Hostels' },
+    { name: 'New GIRLS Hostel', lat: 21.1258, lng: 79.0498, category: 'Hostels' },
+    { name: 'Hostel Block 1-10 (BOYS)', lat: 21.1230, lng: 79.0530, category: 'Hostels' },
+    { name: 'Mega Mess', lat: 21.1240, lng: 79.0535, category: 'Dining' },
+    { name: 'Computer Science Dept', lat: 21.1270, lng: 79.0505, category: 'Departments' },
+    { name: 'Mechanical Dept', lat: 21.1275, lng: 79.0510, category: 'Departments' },
+    { name: 'Electronics Dept', lat: 21.1268, lng: 79.0515, category: 'Departments' },
+    { name: 'Architecture Dept', lat: 21.1272, lng: 79.0490, category: 'Departments' },
+    { name: 'Administrative Building', lat: 21.1260, lng: 79.0520, category: 'Admin' },
+    { name: 'Library', lat: 21.1265, lng: 79.0518, category: 'Admin' },
+    { name: 'Sports Complex (Gymkhana)', lat: 21.1245, lng: 79.0500, category: 'Sports' },
+    { name: 'Cricket Ground', lat: 21.1235, lng: 79.0490, category: 'Sports' },
+    { name: 'VNIT Health Center', lat: 21.1250, lng: 79.0540, category: 'Other' },
 ];
 
 export default function SafeWalk() {
     const { user, profile } = useAuthStore();
     const [activeSession, setActiveSession] = useState<SafeWalkSession | null>(null);
     const [destination, setDestination] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     const [customDestination, setCustomDestination] = useState('');
     const [duration, setDuration] = useState(15);
     const [note, setNote] = useState('');
@@ -34,16 +46,17 @@ export default function SafeWalk() {
     const lastLocationRef = useRef<{ lat: number; lng: number; timestamp: number } | null>(null);
     const lastStatusUpdateRef = useRef<'active' | 'paused' | 'delayed'>('active');
 
-    // 1. Subscribe to active session
+    // 1. Subscribe to active session & Handle Local GPS Monitoring
     useEffect(() => {
         if (!user) return;
 
         const unsubscribe = safeWalkService.subscribeToUserActiveWalk(user.uid, (session) => {
             setActiveSession(session);
-            if (session) {
-                // Tracking started inside the session subscription to ensure walkId is available
-                startGPSTracking(session.id);
-            } else {
+
+            // Start local safety monitoring if session is active
+            if (session && !watchIdRef.current) {
+                startLocalMonitoring();
+            } else if (!session && watchIdRef.current) {
                 stopGPSTracking();
             }
         });
@@ -54,13 +67,48 @@ export default function SafeWalk() {
         };
     }, [user]);
 
+    // Local Location Watch for "No Movement" and "SOS Calibration"
+    // Note: RTDB updates are handled by the global LiveTrackingManager
+    const startLocalMonitoring = () => {
+        if ('geolocation' in navigator) {
+            watchIdRef.current = navigator.geolocation.watchPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+
+                    // Track movement for "paused" check locally
+                    const prevLoc = lastLocationRef.current;
+                    if (!prevLoc || prevLoc.lat !== latitude || prevLoc.lng !== longitude) {
+                        lastLocationRef.current = {
+                            lat: latitude,
+                            lng: longitude,
+                            timestamp: Date.now()
+                        };
+                        if (showNoMovementPopup) setShowNoMovementPopup(false);
+                    }
+                },
+                (error) => console.error('Local GPS error:', error),
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+        }
+    };
+
+    const stopGPSTracking = () => {
+        if (watchIdRef.current !== null) {
+            navigator.geolocation.clearWatch(watchIdRef.current);
+            watchIdRef.current = null;
+        }
+        lastLocationRef.current = null;
+    };
+
     // 2. Monitoring & Countdown Timers
     useEffect(() => {
         if (!activeSession) return;
 
         const interval = setInterval(() => {
             // A. Countdown timer
-            const startTime = activeSession.startTime?.toDate ? activeSession.startTime.toDate() : new Date(activeSession.startTime as any);
+            const startTime = (activeSession.startTime as any)?.toDate
+                ? (activeSession.startTime as any).toDate()
+                : new Date(activeSession.startTime as any);
             const expectedEndTime = new Date(startTime.getTime() + activeSession.expectedDuration * 60000);
             const remaining = Math.max(0, Math.floor((expectedEndTime.getTime() - Date.now()) / 1000));
             setRemainingTime(remaining);
@@ -83,10 +131,10 @@ export default function SafeWalk() {
             if (!showDelayPopup) setShowDelayPopup(true);
         }
 
-        // Check for no movement (60s)
+        // Check for no movement (90s - more lenient locally)
         if (lastLocationRef.current) {
             const timeSinceMove = Date.now() - lastLocationRef.current.timestamp;
-            if (timeSinceMove > 60000) {
+            if (timeSinceMove > 90000) {
                 nextStatus = 'paused';
                 if (!showNoMovementPopup) setShowNoMovementPopup(true);
             }
@@ -97,53 +145,6 @@ export default function SafeWalk() {
             lastStatusUpdateRef.current = nextStatus;
             safeWalkService.updateWalkStatus(session.id, nextStatus);
         }
-    };
-
-    // 3. GPS Tracking Implementation
-    const startGPSTracking = (walkId: string) => {
-        if (watchIdRef.current !== null) return;
-
-        if ('geolocation' in navigator) {
-            watchIdRef.current = navigator.geolocation.watchPosition(
-                (position) => {
-                    const { latitude, longitude, speed } = position.coords;
-
-                    // Update RTDB for monitoring
-                    safeWalkService.updateLocation(walkId, {
-                        latitude,
-                        longitude,
-                        speed,
-                        lastUpdated: Date.now()
-                    });
-
-                    // Track movement for "paused" check
-                    const prevLoc = lastLocationRef.current;
-                    if (!prevLoc || prevLoc.lat !== latitude || prevLoc.lng !== longitude) {
-                        lastLocationRef.current = { lat: latitude, lng: longitude, timestamp: Date.now() };
-                        if (showNoMovementPopup) setShowNoMovementPopup(false);
-
-                        // If we move again after being paused, reset status to active
-                        if (lastStatusUpdateRef.current === 'paused') {
-                            lastStatusUpdateRef.current = 'active';
-                            safeWalkService.updateWalkStatus(walkId, 'active');
-                        }
-                    }
-                },
-                (error) => console.error('GPS tracking error:', error),
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-            );
-        }
-    };
-
-    const stopGPSTracking = () => {
-        if (watchIdRef.current !== null) {
-            navigator.geolocation.clearWatch(watchIdRef.current);
-            watchIdRef.current = null;
-        }
-        lastLocationRef.current = null;
-        lastStatusUpdateRef.current = 'active';
-        setShowNoMovementPopup(false);
-        setShowDelayPopup(false);
     };
 
     // 4. Actions
@@ -158,7 +159,7 @@ export default function SafeWalk() {
 
             const startCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
             const selectedDestName = destination || customDestination;
-            const preset = PRESET_DESTINATIONS.find(d => d.name === destination);
+            const preset = CAMPUS_LOCATIONS.find(d => d.name === destination);
 
             const destCoords = preset ? { lat: preset.lat, lng: preset.lng } : {
                 lat: startCoords.lat + 0.005, // Approximation for custom
@@ -375,24 +376,71 @@ export default function SafeWalk() {
                         ) : (
                             <motion.div key="setup" className="space-y-6">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Destination</label>
-                                    <select
-                                        value={destination}
-                                        onChange={(e) => { setDestination(e.target.value); if (e.target.value) setCustomDestination(''); }}
-                                        className="w-full px-5 py-4 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none font-bold text-slate-700 transition-all appearance-none shadow-sm"
-                                    >
-                                        <option value="">Select preset destination</option>
-                                        {PRESET_DESTINATIONS.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
-                                    </select>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Destination</label>
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            placeholder="Or enter custom place..."
-                                            value={customDestination}
-                                            onChange={(e) => { setCustomDestination(e.target.value); if (e.target.value) setDestination(''); }}
-                                            className="w-full px-5 py-4 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none font-bold text-slate-700 transition-all shadow-sm placeholder:text-slate-400"
+                                            placeholder="Search Hall, Dept, Mess..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full px-5 py-4 pl-12 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none font-bold text-slate-700 transition-all shadow-sm placeholder:text-slate-400"
                                         />
+                                        <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                     </div>
+
+                                    <div className="max-h-[220px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                                        {CAMPUS_LOCATIONS
+                                            .filter(loc =>
+                                                loc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                loc.category.toLowerCase().includes(searchQuery.toLowerCase())
+                                            )
+                                            .map((loc) => (
+                                                <button
+                                                    key={loc.name}
+                                                    onClick={() => {
+                                                        setDestination(loc.name);
+                                                        setSearchQuery(loc.name);
+                                                        setCustomDestination('');
+                                                    }}
+                                                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${destination === loc.name
+                                                        ? 'bg-primary/10 border-primary/40'
+                                                        : 'bg-white/20 border-white/40 hover:bg-white/40'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-1.5 rounded-lg ${loc.category === 'Hostels' ? 'bg-pink-100 text-pink-600' :
+                                                            loc.category === 'Departments' ? 'bg-blue-100 text-blue-600' :
+                                                                'bg-slate-100 text-slate-600'
+                                                            }`}>
+                                                            <MapPin className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <p className="text-sm font-bold text-slate-800">{loc.name}</p>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{loc.category}</p>
+                                                        </div>
+                                                    </div>
+                                                    {destination === loc.name && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                                </button>
+                                            ))
+                                        }
+                                    </div>
+
+                                    <div className="relative pt-2">
+                                        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                            <div className="w-full border-t border-slate-200/50"></div>
+                                        </div>
+                                        <div className="relative flex justify-center">
+                                            <span className="bg-slate-50 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Or Custom</span>
+                                        </div>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        placeholder="Enter custom location name..."
+                                        value={customDestination}
+                                        onChange={(e) => { setCustomDestination(e.target.value); if (e.target.value) setDestination(''); }}
+                                        className="w-full px-5 py-4 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none font-bold text-slate-700 transition-all shadow-sm placeholder:text-slate-400"
+                                    />
                                 </div>
 
                                 <div className="space-y-5 pt-2">

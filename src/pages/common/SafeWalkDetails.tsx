@@ -29,26 +29,39 @@ export default function SafeWalkDetails() {
     const [sending, setSending] = useState(false);
     const [selectedEscort, setSelectedEscort] = useState('');
     const [assigning, setAssigning] = useState(false);
+    const [liveLocation, setLiveLocation] = useState<any>(null);
 
     useEffect(() => {
         if (!id) return;
 
         // Subscribe to walk metadata
-        const unsubscribe = onSnapshot(doc(db, 'safe_walk', id), (doc) => {
+        const unsubscribeMetadata = onSnapshot(doc(db, 'safe_walk', id), (doc) => {
             if (doc.exists()) {
-                setWalk({ id: doc.id, ...doc.data() } as SafeWalkSession);
+                const data = doc.data() as SafeWalkSession;
+                setWalk({ ...data, id: doc.id });
             } else {
                 console.error("Walk not found");
                 navigate(-1);
             }
         });
 
-
-
         return () => {
-            unsubscribe();
+            unsubscribeMetadata();
         };
     }, [id, navigate]);
+
+    useEffect(() => {
+        if (!walk?.userId) return;
+
+        // Subscribe to live location from RTDB
+        const unsubscribeLocation = safeWalkService.subscribeToWalkLocation(walk.userId, (location) => {
+            setLiveLocation(location);
+        });
+
+        return () => {
+            unsubscribeLocation();
+        };
+    }, [walk?.userId]);
 
     const handleAssignEscort = async () => {
         if (!id || !selectedEscort || !user) return;
@@ -133,12 +146,10 @@ export default function SafeWalkDetails() {
                 <motion.div variants={cardVariant} className="glass-card p-2 rounded-[2.5rem] border border-white/50 shadow-2xl overflow-hidden h-[300px] relative">
                     <div className="w-full h-full rounded-[2.2rem] overflow-hidden border border-white/40">
                         <EventDetailMap
-                            location={{
-                                latitude: 21.125, // Default start
-                                longitude: 79.050,
-                                lastUpdated: Date.now()
-                            }}
-                            center={{ lat: 21.125, lng: 79.050 }}
+                            location={liveLocation}
+                            center={walk.startLocation}
+                            destination={walk.destination}
+                            userName={walk.userName}
                             eventType="SAFEWALK"
                         />
                     </div>

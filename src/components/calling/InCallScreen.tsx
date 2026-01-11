@@ -25,6 +25,7 @@ export default function InCallScreen({
 }: InCallScreenProps) {
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
+    const [isSpeakerOn, setIsSpeakerOn] = useState(false);
     const [duration, setDuration] = useState(0);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -53,6 +54,15 @@ export default function InCallScreen({
         }
     }, [remoteStream, localStream, isVideoCall]);
 
+    // Handle audio output for speaker mode
+    useEffect(() => {
+        const audioEl = isVideoCall ? remoteVideoRef.current : audioRef.current;
+        if (audioEl && (audioEl as any).setSinkId) {
+            // This is a experimental API, but try fetching devices if needed
+            // For now we just log, as actual switching often needs device enumeration
+        }
+    }, [isSpeakerOn]);
+
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -69,6 +79,16 @@ export default function InCallScreen({
         const newVideoState = !isVideoOff;
         callService.toggleVideo(!newVideoState);
         setIsVideoOff(newVideoState);
+    };
+
+    const toggleSpeaker = () => {
+        const next = !isSpeakerOn;
+        callService.setSpeakerMode(next);
+        setIsSpeakerOn(next);
+    };
+
+    const switchCamera = () => {
+        callService.switchCamera();
     };
 
     return (
@@ -120,7 +140,7 @@ export default function InCallScreen({
                     <motion.div
                         drag
                         dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
-                        className="absolute top-24 right-5 w-32 h-44 bg-slate-800 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl z-50 cursor-move"
+                        className="absolute bottom-32 right-5 w-32 h-44 bg-slate-800 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl z-50 cursor-move"
                     >
                         {isVideoOff ? (
                             <div className="w-full h-full flex items-center justify-center bg-slate-800">
@@ -190,7 +210,7 @@ export default function InCallScreen({
 
             {/* Controls */}
             <div className="relative z-10 w-full px-8 pb-16 flex flex-col items-center gap-8">
-                <div className="flex gap-6 items-center">
+                <div className="flex gap-4 items-center flex-wrap justify-center">
                     <button
                         onClick={toggleMute}
                         className={`w-14 h-14 rounded-full flex items-center justify-center border transition-all active:scale-90 ${isMuted
@@ -221,13 +241,18 @@ export default function InCallScreen({
                     </button>
 
                     <button
-                        className="w-14 h-14 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 backdrop-blur-md transition-all active:scale-90"
+                        onClick={toggleSpeaker}
+                        className={`w-14 h-14 rounded-full flex items-center justify-center border transition-all active:scale-90 ${isSpeakerOn
+                            ? 'bg-white text-slate-900 border-white shadow-lg'
+                            : 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                            }`}
                     >
                         <Volume2 className="w-6 h-6" />
                     </button>
 
                     {isVideoCall && (
                         <button
+                            onClick={switchCamera}
                             className="w-14 h-14 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 backdrop-blur-md transition-all active:scale-90"
                         >
                             <Camera className="w-6 h-6" />
