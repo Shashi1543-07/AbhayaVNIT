@@ -8,7 +8,7 @@ import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkSe
 import { MapPin, Clock, Shield, Navigation } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
-import SafeWalkMap from '../../components/security/SafeWalkMap';
+import SecurityOverviewMap from '../../components/map/SecurityOverviewMap';
 import { useNavigate } from 'react-router-dom';
 
 export default function WardenSafeWalk() {
@@ -64,7 +64,7 @@ export default function WardenSafeWalk() {
                 {/* Map View - Glass Bordered */}
                 <motion.div variants={cardVariant} className="glass-card p-2 rounded-[2.5rem] border border-white/50 shadow-2xl overflow-hidden h-[300px] relative">
                     <div className="w-full h-full rounded-[2.2rem] overflow-hidden border border-white/40">
-                        <SafeWalkMap walks={activeWalks} />
+                        <SecurityOverviewMap sosEvents={[]} activeWalks={activeWalks} />
                     </div>
                 </motion.div>
 

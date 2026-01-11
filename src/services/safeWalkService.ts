@@ -49,7 +49,7 @@ export interface SafeWalkSession extends SafeWalkRequest {
 }
 
 const COLLECTION_NAME = "safe_walk";
-const RTDB_NODE = "safe_walk_locations";
+
 
 export const safeWalkService = {
     // Start a new Safe Walk
@@ -63,8 +63,9 @@ export const safeWalkService = {
                 status: 'active'
             });
 
-            // Initialize location in RTDB
-            const locationRef = ref(rtdb, `${RTDB_NODE}/${docRef.id}`);
+            // Initialize location in RTDB (live_locations)
+            // We use userId as the key for live tracking now
+            const locationRef = ref(rtdb, `live_locations/${data.userId}`);
             await set(locationRef, {
                 latitude: data.startLocation.lat,
                 longitude: data.startLocation.lng,
@@ -104,9 +105,9 @@ export const safeWalkService = {
     },
 
     // Update Real-time Location to RTDB
-    updateLocation: async (walkId: string, location: SafeWalkLocation) => {
+    updateLocation: async (userId: string, location: SafeWalkLocation) => {
         try {
-            const locationRef = ref(rtdb, `${RTDB_NODE}/${walkId}`);
+            const locationRef = ref(rtdb, `live_locations/${userId}`);
             await set(locationRef, location);
         } catch (error) {
             console.error("Error updating location:", error);
@@ -133,9 +134,10 @@ export const safeWalkService = {
         });
     },
 
-    // Subscribe to a specific walk's location (for Map)
-    subscribeToWalkLocation: (walkId: string, callback: (location: SafeWalkLocation) => void) => {
-        const locationRef = ref(rtdb, `${RTDB_NODE}/${walkId}`);
+    // Subscribe to a specific walk's location (DEPRECATED - Use mapService)
+    // Kept for backward compat if any, but pointing to live_locations
+    subscribeToWalkLocation: (userId: string, callback: (location: SafeWalkLocation) => void) => {
+        const locationRef = ref(rtdb, `live_locations/${userId}`);
         return onValue(locationRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {

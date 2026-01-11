@@ -12,7 +12,8 @@ export const firebaseConfig = {
     projectId: "vnit-girls-safety",
     storageBucket: "vnit-girls-safety.firebasestorage.app",
     messagingSenderId: "40553570166",
-    appId: "1:40553570166:web:418694082d0ed1fb356457"
+    appId: "1:40553570166:web:418694082d0ed1fb356457",
+    databaseURL: "https://vnit-girls-safety-default-rtdb.firebaseio.com"
 };
 
 const app = initializeApp(firebaseConfig);

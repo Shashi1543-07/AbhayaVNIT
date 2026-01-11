@@ -110,9 +110,7 @@ export default function WardenDashboard() {
                 {/* Active SOS Section */}
                 <motion.div variants={cardVariant}>
                     <h3 className="text-sm font-bold text-primary mb-3 ml-1">Active Emergencies</h3>
-                    <div className="glass-card-soft bg-surface/50 rounded-2xl overflow-hidden border-2 border-emergency">
-                        <WardenActiveSOS hostelId={wardenHostelId} />
-                    </div>
+                    <WardenActiveSOS hostelId={wardenHostelId} />
                 </motion.div>
 
                 {/* Active Safe Walks Section */}

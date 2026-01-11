@@ -21,9 +21,7 @@ export default function WardenSOS() {
                 animate="visible"
             >
                 <motion.div variants={cardVariant}>
-                    <div className="glass-card-soft bg-surface/50 rounded-2xl overflow-hidden border-2 border-emergency">
-                        <WardenActiveSOS hostelId={wardenHostelId} />
-                    </div>
+                    <WardenActiveSOS hostelId={wardenHostelId} />
                 </motion.div>
             </motion.main>
             <BottomNav items={wardenNavItems} />

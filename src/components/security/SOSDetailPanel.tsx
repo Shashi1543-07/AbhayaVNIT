@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Phone, User, Shield, CheckCircle, MapPin, Clock, AlertTriangle } from 'lucide-react';
 import { type SOSEvent } from '../../services/sosService';
 import { callService } from '../../services/callService';
 import { useAuthStore } from '../../context/authStore';
-import LiveMap from '../LiveMap';
+import EventDetailMap from '../map/EventDetailMap';
+import { mapService, type LocationData } from '../../services/mapService';
 
 interface SOSDetailPanelProps {
     event: SOSEvent;
@@ -14,6 +16,15 @@ interface SOSDetailPanelProps {
 export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack }: SOSDetailPanelProps) {
     const { user } = useAuthStore();
     const timeElapsed = Math.floor((Date.now() - event.triggeredAt) / 1000 / 60); // minutes
+    const [liveLocation, setLiveLocation] = useState<LocationData | null>(null);
+
+    useEffect(() => {
+        if (!event.userId) return;
+        const unsubscribe = mapService.subscribeToSingleLocation(event.userId, (data) => {
+            setLiveLocation(data);
+        });
+        return () => unsubscribe();
+    }, [event.userId]);
 
     const initiateCall = () => {
         if (!user) return;
@@ -29,7 +40,19 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
         <div className="bg-surface rounded-2xl shadow-sm border border-surface overflow-hidden flex flex-col h-full">
             {/* Map Section */}
             <div className="h-64 relative border-b-4 border-surface shadow-sm z-0">
-                <LiveMap sosEvents={[event]} />
+                <div className="h-full w-full">
+                    <EventDetailMap
+                        userName={event.userName}
+                        eventType="SOS"
+                        location={liveLocation}
+                        center={
+                            liveLocation ? { lat: liveLocation.latitude, lng: liveLocation.longitude } :
+                                (typeof event.location === 'object' && event.location !== null && 'lat' in event.location) ?
+                                    { lat: (event.location as any).lat, lng: (event.location as any).lng } :
+                                    { lat: 21.1259, lng: 79.0525 }
+                        }
+                    />
+                </div>
                 <div className="absolute top-4 right-4 z-[400]">
                     <button
                         onClick={() => onTrack(event.id)}

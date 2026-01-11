@@ -2,7 +2,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
-import LiveMap from '../../components/LiveMap';
+import BottomNav from '../../components/layout/BottomNav';
+import { wardenNavItems } from '../../lib/navItems';
 import { motion } from 'framer-motion';
 import { containerStagger } from '../../lib/animations';
 import { type SOSEvent } from '../../services/sosService';
@@ -11,6 +12,7 @@ import { useAuthStore } from '../../context/authStore';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { MapPin, Clock, Shield, Phone, User, AlertTriangle, Video } from 'lucide-react';
+import { mapService, type LocationData } from '../../services/mapService';
 
 export default function WardenSOSDetail() {
     const { id } = useParams();
@@ -18,6 +20,17 @@ export default function WardenSOSDetail() {
     const { user, profile } = useAuthStore();
     const [event, setEvent] = useState<SOSEvent | null>(null);
     const [loading, setLoading] = useState(true);
+    const [liveLocation, setLiveLocation] = useState<LocationData | null>(null);
+
+    // Call handling...
+
+    useEffect(() => {
+        if (!event?.userId) return;
+        const unsubscribe = mapService.subscribeToSingleLocation(event.userId, (data) => {
+            setLiveLocation(data);
+        });
+        return () => unsubscribe();
+    }, [event?.userId]);
 
     const handleCall = (destRole: 'student' | 'security', isVideo: boolean = false) => {
         if (!user || !event) return;
@@ -116,125 +129,125 @@ export default function WardenSOSDetail() {
                 className="px-4 pt-28 pb-24"
                 variants={containerStagger}
             >
-                {/* Map Section */}
-                <div className="h-64 rounded-xl overflow-hidden border-2 border-surface shadow-lg">
-                    <LiveMap sosEvents={[event]} />
+                {/* Header Section */}
+                <div className="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 className="text-3xl font-black text-slate-800 font-heading tracking-tighter">{event.userName || event.studentName}</h2>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 font-bold mt-1">
+                            <span className="flex items-center gap-1">
+                                <User className="w-3 h-3" /> {event.role}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" /> {event.userPhone || 'No Phone'}
+                            </span>
+                        </div>
+                    </div>
+                    <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${!event.status.recognised ? 'bg-red-500 text-white shadow-red-500/30' :
+                        !event.status.resolved ? 'bg-amber-500 text-white shadow-amber-500/30' :
+                            'bg-green-500 text-white shadow-green-500/30'
+                        }`}>
+                        {!event.status.recognised ? 'Pending' :
+                            !event.status.resolved ? 'Recognised' :
+                                'Resolved'}
+                    </span>
                 </div>
 
-                {/* Event Information Card */}
-                <div className="glass-card rounded-xl p-6 space-y-4">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h2 className="text-xl font-bold text-primary mb-1">{event.userName || event.studentName}</h2>
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
-                                <span className="flex items-center gap-1 bg-background px-2 py-1 rounded">
-                                    <User className="w-3 h-3" /> {event.role}
-                                </span>
-                                <span className="flex items-center gap-1 bg-background px-2 py-1 rounded">
-                                    <Phone className="w-3 h-3" /> {event.userPhone || 'No Phone'}
-                                </span>
+                <div className="space-y-4">
+                    {/* Location & Map Card */}
+                    <div className="glass-card p-5 rounded-[2rem] border border-white/60 shadow-xl relative overflow-hidden">
+                        <div className="flex items-center gap-4 mb-4 relative z-10">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20">
+                                <MapPin className="w-6 h-6 text-indigo-600" />
                             </div>
-                        </div>
-                        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase
-                            ${!event.status.recognised ? 'bg-red-100 text-red-700' :
-                                !event.status.resolved ? 'bg-amber-100 text-amber-700' :
-                                    'bg-green-100 text-green-700'}
-                        `}>
-                            {!event.status.recognised ? 'Pending' :
-                                !event.status.resolved ? 'Recognised' :
-                                    'Resolved'}
-                        </span>
-                    </div>
-
-                    {/* Location & Time Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-surface">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
-                                <MapPin className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted font-bold uppercase">Location</p>
-                                <p className="text-sm font-medium">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Location</p>
+                                <p className="text-sm font-bold text-slate-800 truncate leading-tight">
                                     Hostel {event.hostelId || event.hostel} • Room {event.roomNo || event.roomNumber}
                                 </p>
+                                <p className="text-xs text-slate-500">(Approximate)</p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-warning-50 flex items-center justify-center">
-                                <Clock className="w-5 h-5 text-warning" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted font-bold uppercase">Time Elapsed</p>
-                                <p className="text-sm font-bold text-warning">{timeElapsed} minutes</p>
-                            </div>
+                        <button
+                            onClick={() => navigate(`/warden/map/${event.id}`)}
+                            className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-white/20 relative z-10"
+                        >
+                            <MapPin className="w-4 h-4" />
+                            View Live Map
+                            {liveLocation && (
+                                <span className="animate-pulse w-2 h-2 rounded-full bg-white ml-1"></span>
+                            )}
+                        </button>
+
+                        {/* Decorative Background Blur */}
+                        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl z-0"></div>
+                    </div>
+
+                    {/* Time Card */}
+                    <div className="glass-card p-4 rounded-[1.5rem] border border-white/60 shadow-lg flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0 border border-orange-500/20">
+                            <Clock className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Time Elapsed</p>
+                            <p className="text-sm font-bold text-slate-800">{timeElapsed} minutes ago</p>
                         </div>
                     </div>
 
                     {/* Emergency Details */}
                     {event.emergencyType && (
-                        <div className="p-4 bg-emergency/5 border border-emergency/20 rounded-lg">
+                        <div className="p-4 bg-red-50/50 border border-red-200 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2">
-                                <AlertTriangle className="w-5 h-5 text-emergency" />
-                                <h3 className="font-bold text-emergency uppercase">Emergency Type</h3>
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                                <h3 className="font-bold text-red-700 uppercase text-sm">Emergency Type</h3>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <span className={`px-3 py-1 border rounded font-bold uppercase text-sm
-                                    ${event.emergencyType === 'medical' ? 'bg-red-50 text-red-700 border-red-200' :
-                                        event.emergencyType === 'harassment' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                            'bg-slate-50 text-slate-700 border-slate-200'}
+                            <div className="flex flex-wrap items-center gap-3">
+                                <span className={`px-3 py-1 border rounded-lg font-bold uppercase text-xs
+                                    ${event.emergencyType === 'medical' ? 'bg-red-100 text-red-700 border-red-200' :
+                                        event.emergencyType === 'harassment' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                            'bg-slate-100 text-slate-700 border-slate-200'}
                                 `}>
                                     {event.emergencyType}
                                 </span>
                                 {event.triggerMethod && (
-                                    <span className="text-sm text-muted italic">
+                                    <span className="text-xs text-slate-500 italic">
                                         Triggered via: {event.triggerMethod.replace('_', ' ')}
                                     </span>
                                 )}
                             </div>
                             {event.description && (
-                                <p className="text-sm text-muted mt-3 italic">"{event.description}"</p>
+                                <p className="text-sm text-slate-600 mt-2 italic">"{event.description}"</p>
                             )}
                         </div>
                     )}
 
-                    {/* Assignment Info & Coordinator Calls */}
-                    {event.status.recognised && event.assignedTo && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <Shield className="w-5 h-5 text-blue-600" />
+                    {/* Assignment & Actions Card */}
+                    <div className="glass-card p-5 rounded-[2rem] border border-white/60 shadow-xl space-y-4">
+                        {event.status.recognised && event.assignedTo && (
+                            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <Shield className="w-8 h-8 text-blue-600 bg-white p-1.5 rounded-lg shadow-sm" />
                                     <div>
-                                        <p className="text-sm font-bold text-blue-800">Assigned Security</p>
-                                        <p className="text-xs text-blue-600">{event.assignedTo.name}</p>
+                                        <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">Security</p>
+                                        <p className="text-sm font-bold text-blue-900">{event.assignedTo.name}</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => handleCall('security', false)}
-                                        className="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg active:scale-90 transition-all hover:bg-blue-50"
-                                        title="Voice Call Security"
+                                        className="p-2.5 bg-white border border-blue-100 text-blue-600 rounded-xl active:scale-90 transition-all hover:bg-blue-50 shadow-sm"
+                                        title="Call Security"
                                     >
                                         <Phone className="w-4 h-4" />
                                     </button>
-                                    <button
-                                        onClick={() => handleCall('security', true)}
-                                        className="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg active:scale-90 transition-all hover:bg-blue-50"
-                                        title="Video Call Security"
-                                    >
-                                        <Video className="w-4 h-4" />
-                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Calling Actions */}
-                    <div className="pt-2 border-t border-surface">
-                        <div className="flex justify-between items-center bg-background p-4 rounded-xl border border-surface">
+                        <div className="flex justify-between items-center bg-white/40 p-3 rounded-xl border border-white/50">
                             <div>
-                                <p className="text-xs text-muted font-bold uppercase">Call Student</p>
-                                <p className="text-sm font-medium">{event.userName}</p>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Call Student</p>
+                                <p className="text-sm font-bold text-slate-800">{event.userName}</p>
                             </div>
                             <div className="flex gap-2">
                                 <button
@@ -259,8 +272,9 @@ export default function WardenSOSDetail() {
                                 </button>
                             </div>
                         </div>
+
                         {!event.status.recognised && (
-                            <p className="text-[10px] text-center text-amber-600 font-bold mt-2">
+                            <p className="text-[10px] text-center text-amber-600 font-bold mt-2 bg-amber-50 py-1 rounded-lg border border-amber-100">
                                 🔒 CALLING ENABLED AFTER SECURITY ACKNOWLEDGEMENT
                             </p>
                         )}
@@ -268,21 +282,24 @@ export default function WardenSOSDetail() {
                 </div>
 
                 {/* Timeline */}
-                <div className="glass-card rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-primary mb-4">Incident Timeline</h3>
-                    <div className="relative border-l-2 border-surface ml-2 space-y-6 pl-6 py-2">
+                <div className="glass-card rounded-[2rem] p-6 border border-white/60 shadow-lg mt-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Clock className="w-5 h-5 text-indigo-600" />
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight">Timeline</h3>
+                    </div>
+                    <div className="relative border-l-2 border-indigo-100 ml-2 space-y-6 pl-6 py-2">
                         {(event.timeline || []).map((entry, idx) => (
                             <div key={idx} className="relative">
-                                <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 
-                                    ${entry.action.includes('Triggered') ? 'bg-red-500 border-red-500' :
-                                        entry.action.includes('Recognised') ? 'bg-blue-500 border-blue-500' :
-                                            entry.action.includes('Resolved') ? 'bg-green-500 border-green-500' :
-                                                'bg-surface border-primary'}
+                                <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 shadow-sm
+                                    ${entry.action.includes('Triggered') ? 'bg-red-500 border-white ring-2 ring-red-100' :
+                                        entry.action.includes('Recognised') ? 'bg-blue-500 border-white ring-2 ring-blue-100' :
+                                            entry.action.includes('Resolved') ? 'bg-green-500 border-white ring-2 ring-green-100' :
+                                                'bg-slate-200 border-white'}
                                 `}></div>
                                 <div className="flex flex-col gap-1">
-                                    <p className="font-bold text-primary text-sm">{entry.action}</p>
-                                    {entry.note && <p className="text-xs text-muted">{entry.note}</p>}
-                                    <span className="text-xs font-mono text-muted bg-background px-2 py-1 rounded self-start">
+                                    <p className="font-bold text-slate-800 text-sm">{entry.action}</p>
+                                    {entry.note && <p className="text-xs text-slate-500">{entry.note}</p>}
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                         {new Date(entry.time).toLocaleString()}
                                     </span>
                                 </div>
@@ -292,12 +309,13 @@ export default function WardenSOSDetail() {
                 </div>
 
                 {/* View Only Notice */}
-                <div className="glass-card rounded-xl p-4 bg-blue-50/50 border border-blue-200">
-                    <p className="text-sm text-blue-700 text-center">
-                        <strong>Warden View:</strong> You are viewing this SOS in read-only mode. Only Security personnel can take action on SOS events.
+                <div className="glass-card rounded-xl p-4 bg-blue-50/30 border border-blue-100/50 mt-4">
+                    <p className="text-xs text-blue-700 text-center font-medium">
+                        <strong>Read Only:</strong> Only Security personnel can resolve this event.
                     </p>
                 </div>
             </motion.main>
+            <BottomNav items={wardenNavItems} />
         </MobileWrapper>
     );
 }

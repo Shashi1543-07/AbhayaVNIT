@@ -37,6 +37,7 @@ import CallOverlay from './components/calling/CallOverlay';
 import Feed from './pages/common/Feed';
 
 import CreatePost from './pages/student/CreatePost';
+import EventMapPage from './pages/common/EventMapPage';
 
 
 function AnimatedRoutes() {
@@ -69,6 +70,7 @@ function AnimatedRoutes() {
           <Route path="/warden/dashboard" element={<WardenDashboard />} />
           <Route path="/warden/sos" element={<WardenSOS />} />
           <Route path="/warden/sos/:id" element={<WardenSOSDetail />} />
+          <Route path="/warden/map/:id" element={<EventMapPage />} />
           <Route path="/warden/reports" element={<WardenReports />} />
           <Route path="/warden/messages" element={<Messages />} />
           <Route path="/warden/profile" element={<WardenProfile />} />
@@ -82,6 +84,7 @@ function AnimatedRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['security']} />}>
           <Route path="/security/dashboard" element={<SecurityDashboard />} />
           <Route path="/security/sos/:id" element={<SecuritySOSDetail />} />
+          <Route path="/security/map/:id" element={<EventMapPage />} />
           <Route path="/security/messages" element={<Messages />} />
           <Route path="/security/map" element={<SecurityMapView />} />
           <Route path="/security/profile" element={<SecurityProfile />} />
@@ -97,6 +100,8 @@ function AnimatedRoutes() {
           <Route path="/admin/logs" element={<AuditLogs />} />
           <Route path="/admin/broadcasts" element={<Broadcasts />} />
           <Route path="/admin/sos/:id" element={<AdminSOSDetail />} />
+          <Route path="/admin/sos/:id" element={<AdminSOSDetail />} />
+          <Route path="/admin/map/:id" element={<EventMapPage />} />
           <Route path="/admin/safe-walk/:id" element={<SafeWalkDetails />} />
         </Route>
       </Routes>

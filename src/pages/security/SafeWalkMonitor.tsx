@@ -8,7 +8,7 @@ import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkSe
 import { MapPin, Clock, Shield, Navigation } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
-import SafeWalkMap from '../../components/security/SafeWalkMap';
+import SecurityOverviewMap from '../../components/map/SecurityOverviewMap';
 
 export default function SafeWalkMonitor() {
     const navigate = useNavigate();
@@ -60,7 +60,7 @@ export default function SafeWalkMonitor() {
                 {/* Map View - Glass Container */}
                 <motion.div variants={cardVariant} className="glass-card p-2 rounded-[2.5rem] border border-white/50 shadow-2xl overflow-hidden h-[320px] relative">
                     <div className="w-full h-full rounded-[2.2rem] overflow-hidden border border-white/40">
-                        <SafeWalkMap walks={activeWalks} />
+                        <SecurityOverviewMap sosEvents={[]} activeWalks={activeWalks} />
                     </div>
                     {activeWalks.length > 0 && (
                         <div className="absolute bottom-6 left-6 right-6 bg-white/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/60 shadow-lg z-[1000] text-center">

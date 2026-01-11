@@ -3,11 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
-import { safeWalkService, type SafeWalkSession, type SafeWalkLocation } from '../../services/safeWalkService';
+import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkService';
 import { useAuthStore } from '../../context/authStore';
 import { MapPin, Clock, Shield, Send, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import SafeWalkMap from '../../components/security/SafeWalkMap';
+import EventDetailMap from '../../components/map/EventDetailMap';
 import { securityNavItems, wardenNavItems, adminNavItems } from '../../lib/navItems';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -25,7 +25,6 @@ export default function SafeWalkDetails() {
     const navigate = useNavigate();
     const { profile, user } = useAuthStore();
     const [walk, setWalk] = useState<SafeWalkSession | null>(null);
-    const [liveLocation, setLiveLocation] = useState<SafeWalkLocation | null>(null);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
     const [selectedEscort, setSelectedEscort] = useState('');
@@ -44,14 +43,10 @@ export default function SafeWalkDetails() {
             }
         });
 
-        // Subscribe to live location
-        const unsubLocation = safeWalkService.subscribeToWalkLocation(id, (loc) => {
-            setLiveLocation(loc);
-        });
+
 
         return () => {
             unsubscribe();
-            unsubLocation();
         };
     }, [id, navigate]);
 
@@ -137,16 +132,17 @@ export default function SafeWalkDetails() {
                 {/* Map Section */}
                 <motion.div variants={cardVariant} className="glass-card p-2 rounded-[2.5rem] border border-white/50 shadow-2xl overflow-hidden h-[300px] relative">
                     <div className="w-full h-full rounded-[2.2rem] overflow-hidden border border-white/40">
-                        <SafeWalkMap walks={[walk]} />
+                        <EventDetailMap
+                            location={{
+                                latitude: 21.125, // Default start
+                                longitude: 79.050,
+                                lastUpdated: Date.now()
+                            }}
+                            center={{ lat: 21.125, lng: 79.050 }}
+                            eventType="SAFEWALK"
+                        />
                     </div>
-                    {liveLocation && (
-                        <div className="absolute top-6 right-6 bg-white/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/60 shadow-lg z-[1000]">
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                <span className="text-[10px] font-black text-slate-700 uppercase tracking-tighter">Live GPS</span>
-                            </div>
-                        </div>
-                    )}
+
                 </motion.div>
 
                 {/* Info Grid */}

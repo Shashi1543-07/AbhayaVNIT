@@ -65,12 +65,14 @@ export default function ActiveSafeWalk({ walkId, initialData, onWalkEnded }: Act
             const { latitude, longitude, speed } = position.coords;
 
             // Update RTDB
-            safeWalkService.updateLocation(walkId, {
-                latitude,
-                longitude,
-                speed,
-                lastUpdated: Date.now()
-            });
+            if (user?.uid) {
+                safeWalkService.updateLocation(user.uid, {
+                    latitude,
+                    longitude,
+                    speed,
+                    lastUpdated: Date.now()
+                });
+            }
 
             // Check distance to destination
             if (walkData.destination) {

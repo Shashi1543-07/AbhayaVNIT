@@ -6,9 +6,10 @@ import { useAuthStore } from '../../context/authStore';
 interface TopHeaderProps {
     title: string;
     showBackButton?: boolean;
+    transparent?: boolean;
 }
 
-export default function TopHeader({ title, showBackButton = false }: TopHeaderProps) {
+export default function TopHeader({ title, showBackButton = false, transparent = false }: TopHeaderProps) {
     const navigate = useNavigate();
     const { role } = useAuthStore();
 
@@ -22,7 +23,10 @@ export default function TopHeader({ title, showBackButton = false }: TopHeaderPr
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 mx-auto w-full max-w-[480px] z-40 glass-nav border-b border-white/20 px-6 pb-6 pt-0 flex items-end justify-between shrink-0 shadow-xl backdrop-blur-xl safe-top">
+        <header className={`fixed top-0 left-0 right-0 mx-auto w-full lg:max-w-[480px] z-40 px-6 pb-6 pt-6 flex items-end justify-between shrink-0 safe-top transition-all duration-300 ${transparent
+            ? 'bg-transparent'
+            : 'glass-nav border-b border-white/20 shadow-xl backdrop-blur-xl pt-0'
+            }`}>
             <div className="flex items-center gap-3">
                 {showBackButton && (
                     <button
