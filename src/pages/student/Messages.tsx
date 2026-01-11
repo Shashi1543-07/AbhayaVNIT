@@ -163,7 +163,7 @@ export default function Messages() {
                 background: 'linear-gradient(20deg, #FF99AC 0%, #C084FC 35%, #89CFF0 70%, #FFFFFF 100%)'
             }} />
 
-            <div className="relative px-4 pb-20 z-10 main-content-safe">
+            <div className="relative px-4 pt-nav-safe pb-nav-safe z-10">
                 {/* Search Bar for Conversations */}
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

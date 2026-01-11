@@ -75,7 +75,7 @@ export default function WardenDashboard() {
             />
 
             <motion.main
-                className="px-4 pb-24 main-content-safe"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -128,9 +128,9 @@ export default function WardenDashboard() {
                         <h3 className="text-sm font-bold text-primary">Recent Incidents</h3>
                         <button className="text-xs text-primary font-medium">View All</button>
                     </div>
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {incidents.length === 0 ? (
-                            <div className="text-center py-4 text-muted text-xs">
+                            <div className="text-center py-4 text-muted text-xs col-span-full">
                                 No recent incidents reported.
                             </div>
                         ) : (
@@ -157,7 +157,7 @@ export default function WardenDashboard() {
 
                 {/* Directory Link */}
                 {/* Directory Link and Feed */}
-                <motion.div variants={cardVariant} className="space-y-3">
+                <motion.div variants={cardVariant} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <ActionCard
                         icon={Users}
                         label="Student Directory"

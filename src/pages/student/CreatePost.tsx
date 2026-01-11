@@ -94,7 +94,7 @@ export default function CreatePost() {
             <TopHeader title="Create Post" showBackButton={true} />
 
             <motion.main
-                className="px-4 pt-28 pb-24"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 // Assuming containerStagger is defined elsewhere or meant to be added
                 // variants={containerStagger}
                 initial={{ opacity: 0, y: 20 }}

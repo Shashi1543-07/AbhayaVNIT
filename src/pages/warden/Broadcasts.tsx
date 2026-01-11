@@ -53,7 +53,7 @@ export default function WardenBroadcasts() {
             <TopHeader title="Broadcasts" showBackButton={true} />
 
             <motion.main
-                className="px-4 pt-28 pb-24"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="show"

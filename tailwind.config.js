@@ -76,8 +76,10 @@ export default {
         sans: ['Inter', 'Roboto', 'sans-serif'],
         heading: ['Poppins', 'Montserrat', 'sans-serif'],
       },
-      'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
-      'glow': '0 0 15px rgba(229, 57, 53, 0.5)',
+      boxShadow: {
+        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+        'glow': '0 0 15px rgba(229, 57, 53, 0.5)',
+      },
     },
     animation: {
       blob: "blob 7s infinite",
@@ -99,6 +101,5 @@ export default {
       },
     },
   },
-},
-plugins: [],
+  plugins: [],
 }

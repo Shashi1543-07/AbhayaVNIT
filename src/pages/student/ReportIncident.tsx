@@ -103,7 +103,7 @@ export default function ReportIncident() {
             <TopHeader title="New Report" showBackButton={true} />
 
             <motion.main
-                className="px-4 pb-24 main-content-safe"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

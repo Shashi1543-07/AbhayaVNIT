@@ -86,13 +86,13 @@ export default function AdminDashboard() {
             <TopHeader title="Admin Dashboard" showBackButton={false} />
 
             <motion.main
-                className="px-4 pt-28 pb-24 space-y-6"
+                className="px-4 pt-nav-safe pb-nav-safe space-y-6"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
                 {/* Stats Grid - Responsive */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                     <motion.div variants={cardVariant} className="glass-card p-4 rounded-xl shadow-soft border border-white/40">
                         <div className="bg-primary-50 w-10 h-10 rounded-lg flex items-center justify-center text-primary mb-2">
                             <Users className="w-5 h-5" />
@@ -141,7 +141,7 @@ export default function AdminDashboard() {
                             <p className="text-sm text-slate-500">No active emergencies.</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {activeSOS.map(sos => (
                                 <SOSCard key={sos.id} event={sos} role="admin" />
                             ))}
@@ -171,17 +171,17 @@ export default function AdminDashboard() {
                         </h3>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {loading ? (
-                            <p className="text-slate-500 text-center py-4 text-sm">Loading...</p>
+                            <p className="text-slate-500 text-center py-4 text-sm col-span-full">Loading...</p>
                         ) : incidents.length === 0 ? (
-                            <p className="text-slate-500 text-center py-4 text-sm">No recent incidents.</p>
+                            <p className="text-slate-500 text-center py-4 text-sm col-span-full">No recent incidents.</p>
                         ) : (
                             incidents.map(incident => (
-                                <div key={incident.id} className="glass-card-soft rounded-2xl p-4 flex justify-between items-center">
-                                    <div>
-                                        <p className="font-bold text-sm text-primary">{incident.category}</p>
-                                        <p className="text-xs text-muted">
+                                <div key={incident.id} className="glass-card-soft rounded-2xl p-4 flex justify-between items-center transition-all hover:bg-white/50">
+                                    <div className="min-w-0 pr-2">
+                                        <p className="font-bold text-sm text-primary truncate">{incident.category}</p>
+                                        <p className="text-[10px] text-muted truncate">
                                             {incident.reporterName || 'Unknown'} • {incident.createdAt?.seconds ? new Date(incident.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                                         </p>
                                     </div>

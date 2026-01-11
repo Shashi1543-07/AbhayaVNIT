@@ -7,7 +7,7 @@ interface MobileWrapperProps {
 
 const MobileWrapper: React.FC<MobileWrapperProps> = ({ children, className = '' }) => {
     return (
-        <div className={`min-h-screen bg-transparent text-slate-800 font-sans relative pb-20 w-full lg:max-w-[480px] lg:mx-auto lg:shadow-2xl overflow-hidden ${className}`}>
+        <div className={`min-h-screen bg-transparent text-slate-800 font-sans relative pb-20 w-full overflow-hidden ${className}`}>
             {children}
         </div>
     );

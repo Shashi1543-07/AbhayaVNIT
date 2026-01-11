@@ -101,7 +101,7 @@ export default function SecuritySOSDetail() {
             <TopHeader title="Emergency Details" showBackButton={true} />
 
             <motion.main
-                className="px-4 pt-28 pb-24"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -186,8 +186,8 @@ export default function SecuritySOSDetail() {
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => handleCall(false)}
-                                disabled={!event.status.recognised}
-                                className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all active:scale-95 font-bold text-xs ${event.status.recognised
+                                disabled={!event.status.recognised || event.status.resolved}
+                                className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all active:scale-95 font-bold text-xs ${(event.status.recognised && !event.status.resolved)
                                     ? 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'
                                     : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
                                     }`}
@@ -197,8 +197,8 @@ export default function SecuritySOSDetail() {
                             </button>
                             <button
                                 onClick={() => handleCall(true)}
-                                disabled={!event.status.recognised}
-                                className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all active:scale-95 font-bold text-xs ${event.status.recognised
+                                disabled={!event.status.recognised || event.status.resolved}
+                                className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all active:scale-95 font-bold text-xs ${(event.status.recognised && !event.status.resolved)
                                     ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'
                                     : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
                                     }`}

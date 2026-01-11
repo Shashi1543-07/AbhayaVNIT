@@ -12,15 +12,12 @@
 body {
   margin: 0;
   padding: 0;
-  display: flex;
-  justify-content: center;
   min-height: 100vh;
   background: linear-gradient(135deg, #FFF1F2 0%, #F6F7F9 100%);
 }
 
 #root {
   width: 100%;
-  max-width: 480px;
   min-height: 100vh;
   position: relative;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
@@ -171,6 +168,14 @@ button {
 
 .main-content-safe {
   padding-top: calc(7.5rem + env(safe-area-inset-top, 0px));
+}
+
+.pb-nav-safe {
+  padding-bottom: calc(10rem + env(safe-area-inset-bottom, 1rem)) !important;
+}
+
+.pt-nav-safe {
+  padding-top: calc(8rem + env(safe-area-inset-top, 1.5rem)) !important;
 }
 
 .safe-bottom {

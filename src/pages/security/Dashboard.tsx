@@ -62,7 +62,7 @@ export default function SecurityDashboard() {
             />
 
             <motion.main
-                className="px-4 pb-24 main-content-safe"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -98,7 +98,7 @@ export default function SecurityDashboard() {
 
                 {/* Active SOS Cards - Unified Design */}
                 {activeEvents.length > 0 ? (
-                    <div className="px-4 space-y-4">
+                    <div className="px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {activeEvents.map(event => (
                             <SOSCard key={event.id} event={event} role="security" />
                         ))}
@@ -136,7 +136,7 @@ export default function SecurityDashboard() {
                 {/* Call Support Section */}
                 <motion.div variants={cardVariant} className="p-4">
                     <h3 className="text-sm font-bold text-primary mb-3 ml-1">Communication</h3>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
                         <button
                             onClick={() => {
                                 // Security can call any online warden

@@ -25,7 +25,7 @@ export default function Layout({ children, role }: LayoutProps) {
     if (role === 'admin') {
         return (
             <div className="min-h-screen bg-transparent pb-20">
-                <main className="pt-4 p-4 lg:p-8 max-w-4xl mx-auto">
+                <main className="pt-4 p-4 lg:p-8 w-full">
                     {children}
                 </main>
 

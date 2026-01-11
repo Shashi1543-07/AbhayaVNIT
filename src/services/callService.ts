@@ -98,6 +98,25 @@ export class CallService {
         isVideo: boolean = false
     ): Promise<string> {
         console.log(`callService: Starting ${isVideo ? 'video' : 'audio'} call to receiver UID:`, receiver.uid, "Context:", contextId);
+
+        // Safety guard: Don't allow calling if SOS is already resolved
+        if (contextType === 'sos') {
+            try {
+                const { getDoc, doc } = await import('firebase/firestore');
+                const sosRef = doc(db, 'sos_events', contextId);
+                const sosSnap = await getDoc(sosRef);
+                if (sosSnap.exists()) {
+                    const sosData = sosSnap.data();
+                    if (sosData.status?.resolved) {
+                        throw new Error("Cannot start call for a resolved SOS.");
+                    }
+                }
+            } catch (error: any) {
+                console.error("callService: SOS resolution check failed:", error);
+                if (error.message.includes("resolved")) throw error;
+            }
+        }
+
         this.cleanup();
 
         this.pc = new RTCPeerConnection(servers);

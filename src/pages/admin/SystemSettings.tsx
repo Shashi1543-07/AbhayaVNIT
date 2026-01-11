@@ -102,7 +102,7 @@ export default function SystemSettings() {
         <Layout role="admin">
             <TopHeader title="System Configuration" showBackButton={true} />
 
-            <div className="mb-8 flex justify-between items-center pt-16">
+            <div className="mb-8 flex justify-between items-center pt-nav-safe pb-nav-safe px-4">
                 <div>
                     {/* Title removed, managed by TopHeader - but description might be useful? Keeping desc only if needed, or removing block */}
                     <p className="text-slate-600">Manage global app settings and resources.</p>

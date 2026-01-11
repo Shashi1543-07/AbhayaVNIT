@@ -126,7 +126,7 @@ export default function WardenSOSDetail() {
             <TopHeader title="SOS Event Details" showBackButton={true} />
 
             <motion.main
-                className="px-4 pt-28 pb-24"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
             >
                 {/* Header Section */}
@@ -252,8 +252,8 @@ export default function WardenSOSDetail() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => handleCall('student', false)}
-                                    disabled={!event.status.recognised}
-                                    className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${event.status.recognised
+                                    disabled={!event.status.recognised || event.status.resolved}
+                                    className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${(event.status.recognised && !event.status.resolved)
                                         ? 'bg-secondary/10 text-secondary border-secondary/20 hover:bg-secondary/20'
                                         : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
                                         }`}
@@ -262,8 +262,8 @@ export default function WardenSOSDetail() {
                                 </button>
                                 <button
                                     onClick={() => handleCall('student', true)}
-                                    disabled={!event.status.recognised}
-                                    className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${event.status.recognised
+                                    disabled={!event.status.recognised || event.status.resolved}
+                                    className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${(event.status.recognised && !event.status.resolved)
                                         ? 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100'
                                         : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
                                         }`}

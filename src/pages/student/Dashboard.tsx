@@ -10,7 +10,6 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { callService } from '../../services/callService';
 import { userService, type UserProfile } from '../../services/userService';
-import { safeWalkService } from '../../services/safeWalkService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { useSOS } from '../../features/sos/useSOS';
@@ -23,7 +22,6 @@ export default function StudentDashboard() {
     const { user, profile } = useAuthStore();
     const { activeSOS } = useSOS();
     const [staff, setStaff] = useState<UserProfile[]>([]);
-    const [activeWalk, setActiveWalk] = useState<any>(null);
     const [showBroadcasts, setShowBroadcasts] = useState(false);
     const [locationName, setLocationName] = useState('Locating...');
     const [gpsOn, setGpsOn] = useState(true);
@@ -68,14 +66,6 @@ export default function StudentDashboard() {
         });
     }, []);
 
-    useEffect(() => {
-        if (!user) return;
-        const unsubscribe = safeWalkService.subscribeToUserActiveWalk(user.uid, (walk) => {
-            setActiveWalk(walk);
-        });
-        return () => unsubscribe();
-    }, [user]);
-
     // Removed the automatic subscription to hostel broadcasts for the dashboard view to avoid duplication
     // We will use the BroadcastViewer for admin broadcasts.
     // Hostel specific broadcasts (if any) can remain if needed, but for now focusing on Admin Broadcasts.
@@ -85,9 +75,7 @@ export default function StudentDashboard() {
         if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
     };
 
-    const emergencyId = activeSOS?.id || activeWalk?.id;
-    const emergencyType = activeSOS ? 'sos' : activeWalk ? 'safe_walk' : null;
-    const isEmergencyActive = !!emergencyId;
+    const isSOSActive = !!(activeSOS && !activeSOS.status?.resolved);
 
     return (
         <MobileWrapper>
@@ -103,7 +91,7 @@ export default function StudentDashboard() {
             />
 
             <motion.main
-                className="px-4 pb-24 main-content-safe"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -206,7 +194,7 @@ export default function StudentDashboard() {
                 {/* Quick Actions */}
                 <motion.div variants={cardVariant}>
                     <h3 className="text-sm font-bold text-primary mb-3 ml-1">Quick Actions</h3>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                         <ActionCard icon={Footprints} label="Safe Walk" onClick={() => navigate('/student/safewalk')} />
                         <ActionCard icon={AlertTriangle} label="Report" onClick={() => navigate('/student/report')} />
                         <ActionCard icon={Newspaper} label="Feed" onClick={() => navigate('/feed')} />
@@ -214,36 +202,36 @@ export default function StudentDashboard() {
                 </motion.div>
 
                 {/* Calling Section */}
-                <motion.div variants={cardVariant} className={`mt-10 ${!isEmergencyActive ? 'opacity-60' : ''}`}>
+                <motion.div variants={cardVariant} className={`mt-10 ${!isSOSActive ? 'opacity-60' : ''}`}>
                     <div className="flex justify-between items-end mb-3 ml-1">
                         <h3 className="text-sm font-bold text-primary">Emergency Calling</h3>
-                        {!isEmergencyActive && (
+                        {!isSOSActive && (
                             <span className="text-[9px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
                                 ACTIVATE SOS TO ENABLE
                             </span>
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Security Calls */}
                         <div className="space-y-2">
                             <button
-                                disabled={!isEmergencyActive}
+                                disabled={!isSOSActive}
                                 onClick={() => {
                                     const security = staff.find(s => s.role === 'security');
-                                    if (security && user && emergencyId && emergencyType) {
+                                    if (security && user && activeSOS?.id) {
                                         callService.startCall({
                                             uid: user.uid,
                                             name: profile?.name || user.displayName || 'Student',
                                             role: 'student'
-                                        }, security, emergencyId, emergencyType, false);
-                                    } else if (!isEmergencyActive) {
-                                        alert("Calling is only enabled during active SOS or Safe Walk.");
+                                        }, security, activeSOS.id, 'sos', false);
+                                    } else if (!isSOSActive) {
+                                        alert("Calling is only enabled during an active SOS.");
                                     } else {
                                         alert("Security personnel currently unavailable.");
                                     }
                                 }}
-                                className={`w-full glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-primary/10 active:scale-95 transition-all bg-white/40 ${!isEmergencyActive ? 'grayscale cursor-not-allowed' : ''}`}
+                                className={`w-full glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-primary/10 active:scale-95 transition-all bg-white/40 ${!isSOSActive ? 'grayscale cursor-not-allowed' : ''}`}
                             >
                                 <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                                     <Shield className="w-5 h-5 text-primary" />
@@ -251,22 +239,22 @@ export default function StudentDashboard() {
                                 <span className="text-[10px] font-bold uppercase text-primary">Voice Security</span>
                             </button>
                             <button
-                                disabled={!isEmergencyActive}
+                                disabled={!isSOSActive}
                                 onClick={() => {
                                     const security = staff.find(s => s.role === 'security');
-                                    if (security && user && emergencyId && emergencyType) {
+                                    if (security && user && activeSOS?.id) {
                                         callService.startCall({
                                             uid: user.uid,
                                             name: profile?.name || user.displayName || 'Student',
                                             role: 'student'
-                                        }, security, emergencyId, emergencyType, true);
-                                    } else if (!isEmergencyActive) {
-                                        alert("Calling is only enabled during active SOS or Safe Walk.");
+                                        }, security, activeSOS.id, 'sos', true);
+                                    } else if (!isSOSActive) {
+                                        alert("Calling is only enabled during an active SOS.");
                                     } else {
                                         alert("Security personnel currently unavailable.");
                                     }
                                 }}
-                                className={`w-full glass-card rounded-2xl p-4 flex flex-col items-center gap-2 border border-emerald-500/20 active:scale-95 transition-all bg-emerald-50/30 ${!isEmergencyActive ? 'grayscale cursor-not-allowed' : ''}`}
+                                className={`w-full glass-card rounded-2xl p-4 flex flex-col items-center gap-2 border border-emerald-500/20 active:scale-95 transition-all bg-emerald-50/30 ${!isSOSActive ? 'grayscale cursor-not-allowed' : ''}`}
                             >
                                 <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
                                     <Video className="w-5 h-5 text-emerald-600" />
@@ -278,26 +266,26 @@ export default function StudentDashboard() {
                         {/* Warden Calls */}
                         <div className="space-y-2">
                             <button
-                                disabled={!isEmergencyActive}
+                                disabled={!isSOSActive}
                                 onClick={() => {
                                     const studentHostel = profile?.hostelId || profile?.hostel;
                                     const warden = staff.find(s =>
                                         s.role === 'warden' &&
                                         ((s as any).hostel === studentHostel || (s as any).hostelId === studentHostel)
                                     );
-                                    if (warden && user && emergencyId && emergencyType) {
+                                    if (warden && user && activeSOS?.id) {
                                         callService.startCall({
                                             uid: user.uid,
                                             name: profile?.name || user.displayName || 'Student',
                                             role: 'student'
-                                        }, warden, emergencyId, emergencyType, false);
-                                    } else if (!isEmergencyActive) {
-                                        alert("Calling is only enabled during active SOS or Safe Walk.");
+                                        }, warden, activeSOS.id, 'sos', false);
+                                    } else if (!isSOSActive) {
+                                        alert("Calling is only enabled during an active SOS.");
                                     } else {
                                         alert(`Warden unavailable. (Hostel: ${studentHostel || 'N/A'})`);
                                     }
                                 }}
-                                className={`w-full glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-secondary/10 active:scale-95 transition-all bg-white/40 ${!isEmergencyActive ? 'grayscale cursor-not-allowed' : ''}`}
+                                className={`w-full glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-secondary/10 active:scale-95 transition-all bg-white/40 ${!isSOSActive ? 'grayscale cursor-not-allowed' : ''}`}
                             >
                                 <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
                                     <Home className="w-5 h-5 text-secondary" />
@@ -305,26 +293,26 @@ export default function StudentDashboard() {
                                 <span className="text-[10px] font-bold uppercase text-secondary">Voice Warden</span>
                             </button>
                             <button
-                                disabled={!isEmergencyActive}
+                                disabled={!isSOSActive}
                                 onClick={() => {
                                     const studentHostel = profile?.hostelId || profile?.hostel;
                                     const warden = staff.find(s =>
                                         s.role === 'warden' &&
                                         ((s as any).hostel === studentHostel || (s as any).hostelId === studentHostel)
                                     );
-                                    if (warden && user && emergencyId && emergencyType) {
+                                    if (warden && user && activeSOS?.id) {
                                         callService.startCall({
                                             uid: user.uid,
                                             name: profile?.name || user.displayName || 'Student',
                                             role: 'student'
-                                        }, warden, emergencyId, emergencyType, true);
-                                    } else if (!isEmergencyActive) {
-                                        alert("Calling is only enabled during active SOS or Safe Walk.");
+                                        }, warden, activeSOS.id, 'sos', true);
+                                    } else if (!isSOSActive) {
+                                        alert("Calling is only enabled during an active SOS.");
                                     } else {
                                         alert(`Warden unavailable. (Hostel: ${studentHostel || 'N/A'})`);
                                     }
                                 }}
-                                className={`w-full glass-card rounded-2xl p-4 flex flex-col items-center gap-2 border border-amber-500/20 active:scale-95 transition-all bg-amber-50/30 ${!isEmergencyActive ? 'grayscale cursor-not-allowed' : ''}`}
+                                className={`w-full glass-card rounded-2xl p-4 flex flex-col items-center gap-2 border border-amber-500/20 active:scale-95 transition-all bg-amber-50/30 ${!isSOSActive ? 'grayscale cursor-not-allowed' : ''}`}
                             >
                                 <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                                     <Video className="w-5 h-5 text-amber-600" />
@@ -370,6 +358,6 @@ export default function StudentDashboard() {
             </motion.main>
 
             <BottomNav />
-        </MobileWrapper>
+        </MobileWrapper >
     );
 }

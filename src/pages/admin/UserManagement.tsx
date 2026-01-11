@@ -207,7 +207,7 @@ export default function UserManagement() {
             <TopHeader title="User Management" showBackButton={true} />
 
             <motion.div
-                className="px-4 pt-28 pb-24"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

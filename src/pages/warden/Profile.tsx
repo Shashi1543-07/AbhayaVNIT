@@ -14,7 +14,7 @@ export default function WardenProfile() {
         <MobileWrapper>
             <TopHeader title="My Profile" showBackButton={true} />
             <motion.main
-                className="px-4 pt-28 pb-24"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"

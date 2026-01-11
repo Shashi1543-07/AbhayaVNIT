@@ -42,7 +42,7 @@ export default function Feed() {
             <TopHeader title="Campus Feed" showBackButton={true} />
 
             <motion.main
-                className="px-4 pb-24 main-content-safe"
+                className="px-4 pt-nav-safe pb-nav-safe"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -78,7 +78,7 @@ export default function Feed() {
                         )}
                     </motion.div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <AnimatePresence initial={false}>
                             {posts.map((post) => (
                                 <PostCard key={post.id} post={post} />
@@ -88,10 +88,10 @@ export default function Feed() {
                 )}
             </motion.main>
 
-            {/* Floating Action Button (Students Only) */}
+            {/* Floating Action Button (Students Only) - Updated for full width */}
             {isStudent && (
                 <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-                    <div className="max-w-[480px] mx-auto relative h-screen">
+                    <div className="relative h-screen w-full">
                         <motion.button
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}

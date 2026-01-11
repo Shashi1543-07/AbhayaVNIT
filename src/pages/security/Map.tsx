@@ -29,7 +29,7 @@ export default function SecurityMap() {
     return (
         <MobileWrapper>
             <TopHeader title="Campus Overview" showBackButton={true} />
-            <main className="h-[calc(100vh-140px)] w-full relative">
+            <main className="px-4 pt-nav-safe pb-nav-safe flex-1 flex flex-col min-h-[calc(100vh-8rem)]">
                 <SecurityOverviewMap
                     sosEvents={activeEvents}
                     activeWalks={activeWalks}
