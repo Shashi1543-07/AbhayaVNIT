@@ -135,12 +135,12 @@ service cloud.firestore {
             // Allow sender to edit message (within 15 min limit is handled client side for UX, but rules can also check)
             (request.auth.uid == resource.data.senderId && 
              request.resource.data.diff(resource.data).affectedKeys().hasAny(['text', 'isEdited', 'editedAt'])) ||
-            // Allow sender to delete for everyone (only if not seen)
+            // Allow sender to delete for everyone
             (request.auth.uid == resource.data.senderId && 
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedGlobal', 'text']) &&
-             resource.data.status == 'sent') ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedGlobal', 'text'])) ||
             // Allow any participant to add themselves to deletedFor
             (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedFor']) &&
+             request.resource.data.deletedFor.hasAll(resource.data.get('deletedFor', [])) &&
              request.auth.uid in request.resource.data.deletedFor)
           );
 

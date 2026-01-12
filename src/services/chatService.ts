@@ -11,7 +11,8 @@ import {
     serverTimestamp,
     updateDoc,
     getDoc,
-    limit
+    limit,
+    arrayUnion
 } from 'firebase/firestore';
 
 export interface ChatMessage {
@@ -268,14 +269,10 @@ export const chatService = {
             const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
 
             if (type === 'me') {
-                // Add user to deletedFor array
-                const messageSnap = await getDoc(messageRef);
-                if (messageSnap.exists()) {
-                    const deletedFor = messageSnap.data().deletedFor || [];
-                    await updateDoc(messageRef, {
-                        deletedFor: [...deletedFor, userId]
-                    });
-                }
+                // Add user to deletedFor array using arrayUnion for safety
+                await updateDoc(messageRef, {
+                    deletedFor: arrayUnion(userId)
+                });
             } else {
                 // Delete for everyone
                 await updateDoc(messageRef, {

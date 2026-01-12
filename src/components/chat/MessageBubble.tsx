@@ -21,6 +21,18 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
     const audioRef = useRef<HTMLAudioElement>(null);
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showMenu && !(event.target as Element).closest('.message-menu-container')) {
+                setShowMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showMenu]);
+
     // Filter out messages deleted by current user
     if (message.deletedFor?.includes(user?.uid || '')) {
         return null;
@@ -113,17 +125,6 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
         }
     };
 
-    // Close menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (showMenu && !(event.target as Element).closest('.message-menu-container')) {
-                setShowMenu(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showMenu]);
 
     const handleReplyClick = () => {
         if (!message.replyTo) return;
@@ -342,7 +343,7 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
                                 <span>Delete for me</span>
                             </button>
 
-                            {isMe && message.status === 'sent' && (
+                            {isMe && (
                                 <button
                                     onClick={() => handleDelete('everyone')}
                                     className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3 border-t border-slate-100"
