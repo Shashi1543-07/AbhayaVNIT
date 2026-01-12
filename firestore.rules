@@ -99,30 +99,42 @@ service cloud.firestore {
     // Root-level collection for Chat metadata
     match /conversations/{conversationId} {
       // Split rules to handle 'create' where resource is null
-      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      allow create: if isAuthenticated() && (
+        request.auth.uid in request.resource.data.participants ||
+        (request.resource.data.participantIds != null && request.auth.uid in request.resource.data.participantIds)
+      );
       // Read allows check if participants[uid] == true (matches query) OR just explicit key existence
       allow read, update: if isAuthenticated() && (
-        request.auth.uid in resource.data.participants || 
-        resource.data.participants[request.auth.uid] == true
+        (resource.data.participantIds != null && request.auth.uid in resource.data.participantIds) ||
+        request.auth.uid in resource.data.participants
       );
 
       // 📨 MESSAGES (Sub-collection)
       match /messages/{messageId} {
+        // Function to check participant membership safely
+        function isParticipant() {
+           let convData = get(/databases/$(database)/documents/conversations/$(conversationId)).data;
+           return (convData.participantIds != null && request.auth.uid in convData.participantIds) || 
+                  (request.auth.uid in convData.participants);
+        }
+
         // Create: Only participants can send messages
         allow create: if isAuthenticated() && 
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          isParticipant() &&
           request.resource.data.senderId == request.auth.uid;
 
         // Read: Only participants can read
-        allow read: if isAuthenticated() && 
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow read: if isAuthenticated() && isParticipant();
 
         // Update: Only for status, deletion, and readBy updates
         allow update: if isAuthenticated() && 
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          isParticipant() &&
           (
-            // Allow updating status for delivery/seen indicators
-            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'readBy'])) ||
+            // Allow updating status for delivery/seen indicators OR adding reactions
+            (request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'readBy', 'reactions'])) ||
+            // Allow sender to edit message (within 15 min limit is handled client side for UX, but rules can also check)
+            (request.auth.uid == resource.data.senderId && 
+             request.resource.data.diff(resource.data).affectedKeys().hasAny(['text', 'isEdited', 'editedAt'])) ||
             // Allow sender to delete for everyone (only if not seen)
             (request.auth.uid == resource.data.senderId && 
              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedGlobal', 'text']) &&
@@ -138,11 +150,14 @@ service cloud.firestore {
 
       // 🖊️ TYPING STATUS (Sub-collection)
       match /typing/{userId} {
-        allow read: if isAuthenticated() && 
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-        allow write: if isAuthenticated() && 
-          request.auth.uid == userId &&
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        function isParticipant() {
+           let convData = get(/databases/$(database)/documents/conversations/$(conversationId)).data;
+           return (convData.participantIds != null && request.auth.uid in convData.participantIds) || 
+                  (request.auth.uid in convData.participants);
+        }
+
+        allow read: if isAuthenticated() && isParticipant();
+        allow write: if isAuthenticated() && request.auth.uid == userId && isParticipant();
       }
     }
 

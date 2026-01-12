@@ -1,6 +1,7 @@
+import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Check, CheckCheck, MoreVertical, Trash2, Play, Pause } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { Check, CheckCheck, MoreVertical, Trash2, Play, Pause, FileText, MapPin, Reply as ReplyIcon, Pencil } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { chatService, type ChatMessage } from '../../services/chatService';
 import { useAuthStore } from '../../context/authStore';
 
@@ -8,9 +9,11 @@ interface MessageBubbleProps {
     message: ChatMessage;
     isMe: boolean;
     conversationId: string;
+    onReply?: () => void;
+    onEdit?: (message: ChatMessage) => void;
 }
 
-export default function MessageBubble({ message, isMe, conversationId }: MessageBubbleProps) {
+export default function MessageBubble({ message, isMe, conversationId, onReply, onEdit }: MessageBubbleProps) {
     const { user } = useAuthStore();
     const [showMenu, setShowMenu] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -66,6 +69,14 @@ export default function MessageBubble({ message, isMe, conversationId }: Message
         }
     };
 
+    const handleReaction = async (emoji: string) => {
+        if (!user) return;
+        await chatService.addReaction(conversationId, message.id, user.uid, emoji);
+        setShowMenu(false);
+    };
+
+    const commonEmojis = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
+
     // Status check icons - WhatsApp style
     const renderStatusIcon = () => {
         if (!isMe) return null;
@@ -84,7 +95,6 @@ export default function MessageBubble({ message, isMe, conversationId }: Message
 
     // Long press handlers for mobile
     const handleTouchStart = () => {
-        if (!isMe) return;
         setIsLongPressing(true);
         longPressTimer.current = setTimeout(() => {
             // Haptic feedback if available
@@ -103,8 +113,38 @@ export default function MessageBubble({ message, isMe, conversationId }: Message
         }
     };
 
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showMenu && !(event.target as Element).closest('.message-menu-container')) {
+                setShowMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showMenu]);
+
+    const handleReplyClick = () => {
+        if (!message.replyTo) return;
+        const originalMsg = document.getElementById(`msg-${message.replyTo.id}`);
+        if (originalMsg) {
+            originalMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            originalMsg.classList.add('ring-4', 'ring-primary/40', 'ring-offset-2');
+            setTimeout(() => {
+                originalMsg.classList.remove('ring-4', 'ring-primary/40', 'ring-offset-2');
+            }, 2000);
+        }
+    };
+
     return (
-        <div className={`flex w-full mb-4 ${isMe ? 'justify-end' : 'justify-start'} group relative`}>
+        <motion.div
+            id={`msg-${message.id}`}
+            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            className={`flex w-full mb-4 ${isMe ? 'justify-end' : 'justify-start'} group relative transition-all duration-300 rounded-[32px]`}
+        >
             <div className={`max-w-[80%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                 {/* Sender Name (if not me) */}
                 {!isMe && (message.senderRole !== 'student' || message.senderName) && (
@@ -127,12 +167,58 @@ export default function MessageBubble({ message, isMe, conversationId }: Message
                     onTouchMove={handleTouchEnd}
                     onTouchCancel={handleTouchEnd}
                 >
-                    {/* Voice Message */}
-                    {message.audioUrl ? (
-                        <div className="flex items-center gap-3 pr-12">
+                    {/* Reply Context */}
+                    {message.replyTo && (
+                        <div
+                            onClick={handleReplyClick}
+                            className={`mb-2 p-2 rounded-xl bg-black/5 border-l-4 ${isMe ? 'border-white/50' : 'border-primary/50'} text-[11px] overflow-hidden cursor-pointer hover:bg-black/10 transition-colors`}
+                        >
+                            <p className="font-black opacity-60 mb-0.5">{message.replyTo.senderName}</p>
+                            <p className="italic truncate">{message.replyTo.text}</p>
+                        </div>
+                    )}
+
+                    {/* Media Content */}
+                    {message.type === 'image' && message.mediaUrl && (
+                        <div className="mb-2 rounded-2xl overflow-hidden shadow-sm border border-white/20">
+                            <img src={message.mediaUrl} alt="Shared" className="w-full max-h-[300px] object-cover" />
+                        </div>
+                    )}
+
+                    {message.type === 'location' && message.location && (
+                        <div className="mb-2 rounded-2xl overflow-hidden shadow-sm border border-white/20 bg-white/20 p-3 flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                                <MapPin className="text-primary w-5 h-5" />
+                                <span className="font-bold text-[12px]">Location Shared</span>
+                            </div>
+                            <a
+                                href={`https://www.google.com/maps?q=${message.location.latitude},${message.location.longitude}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] bg-primary text-white py-1.5 px-3 rounded-xl text-center font-bold hover:bg-primary/90 transition-colors"
+                            >
+                                View on Maps
+                            </a>
+                        </div>
+                    )}
+
+                    {message.type === 'document' && (
+                        <div className="mb-2 rounded-2xl overflow-hidden shadow-sm border border-white/20 bg-white/20 p-3 flex items-center gap-3">
+                            <div className="p-2 bg-primary/20 rounded-xl">
+                                <FileText className="text-primary w-6 h-6" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-[12px] truncate">{message.mediaName || 'Document'}</p>
+                                <p className="text-[9px] opacity-60 uppercase font-black">PDF / Doc</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {message.type === 'audio' || message.audioUrl ? (
+                        <div className="flex items-center gap-3 pr-14 min-w-[180px]">
                             <button
                                 onClick={toggleAudio}
-                                className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-all"
+                                className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-all flex-shrink-0"
                             >
                                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                             </button>
@@ -140,21 +226,46 @@ export default function MessageBubble({ message, isMe, conversationId }: Message
                                 <div className="h-1 bg-white/20 rounded-full overflow-hidden">
                                     <div className="h-full bg-white/60 rounded-full w-0" />
                                 </div>
-                                <span className="text-[10px] opacity-70 mt-1 block">
-                                    {message.duration ? `${Math.floor(message.duration)}s` : '...'}
+                                <span className="text-[10px] opacity-70 mt-1 block font-black">
+                                    {message.duration
+                                        ? `${Math.floor(message.duration / 60)}:${String(Math.floor(message.duration % 60)).padStart(2, '0')}`
+                                        : 'Voice Message'}
                                 </span>
                             </div>
-                            <audio ref={audioRef} src={message.audioUrl} onEnded={() => setIsPlaying(false)} />
+                            <audio ref={audioRef} src={message.mediaUrl} onEnded={() => setIsPlaying(false)} />
                         </div>
                     ) : (
-                        <div className="pr-10 min-w-[50px]">
-                            <p className="leading-relaxed font-medium">{message.text}</p>
+                        message.text && (
+                            <div className="pr-14 min-w-[60px] pb-1">
+                                <p className={`leading-relaxed font-bold ${/^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])+$/.test(message.text.trim()) && message.text.length <= 10
+                                    ? 'text-[32px] leading-tight'
+                                    : 'text-[13px]'
+                                    }`}>
+                                    {message.text}
+                                </p>
+                                {message.isEdited && (
+                                    <span className="text-[10px] opacity-40 font-black flex items-center gap-0.5 mt-0.5">
+                                        <Pencil className="w-2 h-2" /> edited
+                                    </span>
+                                )}
+                            </div>
+                        )
+                    )}
+
+                    {/* Reactions */}
+                    {message.reactions && Object.keys(message.reactions).length > 0 && (
+                        <div className={`absolute -bottom-2 ${isMe ? 'right-4' : 'left-4'} flex -space-x-1`}>
+                            {Object.entries(message.reactions).map(([uid, emoji]) => (
+                                <span key={uid} className="bg-white/90 backdrop-blur-sm rounded-full px-1 shadow-sm border border-slate-100 text-[12px] animate-in zoom-in-50 duration-200">
+                                    {emoji}
+                                </span>
+                            ))}
                         </div>
                     )}
 
                     {/* Time & Status */}
-                    <div className="absolute bottom-1 right-2 flex items-center gap-1 opacity-70">
-                        <span className={`text-[9px] font-bold ${isMe ? 'text-white' : 'text-slate-500'}`}>
+                    <div className={`absolute bottom-1 right-2 flex items-center gap-1 ${isMe ? 'text-white/80' : 'text-slate-500/80'} bg-white/10 backdrop-blur-[2px] px-1.5 py-0.5 rounded-full`}>
+                        <span className="text-[9px] font-black tracking-tighter">
                             {message.timestamp?.seconds
                                 ? format(new Date(message.timestamp.seconds * 1000), 'h:mm a')
                                 : '...'}
@@ -162,57 +273,88 @@ export default function MessageBubble({ message, isMe, conversationId }: Message
                         {renderStatusIcon()}
                     </div>
 
-                    {/* Delete Menu Button (only for sender) */}
-                    {isMe && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setShowMenu(!showMenu);
-                            }}
-                            className="absolute -right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 p-2 rounded-full bg-slate-700/80 hover:bg-slate-800/90 shadow-lg backdrop-blur-sm"
-                            title="Message options"
-                        >
-                            <MoreVertical className="w-4 h-4 text-white" />
-                        </button>
-                    )}
+                    {/* Delete & Reaction Menu Toggle */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMenu(!showMenu);
+                        }}
+                        className={`absolute ${isMe ? '-left-8' : '-right-8'} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 p-2 rounded-full bg-slate-700/80 hover:bg-slate-800/90 shadow-lg backdrop-blur-sm`}
+                        title="Message options"
+                    >
+                        <MoreVertical className="w-4 h-4 text-white" />
+                    </button>
                 </div>
 
-                {/* Delete Menu */}
-                {showMenu && isMe && (
-                    <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border-2 border-slate-200/50 overflow-hidden z-50 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="bg-slate-50 px-4 py-2 border-b border-slate-200/50">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Message Options</p>
+                {/* Delete & Reaction Menu */}
+                {showMenu && (
+                    <div className={`message-menu-container absolute ${isMe ? 'right-0' : 'left-0'} top-full mt-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 overflow-hidden z-50 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200`}>
+                        {/* Reaction Picker */}
+                        <div className="flex justify-between px-4 py-3 bg-slate-50/50 border-b border-slate-200/50">
+                            {commonEmojis.map(emoji => (
+                                <button
+                                    key={emoji}
+                                    onClick={() => handleReaction(emoji)}
+                                    className="text-lg hover:scale-125 transition-transform"
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
                         </div>
-                        <button
-                            onClick={() => handleDelete('me')}
-                            className="w-full px-4 py-3.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors flex items-center gap-3 group/item"
-                        >
-                            <Trash2 className="w-4 h-4 text-slate-500 group-hover/item:text-slate-700" />
-                            <span>Delete for me</span>
-                        </button>
-                        {message.status === 'sent' && (
+
+                        <div className="py-1">
                             <button
-                                onClick={() => handleDelete('everyone')}
-                                className="w-full px-4 py-3.5 text-left text-sm font-bold text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center gap-3 border-t border-slate-200/50 group/item"
+                                onClick={() => {
+                                    onReply?.();
+                                    setShowMenu(false);
+                                }}
+                                className="w-full px-4 py-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
                             >
-                                <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
-                                <div className="flex-1">
-                                    <div>Delete for everyone</div>
-                                    <div className="text-[10px] text-red-500 font-medium mt-0.5">Only unseen messages</div>
-                                </div>
+                                <ReplyIcon className="w-4 h-4 text-slate-500" />
+                                <span>Reply</span>
                             </button>
-                        )}
+
+                            {isMe && message.type !== 'image' && message.type !== 'video' && message.type !== 'audio' && message.type !== 'location' && (
+                                <button
+                                    onClick={() => {
+                                        // 15 minutes edit limit
+                                        const now = new Date().getTime();
+                                        const sentAt = message.timestamp?.seconds ? message.timestamp.seconds * 1000 : now;
+                                        if (now - sentAt < 15 * 60 * 1000) {
+                                            onEdit?.(message);
+                                        } else {
+                                            alert("Message editing window has expired (15 min limit)");
+                                        }
+                                        setShowMenu(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                >
+                                    <Pencil className="w-4 h-4 text-slate-500" />
+                                    <span>Edit</span>
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => handleDelete('me')}
+                                className="w-full px-4 py-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                            >
+                                <Trash2 className="w-4 h-4 text-slate-500" />
+                                <span>Delete for me</span>
+                            </button>
+
+                            {isMe && message.status === 'sent' && (
+                                <button
+                                    onClick={() => handleDelete('everyone')}
+                                    className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3 border-t border-slate-100"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Delete for everyone</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
-
-            {/* Close menu on outside click */}
-            {showMenu && (
-                <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowMenu(false)}
-                />
-            )}
-        </div>
+        </motion.div>
     );
 }

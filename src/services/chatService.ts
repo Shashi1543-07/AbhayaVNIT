@@ -23,17 +23,34 @@ export interface ChatMessage {
     timestamp: any;
     status: 'sent' | 'delivered' | 'seen';
     readBy?: { [uid: string]: boolean };
-    deletedFor?: string[]; // UIDs of users who deleted this for themselves
-    deletedGlobal?: boolean; // True if sender deleted for everyone
-    audioUrl?: string; // Voice note URL
-    duration?: number; // Voice note duration in seconds
+    deletedFor?: string[];
+    deletedGlobal?: boolean;
+    type?: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location';
+    mediaUrl?: string;
+    audioUrl?: string; // For backward compatibility
+    mediaName?: string;
+    duration?: number;
+    location?: {
+        latitude: number;
+        longitude: number;
+        address?: string;
+    };
     isSystemMessage?: boolean;
+    replyTo?: {
+        id: string;
+        text: string;
+        senderName: string;
+    };
+    reactions?: { [uid: string]: string };
+    isEdited?: boolean;
+    editedAt?: any;
 }
 
 export interface Conversation {
     id: string;
     type: 'sos' | 'safe_walk' | 'manual';
     participants: { [uid: string]: boolean };
+    participantIds: string[]; // For efficient array-contains indexing
     participantRoles: {
         [uid: string]: string;
     };
@@ -43,6 +60,8 @@ export interface Conversation {
     lastMessage: string;
     lastMessageAt: any;
     createdAt: any;
+    typing?: { [uid: string]: boolean };
+    metadata?: any;
 }
 
 export const chatService = {
@@ -59,11 +78,13 @@ export const chatService = {
     ) => {
         try {
             const participants: { [uid: string]: boolean } = {};
+            const participantIds: string[] = [];
             const participantRoles: { [uid: string]: string } = {};
             const participantNames: { [uid: string]: string } = {};
 
             participantProfiles.forEach(p => {
                 participants[p.uid] = true;
+                participantIds.push(p.uid);
                 participantRoles[p.uid] = p.role;
                 participantNames[p.uid] = p.name;
             });
@@ -82,6 +103,7 @@ export const chatService = {
             const initialData: Omit<Conversation, 'id'> = {
                 type,
                 participants,
+                participantIds,
                 participantRoles,
                 participantNames,
                 lastMessage: 'Chat started',
@@ -98,6 +120,7 @@ export const chatService = {
                 await updateDoc(conversationRef, {
                     participantRoles,
                     participantNames,
+                    participantIds,
                     participants // Ensure all participants are added
                 });
             }
@@ -109,14 +132,18 @@ export const chatService = {
         }
     },
 
-    /**
-     * Send a message to a sub-collection
-     */
-    sendMessage: async (conversationId: string, text: string, user: any) => {
+    sendMessage: async (
+        conversationId: string,
+        text: string,
+        user: any,
+        type: ChatMessage['type'] = 'text',
+        mediaData?: { url?: string, name?: string, duration?: number, location?: ChatMessage['location'] },
+        replyTo?: ChatMessage['replyTo']
+    ) => {
         try {
-            if (!text.trim()) return;
+            if (!text.trim() && !mediaData) return;
 
-            const messageData = {
+            const messageData: any = {
                 senderId: user.uid,
                 senderRole: user.role || 'student',
                 senderName: user.name || user.displayName || 'Unknown',
@@ -125,8 +152,20 @@ export const chatService = {
                 status: 'sent' as const,
                 readBy: { [user.uid]: true },
                 deletedFor: [],
-                deletedGlobal: false
+                deletedGlobal: false,
+                type
             };
+
+            if (mediaData) {
+                if (mediaData.url) messageData.mediaUrl = mediaData.url;
+                if (mediaData.name) messageData.mediaName = mediaData.name;
+                if (mediaData.duration) messageData.duration = mediaData.duration;
+                if (mediaData.location) messageData.location = mediaData.location;
+            }
+
+            if (replyTo) {
+                messageData.replyTo = replyTo;
+            }
 
             // 1. Add to sub-collection
             const messagesRef = collection(db, 'conversations', conversationId, 'messages');
@@ -134,8 +173,17 @@ export const chatService = {
 
             // 2. Update parent conversation
             const conversationRef = doc(db, 'conversations', conversationId);
+            let displayMsg = text.trim();
+            if (!displayMsg) {
+                if (type === 'image') displayMsg = '📷 Photo';
+                else if (type === 'video') displayMsg = '🎥 Video';
+                else if (type === 'audio') displayMsg = '🎤 Voice message';
+                else if (type === 'document') displayMsg = '📄 Document';
+                else if (type === 'location') displayMsg = '📍 Location';
+            }
+
             await updateDoc(conversationRef, {
-                lastMessage: text.trim(),
+                lastMessage: displayMsg,
                 lastMessageAt: serverTimestamp()
             });
 
@@ -153,7 +201,7 @@ export const chatService = {
         // So we MUST include this filter in the query.
         const q = query(
             collection(db, 'conversations'),
-            where(`participants.${userId}`, '==', true),
+            where('participantIds', 'array-contains', userId),
             orderBy('lastMessageAt', 'desc'),
             limit(50)
         );
@@ -334,45 +382,102 @@ export const chatService = {
     /**
      * Upload voice note (placeholder - requires Firebase Storage setup)
      */
-    sendVoiceNote: async (
-        conversationId: string,
-        audioBlob: Blob,
-        duration: number,
-        user: any
-    ) => {
+    /**
+     * Send a voice note
+     */
+    sendVoiceNote: async (conversationId: string, audioBlob: Blob, duration: number, user: any) => {
         try {
-            // For now, create a data URL (in production, upload to Firebase Storage)
+            // For now, using DataURL placeholder
             const reader = new FileReader();
             const audioUrl = await new Promise<string>((resolve) => {
                 reader.onloadend = () => resolve(reader.result as string);
                 reader.readAsDataURL(audioBlob);
             });
 
-            const messageData = {
-                senderId: user.uid,
-                senderRole: user.role || 'student',
-                senderName: user.name || user.displayName || 'Unknown',
-                text: '🎤 Voice message',
-                audioUrl,
-                duration,
-                timestamp: serverTimestamp(),
-                status: 'sent' as const,
-                readBy: { [user.uid]: true },
-                deletedFor: [],
-                deletedGlobal: false
-            };
-
-            const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-            await addDoc(messagesRef, messageData);
-
-            const conversationRef = doc(db, 'conversations', conversationId);
-            await updateDoc(conversationRef, {
-                lastMessage: '🎤 Voice message',
-                lastMessageAt: serverTimestamp()
+            await chatService.sendMessage(conversationId, '', user, 'audio', {
+                url: audioUrl,
+                duration
             });
         } catch (error) {
             console.error("Error sending voice note:", error);
             throw error;
         }
+    },
+
+    /**
+     * Add or update reaction to a message
+     */
+    addReaction: async (conversationId: string, messageId: string, userId: string, emoji: string) => {
+        try {
+            const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
+            await updateDoc(messageRef, {
+                [`reactions.${userId}`]: emoji
+            });
+        } catch (error) {
+            console.error("Error adding reaction:", error);
+        }
+    },
+
+    /**
+     * Edit a message's text
+     */
+    editMessage: async (conversationId: string, messageId: string, newText: string) => {
+        try {
+            const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
+            await updateDoc(messageRef, {
+                text: newText,
+                isEdited: true,
+                editedAt: serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Error editing message:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Presence Tracking: Update user's last seen / online status
+     */
+    updateUserPresence: async (userId: string) => {
+        try {
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+                lastSeen: serverTimestamp(),
+                isOnline: true
+            });
+        } catch (error) {
+            console.error("Error updating presence:", error);
+        }
+    },
+
+    /**
+     * Set user to offline
+     */
+    setUserOffline: async (userId: string) => {
+        try {
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+                isOnline: false,
+                lastSeen: serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Error setting offline:", error);
+        }
+    },
+
+    /**
+     * Subscribe to user's presence
+     */
+    subscribeToPresence: (userId: string, callback: (presence: { isOnline: boolean, lastSeen: any }) => void) => {
+        const userRef = doc(db, 'users', userId);
+        return onSnapshot(userRef, (doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                callback({
+                    isOnline: data.isOnline || false,
+                    lastSeen: data.lastSeen
+                });
+            }
+        });
     }
 };
