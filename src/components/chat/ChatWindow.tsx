@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, User as UserIcon, Shield, Search, Mic, Plus, Image as ImageIcon, Video, Paperclip, MapPin, Smile, Pencil, Check, ChevronDown } from 'lucide-react';
+import { X, Send, User as UserIcon, Shield, Search, Mic, Plus, Image as ImageIcon, Video, Paperclip, MapPin, Smile, Pencil, Check, ChevronDown, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '../../services/chatService';
 import type { ChatMessage, Conversation } from '../../services/chatService';
@@ -40,6 +40,7 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
     const audioChunksRef = useRef<Blob[]>([]);
     const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
     const recordingStartTimeRef = useRef<number>(0);
+    const shouldDiscardRef = useRef<boolean>(false);
 
     // Subscribe to Chat & Messages
     useEffect(() => {
@@ -221,13 +222,15 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                     clearInterval(recordingIntervalRef.current);
                 }
 
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
                 const finalDuration = (Date.now() - recordingStartTimeRef.current) / 1000;
 
-                if (user && finalDuration > 0.5) { // Only send if longer than 0.5s
+                // Only send if NOT discarded and longer than 0.5s
+                if (!shouldDiscardRef.current && user && finalDuration > 0.5) {
+                    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
                     await chatService.sendVoiceNote(chatId, audioBlob, finalDuration, user);
                 }
 
+                shouldDiscardRef.current = false; // Reset for next time
                 setRecordingDuration(0);
                 stream.getTracks().forEach(track => track.stop());
             };
@@ -248,6 +251,15 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
 
     const stopVoiceRecording = () => {
         if (mediaRecorderRef.current && isRecording) {
+            shouldDiscardRef.current = false;
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const cancelVoiceRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            shouldDiscardRef.current = true;
             mediaRecorderRef.current.stop();
             setIsRecording(false);
         }
@@ -535,18 +547,29 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                     )}
 
                     <form onSubmit={handleSend} className="bg-white/40 border border-white/60 rounded-[28px] p-1.5 flex items-center gap-2 shadow-inner">
-                        <button
-                            type="button"
-                            onClick={() => setShowMediaMenu(!showMediaMenu)}
-                            className={`p-2 rounded-full hover:bg-white/60 transition-all ${showMediaMenu ? 'rotate-45 text-primary' : 'text-slate-600'}`}
-                        >
-                            <Plus className="w-6 h-6" />
-                        </button>
+                        {!isRecording && (
+                            <button
+                                type="button"
+                                onClick={() => setShowMediaMenu(!showMediaMenu)}
+                                className={`p-2 rounded-full hover:bg-white/60 transition-all ${showMediaMenu ? 'rotate-45 text-primary' : 'text-slate-600'}`}
+                            >
+                                <Plus className="w-6 h-6" />
+                            </button>
+                        )}
 
                         {/* Input Field Overlay */}
                         <div className="flex-1 bg-white/40 rounded-2xl p-1 px-3 flex items-center gap-2">
                             {isRecording ? (
                                 <div className="flex-1 flex items-center gap-3 px-2">
+                                    <button
+                                        type="button"
+                                        onClick={cancelVoiceRecording}
+                                        className="p-1.5 px-3 rounded-2xl bg-red-50 text-red-600 hover:bg-red-100 transition-all flex items-center gap-2 border border-red-200 shadow-sm group active:scale-95"
+                                        title="Cancel Recording"
+                                    >
+                                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                        <span className="text-[10px] font-black tracking-tighter uppercase">Cancel</span>
+                                    </button>
                                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
                                     <span className="text-[11px] font-black text-red-600 uppercase tracking-widest flex-1">
                                         Recording {Math.floor(recordingDuration / 60)}:{String(recordingDuration % 60).padStart(2, '0')}
@@ -605,13 +628,11 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                         ) : newMessage.trim() === '' ? (
                             <button
                                 type="button"
-                                onMouseDown={startVoiceRecording}
-                                onMouseUp={stopVoiceRecording}
-                                onTouchStart={startVoiceRecording}
-                                onTouchEnd={stopVoiceRecording}
-                                className={`p-3 rounded-full transition-all ${isRecording ? 'bg-red-500 scale-125 shadow-red-500/50' : 'bg-white/60 text-slate-600'} shadow-lg`}
+                                onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                                className={`p-3 rounded-full transition-all ${isRecording ? 'bg-red-500 scale-110 shadow-red-500/50' : 'bg-white/60 text-slate-600'} shadow-lg active:scale-95`}
+                                title={isRecording ? "Stop and Send" : "Record Voice Note"}
                             >
-                                <Mic className={`w-5 h-5 ${isRecording ? 'text-white translate-y-[-2px] animate-pulse' : ''}`} />
+                                <Mic className={`w-5 h-5 ${isRecording ? 'text-white translate-y-[-1px] animate-pulse' : ''}`} />
                             </button>
                         ) : (
                             <button
