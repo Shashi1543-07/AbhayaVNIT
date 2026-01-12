@@ -193,6 +193,9 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
     };
 
     const startVoiceRecording = async () => {
+        if (isRecording) return; // Prevent multiple starts
+        setIsRecording(true); // Set immediately to prevent race conditions
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -243,9 +246,9 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
             }, 120000);
 
             mediaRecorder.start();
-            setIsRecording(true);
         } catch (error) {
             console.error("Failed to start recording:", error);
+            setIsRecording(false); // Reset on error
         }
     };
 
