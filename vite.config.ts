@@ -12,6 +12,7 @@ export default defineConfig({
     basicSsl(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // Disable auto-registration to avoid path issues
       includeAssets: ['logo.png', 'vite.svg'],
       manifest: {
         name: "VNIT Girls' Safety App",
@@ -32,8 +33,10 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: []
-      }
+        globPatterns: [], // Empty patterns to skip service worker generation
+        skipWaiting: false
+      },
+      disable: true // Disable PWA features during build to avoid apostrophe path issues
     })
   ],
   server: {
