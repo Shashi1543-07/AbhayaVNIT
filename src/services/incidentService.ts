@@ -7,7 +7,9 @@ import {
     query,
     where,
     onSnapshot,
-    serverTimestamp
+    serverTimestamp,
+    arrayUnion,
+    getDoc
 } from 'firebase/firestore';
 
 export interface Incident {
@@ -123,7 +125,6 @@ export const incidentService = {
     // 3. Update Status (Warden)
     updateIncidentStatus: async (id: string, status: Incident['status'], userId: string, note?: string) => {
         const incidentRef = doc(db, 'incidents', id);
-        const { arrayUnion } = await import('firebase/firestore');
 
         await updateDoc(incidentRef, {
             status,
@@ -139,7 +140,6 @@ export const incidentService = {
     // 4. Add Comment (Warden/Student)
     addComment: async (id: string, userId: string, comment: string) => {
         const incidentRef = doc(db, 'incidents', id);
-        const { arrayUnion } = await import('firebase/firestore');
 
         await updateDoc(incidentRef, {
             timeline: arrayUnion({
@@ -149,5 +149,17 @@ export const incidentService = {
                 note: comment
             })
         });
+    },
+
+    // 5. Get Incident By ID
+    getIncidentById: async (id: string): Promise<Incident | null> => {
+        const docRef = doc(db, 'incidents', id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Incident;
+        } else {
+            return null;
+        }
     }
 };

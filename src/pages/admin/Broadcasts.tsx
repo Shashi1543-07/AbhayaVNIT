@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import Layout from '../../components/Layout';
+import MobileWrapper from '../../components/layout/MobileWrapper';
+import BottomNav from '../../components/layout/BottomNav';
+import { adminNavItems } from '../../lib/navItems';
 import { Megaphone, Send, Clock, Users } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -59,7 +61,7 @@ export default function Broadcasts() {
     };
 
     return (
-        <Layout role="admin">
+        <MobileWrapper>
             <TopHeader title="Broadcasts & Alerts" showBackButton={true} />
 
             <motion.main
@@ -76,61 +78,63 @@ export default function Broadcasts() {
                     animate="visible"
                 >
                     {/* Send Form */}
-                    <motion.div variants={cardVariant} className="w-full max-w-2xl glass-card p-6 rounded-xl shadow-sm border border-white/40">
-                        <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 text-indigo-700">
-                            <Megaphone className="w-5 h-5" />
+                    <motion.div variants={cardVariant} className="w-full max-w-2xl glass-card bg-black/40 p-6 rounded-[24px] shadow-sm border border-white/10">
+                        <h2 className="text-lg font-heading font-black text-white mb-6 flex items-center gap-3 border-b border-white/10 pb-4 uppercase tracking-tight">
+                            <div className="p-2 bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
+                                <Megaphone className="w-5 h-5 text-[#D4AF37]" />
+                            </div>
                             New Announcement
                         </h2>
 
                         <form onSubmit={handleSend} className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Target Audience</label>
+                                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Target Audience</label>
                                     <select
-                                        className="w-full p-3 bg-white/50 border border-white/40 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none backdrop-blur-sm"
+                                        className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold appearance-none"
                                         value={targetGroup}
                                         onChange={(e) => setTargetGroup(e.target.value)}
                                     >
-                                        <option value="all">All Users</option>
-                                        <option value="student">Students Only</option>
-                                        <option value="warden">Wardens Only</option>
-                                        <option value="security">Security Staff Only</option>
+                                        <option value="all" className="bg-zinc-900">All Users</option>
+                                        <option value="student" className="bg-zinc-900">Students Only</option>
+                                        <option value="warden" className="bg-zinc-900">Wardens Only</option>
+                                        <option value="security" className="bg-zinc-900">Security Staff Only</option>
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Priority Level</label>
+                                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Priority Level</label>
                                     <select
-                                        className="w-full p-3 bg-white/50 border border-white/40 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none backdrop-blur-sm"
+                                        className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold appearance-none"
                                         value={priority}
                                         onChange={(e) => setPriority(e.target.value)}
                                     >
-                                        <option value="info">Information (Blue)</option>
-                                        <option value="warning">Warning (Orange)</option>
-                                        <option value="emergency">Emergency (Red)</option>
+                                        <option value="info" className="bg-zinc-900">Information (Blue)</option>
+                                        <option value="warning" className="bg-zinc-900">Warning (Orange)</option>
+                                        <option value="emergency" className="bg-zinc-900">Emergency (Red)</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Title</label>
                                 <input
                                     type="text"
                                     placeholder="e.g. Hostel Curfew Update"
                                     required
-                                    className="w-full p-3 bg-white/50 border border-white/40 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none backdrop-blur-sm"
+                                    className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Message</label>
+                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Message</label>
                                 <textarea
                                     placeholder="Type your message here..."
                                     required
                                     rows={5}
-                                    className="w-full p-3 bg-white/50 border border-white/40 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none backdrop-blur-sm"
+                                    className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold resize-none placeholder:text-zinc-700"
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                 />
@@ -139,43 +143,45 @@ export default function Broadcasts() {
                             <button
                                 type="submit"
                                 disabled={sending}
-                                className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-4 rounded-xl font-bold hover:opacity-90 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+                                className="w-full bg-gradient-to-r from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black py-4 rounded-xl font-black uppercase tracking-wider text-xs hover:shadow-lg hover:shadow-[#D4AF37]/20 hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
                             >
-                                <Send className="w-5 h-5" />
+                                <Send className="w-4 h-4" />
                                 {sending ? 'Sending...' : 'Send Broadcast'}
                             </button>
                         </form>
                     </motion.div>
 
                     {/* History Sidebar */}
-                    <div className="w-full max-w-2xl">
-                        <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 flex flex-col">
-                            <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 flex-shrink-0 text-slate-600">
-                                <Clock className="w-5 h-5" />
+                    <div className="w-full max-w-2xl px-4 md:px-0">
+                        <div className="glass-card bg-black/40 p-6 rounded-[24px] shadow-sm border border-white/10 flex flex-col">
+                            <h2 className="text-lg font-heading font-black text-white mb-6 flex items-center gap-3 border-b border-white/10 pb-4 uppercase tracking-tight">
+                                <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                                    <Clock className="w-5 h-5 text-emerald-500" />
+                                </div>
                                 Recent History
                             </h2>
 
                             <div className="space-y-4 pr-1">
                                 {history.length === 0 ? (
-                                    <p className="text-slate-500 text-sm italic py-4 text-center">No broadcasts sent yet.</p>
+                                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest py-8 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">No broadcasts sent yet.</p>
                                 ) : (
                                     history.map(item => (
-                                        <div key={item.id} className="p-5 rounded-2xl border border-white/30 bg-white/40 hover:bg-white/50 transition-all backdrop-blur-sm shadow-sm group break-words">
+                                        <div key={item.id} className="p-5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all backdrop-blur-sm shadow-sm group break-words">
                                             <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
-                                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize tracking-wide shadow-sm
-                                                ${item.priority === 'emergency' ? 'bg-red-500/20 text-red-700 border border-red-200/50' :
-                                                        item.priority === 'warning' ? 'bg-orange-500/20 text-orange-700 border border-orange-200/50' :
-                                                            'bg-blue-500/20 text-blue-700 border border-blue-200/50'}`}>
+                                                <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border
+                                                ${item.priority === 'emergency' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                                        item.priority === 'warning' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                                            'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}`}>
                                                     {item.priority}
                                                 </span>
-                                                <span className="text-[10px] text-slate-500 font-bold bg-white/40 px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm">
+                                                <span className="text-[10px] text-zinc-500 font-bold bg-white/5 border border-white/10 px-2 py-1 rounded-lg whitespace-nowrap">
                                                     {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
                                                 </span>
                                             </div>
-                                            <h3 className="font-bold text-slate-800 text-base mb-1 group-hover:text-indigo-700 transition-colors leading-tight">{item.title}</h3>
-                                            <p className="text-sm text-slate-600 leading-relaxed opacity-90">{item.message}</p>
-                                            <div className="mt-4 pt-3 border-t border-white/20 flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                                <div className="bg-slate-100 p-1 rounded-md">
+                                            <h3 className="font-bold text-white text-base mb-2 group-hover:text-[#D4AF37] transition-colors leading-tight">{item.title}</h3>
+                                            <p className="text-sm text-zinc-400 leading-relaxed font-medium">{item.message}</p>
+                                            <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[10px] text-zinc-500 font-black uppercase tracking-wider">
+                                                <div className="bg-white/10 p-1.5 rounded-lg text-zinc-400">
                                                     <Users className="w-3 h-3" />
                                                 </div>
                                                 <span>Sent To: {item.targetGroup}</span>
@@ -188,6 +194,8 @@ export default function Broadcasts() {
                     </div>
                 </motion.div>
             </motion.main>
-        </Layout>
+
+            <BottomNav items={adminNavItems} />
+        </MobileWrapper>
     );
 }

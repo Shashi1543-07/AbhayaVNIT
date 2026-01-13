@@ -11,7 +11,8 @@ import {
     deleteDoc as firestoreDeleteDoc,
     query,
     where,
-    addDoc
+    addDoc,
+    arrayUnion
 } from 'firebase/firestore';
 
 
@@ -72,7 +73,6 @@ export class CallService {
 
     private async logToTimeline(contextId: string, contextType: 'sos' | 'safe_walk', action: string, note?: string) {
         try {
-            const { arrayUnion } = await import('firebase/firestore');
             const collectionName = contextType === 'sos' ? 'sos_events' : 'safe_walk';
             const docRef = doc(db, collectionName, contextId);
 
@@ -102,7 +102,6 @@ export class CallService {
         // Safety guard: Don't allow calling if SOS is already resolved
         if (contextType === 'sos') {
             try {
-                const { getDoc, doc } = await import('firebase/firestore');
                 const sosRef = doc(db, 'sos_events', contextId);
                 const sosSnap = await getDoc(sosRef);
                 if (sosSnap.exists()) {

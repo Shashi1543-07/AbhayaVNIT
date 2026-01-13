@@ -38,30 +38,29 @@ export default function SOSCard({ event, role }: SOSCardProps) {
                 </div>
 
                 {/* Content Section */}
-                <div className="p-4">
+                <div className="p-4 bg-black/20">
                     <div className="flex justify-between items-start mb-3">
                         <div>
-                            <p className="font-bold text-lg text-primary">{event.userName}</p>
-                            <p className="text-sm text-muted">
-                                {event.hostelId ? `Hostel ${event.hostelId}` : 'Unknown Hostel'}
-                                {event.roomNo ? ` • Room ${event.roomNo}` : ''}
+                            <p className="font-extrabold text-lg text-white font-heading tracking-tight leading-tight">{event.userName}</p>
+                            <p className="text-[10px] text-[#D4AF37] font-black uppercase tracking-[0.2em] mt-1">
+                                {event.hostelId || event.hostel || 'Unknown'} • {event.roomNo || 'Emergency Zone'}
                             </p>
                         </div>
                         {event.status.recognised && (
-                            <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase border ${event.status.resolved
-                                ? 'bg-green-50 text-green-700 border-green-200'
-                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            <span className={`px-2.5 py-1 text-[8px] font-black rounded-lg uppercase tracking-widest border shadow-sm ${event.status.resolved
+                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                                 }`}>
-                                {event.status.resolved ? 'Resolved' : 'Recognised'}
+                                {event.status.resolved ? 'Secured' : 'In Progress'}
                             </span>
                         )}
                     </div>
 
                     <button
                         onClick={() => navigate(getDetailRoute())}
-                        className="w-full mt-1 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white font-bold py-2.5 rounded-xl shadow-md hover:opacity-95 active:scale-[0.98] transition-all"
+                        className="w-full mt-2 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black font-black py-3 rounded-2xl shadow-[0_4px_15px_rgba(212,175,55,0.2)] hover:opacity-90 active:scale-[0.97] transition-all text-[11px] uppercase tracking-[0.2em] border border-white/20"
                     >
-                        View Details
+                        Tactical Details
                     </button>
                 </div>
             </div>

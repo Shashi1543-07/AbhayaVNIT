@@ -3,7 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getDatabase } from "firebase/database";
-// import { getFunctions } from "firebase/functions";
+import { getFunctions } from "firebase/functions";
 
 // TODO: Replace with your actual Firebase project configuration
 export const firebaseConfig = {
@@ -13,7 +13,7 @@ export const firebaseConfig = {
     storageBucket: "vnit-girls-safety.firebasestorage.app",
     messagingSenderId: "40553570166",
     appId: "1:40553570166:web:418694082d0ed1fb356457",
-    databaseURL: "https://vnit-girls-safety-default-rtdb.firebaseio.com/"
+    databaseURL: "https://vnit-girls-safety-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -33,6 +33,6 @@ if (typeof window !== 'undefined') {
 }
 export const rtdb = getDatabase(app);
 export const storage = getStorage(app);
-// export const functions = getFunctions(app);
+export const functions = getFunctions(app);
 
 export default app;

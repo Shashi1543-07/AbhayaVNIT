@@ -110,41 +110,41 @@ export default function ReportIncident() {
             >
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <motion.div variants={cardVariant} className="glass-card p-4 rounded-2xl shadow-soft space-y-4 border border-white/40">
+                    <motion.div variants={cardVariant} className="glass p-5 rounded-[32px] shadow-2xl space-y-5 border border-white/5">
                         <div>
-                            <label className="block text-sm font-bold text-primary mb-2">Category</label>
+                            <label className="block text-[11px] font-black text-[#D4AF37] mb-2 uppercase tracking-[0.2em] ml-1">Threat Category</label>
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
-                                className="w-full px-4 py-3 bg-primary-50 border border-primary-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                                className="w-full px-4 py-4 bg-black/40 border border-white/10 rounded-2xl text-white focus:ring-2 focus:ring-[#D4AF37]/40 outline-none transition-all font-bold appearance-none"
                             >
-                                <option value="harassment">Harassment</option>
-                                <option value="stalking">Stalking</option>
-                                <option value="unsafe_area">Unsafe Area / Lighting</option>
-                                <option value="suspicious_activity">Suspicious Activity</option>
-                                <option value="other">Other</option>
+                                <option value="harassment" className="bg-zinc-900">Harassment</option>
+                                <option value="stalking" className="bg-zinc-900">Stalking</option>
+                                <option value="unsafe_area" className="bg-zinc-900">Unsafe Area / Lighting</option>
+                                <option value="suspicious_activity" className="bg-zinc-900">Suspicious Activity</option>
+                                <option value="other" className="bg-zinc-900">Other</option>
                             </select>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-primary mb-2">Description</label>
+                            <label className="block text-[11px] font-black text-[#D4AF37] mb-2 uppercase tracking-[0.2em] ml-1">Incident Intel</label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={4}
-                                className="w-full px-4 py-3 bg-primary-50 border border-primary-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-none"
-                                placeholder="Describe what happened..."
+                                className="w-full px-4 py-4 bg-black/40 border border-white/10 rounded-2xl text-white focus:ring-2 focus:ring-[#D4AF37]/40 outline-none transition-all resize-none placeholder:text-zinc-700 font-bold"
+                                placeholder="State clearly what happened..."
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-primary mb-2">Photo Evidence</label>
-                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-primary-200 border-dashed rounded-xl cursor-pointer bg-primary-50 hover:bg-primary-100 transition-colors">
+                            <label className="block text-[11px] font-black text-[#D4AF37] mb-2 uppercase tracking-[0.2em] ml-1">Visual Evidence</label>
+                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/5 border-dashed rounded-2xl cursor-pointer bg-white/5 hover:bg-white/10 transition-all group">
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <Camera className="w-8 h-8 text-text-light mb-2" />
-                                    <p className="text-xs text-text-secondary font-medium">
-                                        {photo ? photo.name : 'Tap to upload photo'}
+                                    <Camera className="w-8 h-8 text-[#D4AF37] mb-2 group-hover:scale-110 transition-transform" />
+                                    <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
+                                        {photo ? photo.name : 'Deploy Photo Evidence'}
                                     </p>
                                 </div>
                                 <input
@@ -156,15 +156,15 @@ export default function ReportIncident() {
                             </label>
                         </div>
 
-                        <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-xl">
+                        <div className="flex items-center gap-4 p-4 bg-white/5 rounded-[20px] border border-white/5">
                             <input
                                 type="checkbox"
                                 id="anonymous"
                                 checked={isAnonymous}
                                 onChange={(e) => setIsAnonymous(e.target.checked)}
-                                className="w-5 h-5 text-primary border-primary-200 rounded focus:ring-primary"
+                                className="w-5 h-5 bg-black border-white/10 rounded focus:ring-[#D4AF37] text-[#D4AF37]"
                             />
-                            <label htmlFor="anonymous" className="text-sm font-medium text-primary">Report Anonymously</label>
+                            <label htmlFor="anonymous" className="text-xs font-black text-[#D4AF37] uppercase tracking-widest">Report Anonymously</label>
                         </div>
                     </motion.div>
 
@@ -175,14 +175,14 @@ export default function ReportIncident() {
                             variants={buttonGlow}
                             animate="animate"
                             whileTap={{ scale: 0.98 }}
-                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-4 rounded-xl font-bold shadow-lg hover:opacity-90 transition-all disabled:opacity-70 disabled:cursor-not-allowed border border-white/20"
+                            className="w-full flex items-center justify-center gap-3 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[11px] shadow-[0_10px_40px_rgba(212,175,55,0.2)] hover:opacity-90 transition-all disabled:opacity-50 border border-white/20"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                            {loading ? 'Submitting...' : 'Submit Report'}
+                            {loading ? 'Transmitting...' : 'Send Intel to Warden'}
                         </motion.button>
-                        <p className="text-xs text-text-light text-center mt-3 flex items-center justify-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            Location will be attached automatically
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center mt-5 flex items-center justify-center gap-2">
+                            <MapPin className="w-4 h-4 text-[#D4AF37]" />
+                            G-Pos data will be tagged automatically
                         </p>
                     </motion.div>
                 </form>

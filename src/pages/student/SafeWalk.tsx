@@ -237,27 +237,27 @@ export default function SafeWalk() {
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.8, opacity: 0 }}
-                            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md"
+                            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-3xl"
                         >
-                            <div className="glass-card p-6 rounded-[2rem] w-full max-w-xs text-center border-2 border-white/50 shadow-2xl">
-                                <AlertCircle className="w-12 h-12 text-warning mx-auto mb-4" />
-                                <h3 className="text-xl font-black text-slate-900 mb-2">Are you okay?</h3>
-                                <p className="text-sm text-slate-600 font-medium mb-6">
+                            <div className="glass p-8 rounded-[2.5rem] w-full max-w-xs text-center border border-white/5 shadow-2xl">
+                                <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-6 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]" />
+                                <h3 className="text-2xl font-black text-white mb-3 font-heading tracking-tight">Are you okay?</h3>
+                                <p className="text-sm text-zinc-400 font-bold mb-8 leading-relaxed">
                                     {showNoMovementPopup
                                         ? "No movement detected for 60 seconds."
                                         : "You have exceeded your expected duration."
                                     }
                                 </p>
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     <button
                                         onClick={() => { setShowNoMovementPopup(false); setShowDelayPopup(false); }}
-                                        className="w-full py-4 bg-emerald-500 text-white font-black rounded-2xl shadow-lg border border-emerald-400/30"
+                                        className="w-full py-4.5 bg-emerald-500 text-black font-black uppercase tracking-widest text-[11px] rounded-[20px] shadow-2xl active:scale-95 transition-all border border-emerald-400/30"
                                     >
                                         I'M SAFE
                                     </button>
                                     <button
                                         onClick={handleSOS}
-                                        className="w-full py-4 bg-red-500 text-white font-black rounded-2xl shadow-lg border border-red-400/30"
+                                        className="w-full py-4.5 bg-red-600 text-white font-black uppercase tracking-widest text-[11px] rounded-[20px] shadow-2xl active:scale-95 transition-all border border-red-500/30"
                                     >
                                         I'M IN DANGER
                                     </button>
@@ -268,85 +268,85 @@ export default function SafeWalk() {
                 </AnimatePresence>
 
                 {/* Main Card */}
-                <motion.div variants={cardVariant} className="glass-card p-8 rounded-[2.5rem] relative overflow-hidden border border-white/50 shadow-2xl">
-                    <div className={`absolute top-0 left-0 w-full h-2 ${activeSession ? (activeSession.status === 'active' ? 'bg-emerald-500' : 'bg-orange-500') : 'bg-primary'
+                <motion.div variants={cardVariant} className="glass p-8 rounded-[3rem] relative overflow-hidden border border-white/5 shadow-2xl">
+                    <div className={`absolute top-0 left-0 w-full h-2 ${activeSession ? (activeSession.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500') : 'bg-[#D4AF37]'
                         }`} />
 
                     <div className="flex justify-between items-start mb-8">
-                        <div className="w-16 h-16 bg-white/40 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/60 shadow-sm text-primary">
-                            <Navigation className="w-8 h-8" />
+                        <div className="w-16 h-16 bg-white/5 backdrop-blur-3xl rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl text-[#D4AF37]">
+                            <Navigation className="w-8 h-8" strokeWidth={3} />
                         </div>
                         {activeSession && (
-                            <div className="bg-white/40 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/60 shadow-sm">
-                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest text-center">Remaining</p>
-                                <p className="text-xl font-black text-primary font-mono">{formatTime(remainingTime)}</p>
+                            <div className="bg-black/40 backdrop-blur-3xl px-6 py-3 rounded-2xl border border-white/5 shadow-inner">
+                                <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] text-center mb-0.5">Remaining</p>
+                                <p className="text-2xl font-black text-[#D4AF37] font-mono tracking-tighter drop-shadow-sm">{formatTime(remainingTime)}</p>
                             </div>
                         )}
                     </div>
 
-                    <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">
-                        {activeSession ? 'Tracking Live' : 'Start Safe Walk'}
+                    <h2 className="text-3xl font-black text-white mb-3 tracking-tight font-heading drop-shadow-sm">
+                        {activeSession ? 'Tracking Live' : 'Safe Walk'}
                     </h2>
-                    <p className="text-sm text-slate-600 font-medium mb-10 leading-relaxed opacity-80">
+                    <p className="text-sm text-zinc-500 font-bold mb-10 leading-relaxed opacity-80">
                         {activeSession
-                            ? 'Your location is being shared with security and hostel wardens for your safety.'
-                            : 'Heading back late? Let security and your warden stay informed while you walk.'}
+                            ? 'Your location is shared with security and hostel wardens for official oversight.'
+                            : 'Deploy real-time safety tracking for your walk back across campus.'}
                     </p>
 
                     <AnimatePresence mode="wait">
                         {activeSession ? (
                             <motion.div key="active" className="space-y-8">
-                                <div className="bg-white/30 backdrop-blur-md p-6 rounded-3xl text-left border border-white/60 shadow-sm">
-                                    <div className="flex items-center gap-4 mb-6">
-                                        <div className="p-2.5 bg-emerald-100/50 rounded-xl border border-emerald-200/50">
-                                            <MapPin className="w-5 h-5 text-emerald-600" />
+                                <div className="bg-black/40 backdrop-blur-3xl p-6 rounded-[2.5rem] text-left border border-white/5 shadow-inner">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="p-3 bg-[#D4AF37]/10 rounded-2xl border border-[#D4AF37]/20">
+                                            <MapPin className="w-6 h-6 text-[#D4AF37]" />
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Destination</p>
-                                            <p className="text-base font-bold text-slate-800">{activeSession.destination.name}</p>
+                                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Destination Intel</p>
+                                            <p className="text-lg font-black text-white tracking-tight leading-tight">{activeSession.destination.name}</p>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center gap-4">
-                                        <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
-                                            <Clock className="w-5 h-5 text-primary" />
+                                        <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+                                            <Clock className="w-6 h-6 text-[#D4AF37]" />
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Status</p>
+                                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Signal Status</p>
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-3 h-3 rounded-full animate-pulse shadow-sm ${activeSession.status === 'active' ? 'bg-emerald-500' :
-                                                    activeSession.status === 'paused' ? 'bg-yellow-500' : 'bg-orange-500'
+                                                <div className={`w-3 h-3 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)] ${activeSession.status === 'active' ? 'bg-emerald-500' :
+                                                    activeSession.status === 'paused' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
                                                     }`} />
-                                                <p className="text-base font-black capitalize text-slate-800 tracking-tight">{activeSession.status}</p>
+                                                <p className="text-lg font-black capitalize text-white tracking-tighter">{activeSession.status}</p>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Security Communications */}
                                     {activeSession.timeline && activeSession.timeline.some(e => e.type === 'message') && (
-                                        <div className="pt-4 border-t border-white/40">
-                                            <div className="flex items-center gap-2 mb-3 ml-1">
-                                                <MessageCircle className="w-4 h-4 text-primary" />
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Security Guidance</p>
+                                        <div className="pt-6 mt-6 border-t border-white/5">
+                                            <div className="flex items-center gap-2 mb-4 ml-1">
+                                                <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
+                                                <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Security Guidance</p>
                                             </div>
-                                            <div className="space-y-3">
+                                            <div className="space-y-4">
                                                 {activeSession.timeline
                                                     .filter(e => e.type === 'message')
-                                                    .slice(-3) // Show last 3 messages for context
+                                                    .slice(-3)
                                                     .map((msg, idx) => (
                                                         <motion.div
                                                             key={idx}
                                                             initial={{ x: -10, opacity: 0 }}
                                                             animate={{ x: 0, opacity: 1 }}
                                                             transition={{ delay: idx * 0.1 }}
-                                                            className="p-4 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 border border-white/20"
+                                                            className="p-5 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black rounded-[24px] shadow-2xl border border-white/20"
                                                         >
-                                                            <p className="text-sm font-bold leading-relaxed italic">
+                                                            <p className="text-sm font-black leading-tight italic drop-shadow-sm">
                                                                 "{msg.details.split(': ')[1] || msg.details}"
                                                             </p>
-                                                            <div className="flex justify-between items-center mt-2 opacity-60">
-                                                                <p className="text-[8px] font-black uppercase">Official Protocol</p>
-                                                                <p className="text-[8px] font-black uppercase">
+                                                            <div className="flex justify-between items-center mt-3 opacity-60">
+                                                                <p className="text-[8px] font-black uppercase tracking-widest">Protocol Intel</p>
+                                                                <p className="text-[8px] font-black uppercase font-mono">
                                                                     {msg.timestamp ? (typeof msg.timestamp === 'string' ? msg.timestamp.split('T')[1].split('.')[0] : new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : 'Now'}
                                                                 </p>
                                                             </div>
@@ -358,16 +358,16 @@ export default function SafeWalk() {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4 pt-4">
+                                <div className="grid grid-cols-2 gap-4 pt-6">
                                     <button
                                         onClick={handleEndWalk}
-                                        className="py-5 bg-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all text-sm tracking-widest border border-emerald-400/20"
+                                        className="py-5 bg-emerald-500 text-black font-black uppercase tracking-widest text-[11px] rounded-[24px] shadow-2xl active:scale-95 transition-all border border-emerald-400/20"
                                     >
                                         ARRIVED
                                     </button>
                                     <button
                                         onClick={handleSOS}
-                                        className="py-5 bg-red-500 text-white font-black rounded-2xl shadow-xl shadow-red-500/20 active:scale-95 transition-all text-sm tracking-widest border border-red-400/20"
+                                        className="py-5 bg-red-600 text-white font-black uppercase tracking-widest text-[11px] rounded-[24px] shadow-2xl active:scale-95 transition-all border border-red-500/30"
                                     >
                                         SOS
                                     </button>
@@ -375,17 +375,17 @@ export default function SafeWalk() {
                             </motion.div>
                         ) : (
                             <motion.div key="setup" className="space-y-6">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Destination</label>
-                                    <div className="relative">
+                                <div className="space-y-4">
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Destination Search</label>
+                                    <div className="relative group">
                                         <input
                                             type="text"
                                             placeholder="Search Hall, Dept, Mess..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full px-5 py-4 pl-12 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none font-bold text-slate-700 transition-all shadow-sm placeholder:text-slate-400"
+                                            className="w-full px-5 py-4 pl-12 rounded-[22px] bg-black/40 backdrop-blur-3xl border border-white/10 focus:ring-2 focus:ring-[#D4AF37]/30 outline-none font-bold text-white transition-all shadow-inner placeholder:text-zinc-700"
                                         />
-                                        <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#D4AF37]" strokeWidth={3} />
                                     </div>
 
                                     <div className="max-h-[220px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
@@ -403,23 +403,23 @@ export default function SafeWalk() {
                                                         setCustomDestination('');
                                                     }}
                                                     className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${destination === loc.name
-                                                        ? 'bg-primary/10 border-primary/40'
-                                                        : 'bg-white/20 border-white/40 hover:bg-white/40'
+                                                        ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.1)]'
+                                                        : 'bg-white/5 border-white/10 hover:bg-white/10'
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`p-1.5 rounded-lg ${loc.category === 'Hostels' ? 'bg-pink-100 text-pink-600' :
-                                                            loc.category === 'Departments' ? 'bg-blue-100 text-blue-600' :
-                                                                'bg-slate-100 text-slate-600'
+                                                        <div className={`p-1.5 rounded-lg ${loc.category === 'Hostels' ? 'bg-[#D4AF37]/10 text-[#D4AF37]' :
+                                                            loc.category === 'Departments' ? 'bg-blue-600/10 text-blue-400' :
+                                                                'bg-white/5 text-zinc-400'
                                                             }`}>
                                                             <MapPin className="w-4 h-4" />
                                                         </div>
                                                         <div className="text-left">
-                                                            <p className="text-sm font-bold text-slate-800">{loc.name}</p>
-                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{loc.category}</p>
+                                                            <p className="text-sm font-black text-white font-heading">{loc.name}</p>
+                                                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">{loc.category}</p>
                                                         </div>
                                                     </div>
-                                                    {destination === loc.name && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                                    {destination === loc.name && <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.6)]" />}
                                                 </button>
                                             ))
                                         }
@@ -430,34 +430,34 @@ export default function SafeWalk() {
                                             <div className="w-full border-t border-slate-200/50"></div>
                                         </div>
                                         <div className="relative flex justify-center">
-                                            <span className="bg-slate-50 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Or Custom</span>
+                                            <span className="bg-black px-3 text-[10px] font-black text-zinc-600 uppercase tracking-widest">Or Custom</span>
                                         </div>
                                     </div>
 
                                     <input
                                         type="text"
-                                        placeholder="Enter custom location name..."
+                                        placeholder="Manual Target Sector Entry..."
                                         value={customDestination}
                                         onChange={(e) => { setCustomDestination(e.target.value); if (e.target.value) setDestination(''); }}
-                                        className="w-full px-5 py-4 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none font-bold text-slate-700 transition-all shadow-sm placeholder:text-slate-400"
+                                        className="w-full px-5 py-4 rounded-[22px] bg-black/40 backdrop-blur-3xl border border-white/10 focus:ring-2 focus:ring-[#D4AF37]/30 outline-none font-bold text-white transition-all shadow-inner placeholder:text-zinc-700"
                                     />
                                 </div>
 
                                 <div className="space-y-5 pt-2">
                                     <div className="flex justify-between items-center px-1">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Walk Duration</span>
-                                        <span className="text-sm font-black text-primary bg-primary/10 px-3 py-1 rounded-xl border border-primary/20">{duration} mins</span>
+                                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Walk Duration</span>
+                                        <span className="text-sm font-black text-[#D4AF37] bg-[#D4AF37]/10 px-3 py-1 rounded-xl border border-[#D4AF37]/20">{duration} mins</span>
                                     </div>
                                     <input
                                         type="range" min="5" max="30" step="5"
                                         value={duration}
                                         onChange={(e) => setDuration(Number(e.target.value))}
-                                        className="w-full h-2.5 bg-slate-200/50 rounded-full appearance-none accent-primary cursor-pointer border border-white/20"
+                                        className="w-full h-2.5 bg-white/5 rounded-full appearance-none accent-[#D4AF37] cursor-pointer border border-white/5 shadow-inner"
                                     />
                                     <div className="flex justify-between px-1">
-                                        <span className="text-[9px] text-slate-400 font-black">5M</span>
-                                        <span className="text-[9px] text-slate-400 font-black">15M</span>
-                                        <span className="text-[9px] text-slate-400 font-black">30M</span>
+                                        <span className="text-[9px] text-zinc-600 font-black">5M</span>
+                                        <span className="text-[9px] text-zinc-600 font-black">15M</span>
+                                        <span className="text-[9px] text-zinc-600 font-black">30M</span>
                                     </div>
                                 </div>
 
@@ -465,7 +465,7 @@ export default function SafeWalk() {
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
                                     placeholder="Add an optional note..."
-                                    className="w-full p-5 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none text-sm font-bold text-slate-700 transition-all resize-none h-28 shadow-sm placeholder:text-slate-400"
+                                    className="w-full p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 focus:ring-2 focus:ring-[#D4AF37]/30 outline-none text-sm font-black text-white transition-all resize-none h-28 shadow-inner placeholder:text-zinc-700"
                                 />
 
                                 <motion.button
@@ -474,9 +474,9 @@ export default function SafeWalk() {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={handleStartWalk}
                                     disabled={loading || (!destination && !customDestination)}
-                                    className="w-full py-3 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white font-bold rounded-2xl shadow-lg hover:opacity-90 transition-all text-sm tracking-[0.1em] flex items-center justify-center gap-2 border border-white/20 mt-6 disabled:opacity-50"
+                                    className="w-full py-4.5 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black font-black uppercase tracking-[0.2em] text-[11px] rounded-[24px] shadow-[0_10px_40px_rgba(212,175,55,0.2)] hover:opacity-90 transition-all border border-white/20 mt-8 disabled:opacity-50"
                                 >
-                                    {loading ? 'STARTING...' : 'START SAFE WALK'}
+                                    {loading ? 'CALIBRATING...' : 'ESTABLISH SAFE WALK'}
                                 </motion.button>
                             </motion.div>
                         )}
@@ -485,19 +485,19 @@ export default function SafeWalk() {
 
                 {/* Features Info - Glassy Grid */}
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="glass-card p-6 rounded-[2rem] border border-white/50 flex flex-col items-center text-center shadow-xl">
-                        <div className="p-3 bg-secondary/10 rounded-2xl mb-3 border border-secondary/5">
-                            <Shield className="w-8 h-8 text-secondary" />
+                    <div className="glass p-6 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center shadow-2xl">
+                        <div className="p-4 bg-[#D4AF37]/10 rounded-2xl mb-4 border border-[#D4AF37]/10">
+                            <Shield className="w-8 h-8 text-[#D4AF37]" strokeWidth={3} />
                         </div>
-                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">Monitored</h4>
-                        <p className="text-[10px] text-slate-500 font-black opacity-60">Synced with Security</p>
+                        <h4 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Monitored</h4>
+                        <p className="text-[10px] text-zinc-500 font-black opacity-60">HQ Synced</p>
                     </div>
-                    <div className="glass-card p-6 rounded-[2rem] border border-white/50 flex flex-col items-center text-center shadow-xl">
-                        <div className="p-3 bg-secondary/10 rounded-2xl mb-3 border border-secondary/5">
-                            <Navigation className="w-8 h-8 text-secondary" />
+                    <div className="glass p-6 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center shadow-2xl">
+                        <div className="p-4 bg-[#D4AF37]/10 rounded-2xl mb-4 border border-[#D4AF37]/10">
+                            <Navigation className="w-8 h-8 text-[#D4AF37]" strokeWidth={3} />
                         </div>
-                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">Live GPS</h4>
-                        <p className="text-[10px] text-slate-500 font-black opacity-60">Real-time tracking</p>
+                        <h4 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Live G-POS</h4>
+                        <p className="text-[10px] text-zinc-500 font-black opacity-60">Active Tracking</p>
                     </div>
                 </div>
             </motion.main>

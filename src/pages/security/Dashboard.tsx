@@ -105,13 +105,13 @@ export default function SecurityDashboard() {
                     </div>
                 ) : (
                     <motion.div variants={cardVariant} className="p-4">
-                        <div className="glass-card bg-success/10 rounded-2xl p-4 border border-success/30 flex items-center gap-3">
-                            <div className="bg-success/20 p-2 rounded-full">
-                                <Shield className="text-success w-5 h-5" />
+                        <div className="glass rounded-[32px] bg-emerald-500/5 p-6 border border-emerald-500/20 flex items-center gap-4 shadow-2xl">
+                            <div className="bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
+                                <Shield className="text-emerald-500 w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-primary">All Clear</h3>
-                                <p className="text-xs text-muted">No active emergencies reported.</p>
+                                <h3 className="font-extrabold text-white text-base font-heading">All Clear</h3>
+                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-none">No active emergencies</p>
                             </div>
                         </div>
                     </motion.div>
@@ -119,11 +119,11 @@ export default function SecurityDashboard() {
 
                 {/* Active Safe Walks */}
                 <motion.div variants={cardVariant} className="p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-primary">Active Safe Walks</h3>
+                    <div className="flex justify-between items-center px-1">
+                        <h3 className="text-sm font-bold text-[#D4AF37] font-heading uppercase tracking-tighter">Active Safe Walks</h3>
                         <button
                             onClick={() => window.location.href = '/security/safe-walks'}
-                            className="text-muted hover:text-primary transition-colors"
+                            className="text-[10px] text-[#D4AF37]/60 font-black uppercase tracking-widest"
                         >
                             View All
                         </button>
@@ -135,39 +135,38 @@ export default function SecurityDashboard() {
 
                 {/* Call Support Section */}
                 <motion.div variants={cardVariant} className="p-4">
-                    <h3 className="text-sm font-bold text-primary mb-3 ml-1">Communication</h3>
+                    <h3 className="text-sm font-bold text-[#D4AF37] mb-3 ml-1 uppercase tracking-tighter">Communication</h3>
                     <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
                         <button
                             onClick={() => {
-                                // Security can call any online warden
                                 alert("Routing call to Warden on duty...");
                             }}
-                            className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-secondary/10 active:scale-95 transition-all"
+                            className="glass rounded-2xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/10 active:scale-95 transition-all shadow-xl"
                         >
-                            <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
-                                <Shield className="w-5 h-5 text-secondary" />
+                            <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/10">
+                                <Shield className="w-5 h-5 text-[#D4AF37]" />
                             </div>
-                            <span className="text-[10px] font-bold uppercase text-secondary">Contact Warden</span>
+                            <span className="text-[9px] font-black uppercase text-[#D4AF37] font-heading">Contact Warden</span>
                         </button>
                         <button
                             onClick={() => {
                                 alert("Connecting to Control Room...");
                             }}
-                            className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-primary/10 active:scale-95 transition-all"
+                            className="glass rounded-2xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/10 active:scale-95 transition-all shadow-xl"
                         >
-                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                                <Shield className="w-5 h-5 text-primary" />
+                            <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/10">
+                                <Shield className="w-5 h-5 text-[#D4AF37]" />
                             </div>
-                            <span className="text-[10px] font-bold uppercase text-primary">Dispatch</span>
+                            <span className="text-[9px] font-black uppercase text-[#D4AF37] font-heading">Dispatch</span>
                         </button>
                         <button
                             onClick={() => navigate('/feed')}
-                            className="glass-card-soft rounded-2xl p-4 flex flex-col items-center gap-2 border border-blue-500/10 active:scale-95 transition-all"
+                            className="glass rounded-2xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/10 active:scale-95 transition-all shadow-xl"
                         >
-                            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
-                                <Newspaper className="w-5 h-5 text-blue-500" />
+                            <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/10">
+                                <Newspaper className="w-5 h-5 text-[#D4AF37]" />
                             </div>
-                            <span className="text-[10px] font-bold uppercase text-blue-500">Campus Feed</span>
+                            <span className="text-[9px] font-black uppercase text-[#D4AF37] font-heading">Campus Feed</span>
                         </button>
                     </div>
                 </motion.div>
@@ -180,19 +179,19 @@ export default function SecurityDashboard() {
                     <motion.button
                         variants={cardVariant}
                         onClick={() => setShowBroadcasts(true)}
-                        className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] p-1 rounded-2xl shadow-lg active:scale-95 transition-all"
+                        className="w-full bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] p-[1.5px] rounded-[24px] shadow-2xl active:scale-95 transition-all group"
                     >
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between">
+                        <div className="bg-black/80 backdrop-blur-2xl rounded-[22px] p-4 flex items-center justify-between border border-white/5">
                             <div className="flex items-center gap-3">
-                                <div className="bg-white/30 p-2 rounded-full">
-                                    <Megaphone className="w-5 h-5 text-white" />
+                                <div className="bg-[#D4AF37]/10 p-2.5 rounded-2xl border border-[#D4AF37]/20">
+                                    <Megaphone className="w-5 h-5 text-[#D4AF37]" />
                                 </div>
                                 <div className="text-left">
-                                    <h3 className="font-bold text-white text-sm">Priority Broadcasts</h3>
-                                    <p className="text-xs text-white/90">View admin alerts</p>
+                                    <h3 className="font-black text-white text-sm font-heading tracking-tight">Priority Broadcasts</h3>
+                                    <p className="text-[10px] text-[#D4AF37] font-bold opacity-60">Admin alerts & notices</p>
                                 </div>
                             </div>
-                            <div className="bg-white/30 px-3 py-1 rounded-full text-xs font-bold text-white">
+                            <div className="bg-[#D4AF37] px-4 py-1.5 rounded-xl text-[10px] font-black text-black uppercase tracking-widest shadow-lg">
                                 Check
                             </div>
                         </div>

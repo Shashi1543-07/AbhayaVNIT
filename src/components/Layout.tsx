@@ -4,7 +4,6 @@ import { useAuthStore } from '../context/authStore';
 import { auth } from '../lib/firebase';
 import { Menu, X, LogOut } from 'lucide-react';
 import { cn } from '../lib/utils';
-import AdminBottomNav from './layout/AdminBottomNav';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -22,17 +21,7 @@ export default function Layout({ children, role }: LayoutProps) {
     };
 
     // For Admin, we now use a mobile-first bottom nav approach similar to other roles
-    if (role === 'admin') {
-        return (
-            <div className="min-h-screen bg-transparent pb-20">
-                <main className="pt-4 p-4 lg:p-8 w-full">
-                    {children}
-                </main>
-
-                <AdminBottomNav />
-            </div>
-        );
-    }
+    // if (role === 'admin') block removed as pages now handle their own layout
 
     // Legacy Sidebar Layout for other roles (if they still use this Layout component)
     // Note: Student, Warden, Security seem to use MobileWrapper + specific BottomNavs directly in their pages.

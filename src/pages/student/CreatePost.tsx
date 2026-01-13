@@ -101,55 +101,58 @@ export default function CreatePost() {
                 animate={{ opacity: 1, y: 0 }}
             >
                 <motion.div
-                    className="glass-card p-6 rounded-[2rem] border-2 border-white/50 shadow-xl"
+                    className="glass p-8 rounded-[3rem] border border-white/5 shadow-2xl bg-black/40"
                 >
                     {/* Error */}
                     {error && (
-                        <div className="mb-4 p-4 bg-red-100 border border-red-300 rounded-2xl">
-                            <p className="text-sm text-red-700 font-bold">{error}</p>
+                        <div className="mb-6 p-4 bg-red-600/10 border border-red-500/20 rounded-2xl">
+                            <p className="text-xs text-red-500 font-bold uppercase tracking-widest text-center">{error}</p>
                         </div>
                     )}
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Text Input */}
                         <div>
                             <textarea
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
-                                placeholder="What's on your mind?"
+                                placeholder="Broadcast tactical memo..."
                                 maxLength={280}
-                                className="w-full p-5 rounded-2xl bg-white/40 backdrop-blur-md border border-white/60 focus:border-primary/50 outline-none text-sm font-bold text-slate-700 transition-all resize-none h-48 placeholder:text-slate-400"
+                                className="w-full p-6 rounded-[2.5rem] bg-black/40 backdrop-blur-3xl border border-white/10 focus:ring-2 focus:ring-[#D4AF37]/30 outline-none text-sm font-bold text-white transition-all resize-none h-56 placeholder:text-zinc-700 shadow-inner"
                                 disabled={loading}
                                 autoFocus
                             />
-                            <div className="flex justify-end mt-2">
-                                <span className={`text-xs font-black ${text.length > 280 ? 'text-red-500' : 'text-slate-400'}`}>
-                                    {text.length}/280
+                            <div className="flex justify-end mt-4 px-4">
+                                <span className={`text-[10px] font-black tracking-widest ${text.length > 280 ? 'text-red-500' : 'text-zinc-500'}`}>
+                                    {text.length} / 280 ENTRIES
                                 </span>
                             </div>
                         </div>
 
                         {/* Image Preview */}
                         {imagePreview && (
-                            <div className="relative rounded-2xl overflow-hidden border-2 border-white/60">
-                                <img src={imagePreview} alt="Preview" className="w-full max-h-64 object-cover" />
+                            <div className="relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl group">
+                                <img src={imagePreview} alt="Preview" className="w-full max-h-72 object-cover" />
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all pointer-events-none" />
                                 <button
                                     type="button"
                                     onClick={removeImage}
                                     disabled={loading}
-                                    className="absolute top-3 right-3 p-2 rounded-xl bg-white/90 hover:bg-white transition-all shadow-lg disabled:opacity-50"
+                                    className="absolute top-4 right-4 p-3 rounded-2xl bg-black/60 backdrop-blur-3xl border border-white/10 hover:bg-black/80 transition-all shadow-2xl active:scale-90"
                                 >
-                                    <X className="w-4 h-4 text-slate-700" />
+                                    <X className="w-5 h-5 text-red-500" strokeWidth={3} />
                                 </button>
                             </div>
                         )}
 
                         {/* Image Upload Button */}
                         {!imagePreview && (
-                            <label className="flex items-center gap-3 p-4 rounded-2xl bg-white/30 border border-white/60 cursor-pointer hover:bg-white/40 transition-all">
-                                <Image className="w-5 h-5 text-primary" />
-                                <span className="text-sm font-bold text-slate-700">Add Image (optional)</span>
+                            <label className="flex items-center gap-4 p-5 rounded-[22px] bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all group shadow-inner">
+                                <div className="p-3 bg-[#D4AF37]/10 rounded-xl group-hover:bg-[#D4AF37]/20 transition-all">
+                                    <Image className="w-6 h-6 text-[#D4AF37]" strokeWidth={3} />
+                                </div>
+                                <span className="text-sm font-black text-zinc-400 uppercase tracking-widest">Attach Visual Intel</span>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -161,19 +164,19 @@ export default function CreatePost() {
                         )}
 
                         {/* Submit Button */}
-                        <div className="pt-4">
+                        <div className="pt-2">
                             <button
                                 type="submit"
                                 disabled={loading || !text.trim()}
-                                className="w-full py-4 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white font-black rounded-2xl shadow-xl hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
+                                className="w-full py-5 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black font-black rounded-[24px] shadow-[0_10px_40px_rgba(212,175,55,0.2)] hover:opacity-95 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-[11px] border border-white/20"
                             >
                                 {loading ? (
                                     <>
-                                        <Loader className="w-4 h-4 animate-spin" />
-                                        Posting...
+                                        <Loader className="w-5 h-5 animate-spin" />
+                                        TRANSMITTING...
                                     </>
                                 ) : (
-                                    'Share with Campus'
+                                    'BROADCAST MEMO'
                                 )}
                             </button>
                         </div>

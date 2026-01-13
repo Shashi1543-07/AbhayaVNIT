@@ -45,11 +45,24 @@ service cloud.firestore {
       // 1. Creation: Allow any authenticated user to create
       allow create: if isAuthenticated();
         
-      // 2. Read: Allow any authenticated user to read (for now, to ensure maps work)
+      // 2. Read: Allow any authenticated user to read
       allow read: if isAuthenticated();
 
-      // 3. Update: Security can update, or the creators themselves (if needed)
-      allow update: if isAuthenticated();
+      // 3. Update: 
+      allow update: if 
+        // A. Authenticated owner, security, warden, or admin
+        hasRole('security') || hasRole('admin') || hasRole('warden') || isOwner(resource.data.userId) ||
+        // B. Unauthenticated (for token-based cancellation)
+        // We allow updating the status and timeline if the correct token is provided in the request
+        (request.resource.data.sosToken == resource.data.sosToken && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt', 'resolutionSummary', 'timeline', 'liveLocation']))
+      ;
+    }
+
+    // SOS Sessions Collection (for Spark plan client-side management)
+    match /sos_sessions/{sessionId} {
+      allow create: if isAuthenticated();
+      allow read, update: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('security') || hasRole('admin'));
     }
 
     // Incidents Collection

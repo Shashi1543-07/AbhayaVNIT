@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, User as UserIcon, Shield, Search, Mic, Plus, Image as ImageIcon, Video, Paperclip, MapPin, Smile, Pencil, Check, ChevronDown, Trash2 } from 'lucide-react';
+import { X, Send, User as UserIcon, Shield, Search, Mic, Plus, Image as ImageIcon, Video, Paperclip, MapPin, Smile, ChevronDown, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '../../services/chatService';
 import type { ChatMessage, Conversation } from '../../services/chatService';
@@ -344,7 +344,7 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
 
                     rendered.push(
                         <div key={`date-${dateStr}`} className="flex justify-center my-6 sticky top-2 z-20">
-                            <div className="bg-white/40 backdrop-blur-xl text-slate-700 text-[10px] px-4 py-1.5 rounded-full border border-white/40 font-black shadow-sm uppercase tracking-widest">
+                            <div className="bg-[#D4AF37]/10 backdrop-blur-xl text-[#D4AF37] text-[10px] px-4 py-1.5 rounded-full border border-[#D4AF37]/20 font-black shadow-sm uppercase tracking-widest">
                                 {displayDate}
                             </div>
                         </div>
@@ -387,37 +387,39 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
 
             {/* Main Window Container - REBUILT TO MATCH APP WIDTH */}
             <div className="relative w-full h-full flex flex-col pointer-events-auto bg-transparent transition-all overflow-hidden">
-                {/* Background Gradient - Global Consistency */}
-                <div className="absolute inset-0 pointer-events-none" style={{
-                    background: 'linear-gradient(20deg, #FF99AC 0%, #C084FC 35%, #89CFF0 70%, #FFFFFF 100%)'
+                {/* Background Gradient - Inheritance from Global Breathing Gradient */}
+                <div className="absolute inset-0 pointer-events-none z-0" style={{
+                    background: 'radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%)',
+                    backgroundSize: '400% 400%',
+                    animation: 'breathingGradient 15s ease infinite'
                 }} />
 
-                {/* Header */}
-                <div className="relative bg-white/30 backdrop-blur-xl border-b border-white/20 p-4 pt-safe-top flex flex-col gap-3 shadow-sm z-10 rounded-b-[32px]">
+                {/* Header - Almost invisible glass to prevent 'white strip' look */}
+                <div className="relative bg-black/40 backdrop-blur-3xl border-b border-white/5 px-6 py-4 pt-safe-top flex flex-col gap-3 shadow-2xl z-20">
                     <div className="flex justify-between items-center w-full">
                         <div className="flex items-center gap-3">
-                            <button onClick={onClose} className="p-2.5 -ml-2 rounded-full bg-white/40 hover:bg-white/60 text-slate-700 transition-all shadow-sm border border-white/20 active:scale-90">
-                                <X className="w-6 h-6" />
+                            <button onClick={onClose} className="p-2.5 -ml-1 rounded-xl bg-white/5 backdrop-blur-md hover:bg-white/10 text-[#D4AF37] transition-all shadow-lg border border-white/10 active:scale-90" title="Close">
+                                <X className="w-6 h-6" strokeWidth={3} />
                             </button>
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-white/50 shrink-0
-                                    ${chatRoom?.type === 'sos' ? 'bg-red-500 text-white' : 'bg-white/80 text-primary'}
-                                `}>
-                                {chatRoom?.type === 'sos' ? <Shield className="w-6 h-6" /> : <UserIcon className="w-6 h-6" />}
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl border border-white/10 shrink-0 backdrop-blur-3xl
+                                     ${chatRoom?.type === 'sos' ? 'bg-red-600/20 text-red-500 border-red-500/20' : 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20'}
+                                 `}>
+                                {chatRoom?.type === 'sos' ? <Shield className="w-7 h-7" /> : <UserIcon className="w-7 h-7" />}
                             </div>
                             <div className="min-w-0">
-                                <h3 className="font-extrabold text-slate-800 text-base leading-none mb-1 truncate">
+                                <h3 className="font-black text-white text-[15px] leading-tight mb-0.5 truncate font-heading tracking-tight drop-shadow-sm">
                                     {getOtherParticipantName()}
                                 </h3>
-                                <div className="flex items-center gap-1.5 font-black text-[9px] uppercase tracking-widest">
+                                <div className="flex items-center gap-1.5 font-black text-[9px] uppercase tracking-widest font-heading">
                                     {isTyping ? (
                                         <>
-                                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-sm" />
-                                            <span className="text-green-600">typing...</span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                            <span className="text-emerald-500">typing...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <span className={`w-2 h-2 rounded-full ${presence.isOnline ? 'bg-green-500' : 'bg-slate-400'} shadow-sm`} />
-                                            <span className="opacity-60">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${presence.isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-zinc-600'}`} />
+                                            <span className={`${presence.isOnline ? 'text-emerald-500' : 'text-zinc-500'}`}>
                                                 {presence.isOnline ? 'Online' : presence.lastSeen ? `Last seen ${format(new Date(presence.lastSeen.seconds * 1000), 'h:mm a')}` : getOtherParticipantRole()}
                                             </span>
                                         </>
@@ -427,23 +429,25 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                         </div>
                         <button
                             onClick={() => setShowSearch(!showSearch)}
-                            className={`p-2.5 rounded-full transition-all active:scale-90 border border-white/10 ${showSearch ? 'bg-primary text-white shadow-lg' : 'bg-white/40 hover:bg-white/60 text-slate-700'}`}
+                            className={`p-2.5 rounded-xl transition-all active:scale-90 shadow-lg border border-white/10 ${showSearch ? 'bg-[#D4AF37] text-black border-[#D4AF37]' : 'bg-white/5 backdrop-blur-md hover:bg-white/10 text-[#D4AF37]'}`}
+                            title="Search messages"
                         >
-                            <Search className="w-5 h-5" />
+                            <Search className="w-5 h-5" strokeWidth={3} />
                         </button>
                     </div>
 
-                    {/* Search Input */}
+                    {/* Search Input - Improved visibility */}
                     {showSearch && (
                         <div className="px-1 pb-1 animate-in slide-in-from-top duration-300">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <div className="relative group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D4AF37] group-focus-within:text-[#CF9E1B] transition-colors" strokeWidth={3} />
                                 <input
                                     autoFocus
                                     type="text"
                                     placeholder="Search in conversation..."
                                     value={msgSearchTerm}
                                     onChange={(e) => setMsgSearchTerm(e.target.value)}
+                                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-black text-white placeholder:text-zinc-600 focus:outline-none focus:ring-4 focus:ring-[#D4AF37]/10 transition-all font-heading"
                                 />
                             </div>
                         </div>
@@ -451,25 +455,25 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                 </div>
 
                 {/* Messages Area Wrapper */}
-                <div className="relative flex-1 min-h-0">
+                <div className="relative flex-1 min-h-0 z-10">
                     <div
                         ref={messagesContainerRef}
                         onScroll={handleScroll}
-                        className="absolute inset-0 overflow-y-auto p-4 space-y-4 scrollbar-hide bg-transparent"
+                        className="absolute inset-0 overflow-y-auto p-5 pb-10 space-y-4 scrollbar-hide bg-transparent"
                     >
                         {loading && messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full gap-4">
-                                <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                <p className="text-primary-dark font-black text-[10px] uppercase tracking-widest animate-pulse">Establishing Secure Link...</p>
+                            <div className="flex flex-col items-center justify-center h-full gap-5">
+                                <div className="w-12 h-12 border-[5px] border-[#D4AF37]/20 border-t-[#D4AF37] rounded-full animate-spin" />
+                                <p className="text-[#D4AF37] font-black text-[11px] uppercase tracking-[0.25em] animate-pulse font-heading">Secure Link Established...</p>
                             </div>
                         ) : messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center px-10">
-                                <div className="w-24 h-24 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center mb-6 shadow-2xl border border-white/40 animate-in zoom-in-50 duration-500">
-                                    <Shield className="w-12 h-12 text-white/50" />
+                            <div className="flex flex-col items-center justify-center h-full text-center px-12">
+                                <div className="w-28 h-28 bg-[#D4AF37]/10 backdrop-blur-2xl rounded-[40px] flex items-center justify-center mb-8 shadow-2xl border border-[#D4AF37]/20 animate-in zoom-in-50 duration-700">
+                                    <Shield className="w-14 h-14 text-[#D4AF37]/40" />
                                 </div>
-                                <h3 className="font-black text-slate-800 text-lg mb-2">Encrypted Channel</h3>
-                                <p className="text-xs text-slate-600 font-bold leading-relaxed opacity-70">
-                                    All messages are monitored for safety and end-to-end encrypted for privacy.
+                                <h3 className="font-black text-white text-xl mb-3 font-heading tracking-tight">Encrypted Channel</h3>
+                                <p className="text-sm text-zinc-500 font-bold leading-relaxed opacity-60">
+                                    Messages are end-to-end encrypted and monitored for student safety.
                                 </p>
                             </div>
                         ) : (
@@ -478,7 +482,7 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Scroll to Bottom Button - MOVED HIGHER AND HIGHER Z-INDEX */}
+                    {/* Scroll to Bottom Button */}
                     <AnimatePresence>
                         {showScrollButton && (
                             <motion.button
@@ -486,100 +490,48 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.5, y: 20 }}
                                 onClick={() => scrollToBottom()}
-                                className="absolute bottom-10 right-6 p-4 bg-white/60 backdrop-blur-2xl text-primary rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-white/60 z-[150] hover:bg-white/80 transition-all group active:scale-95"
+                                className="absolute bottom-10 right-6 p-4.5 bg-[#D4AF37]/20 backdrop-blur-3xl text-[#D4AF37] rounded-[24px] shadow-2xl border border-[#D4AF37]/30 z-[150] hover:bg-[#D4AF37]/30 hover:scale-110 transition-all group active:scale-95"
                             >
-                                <ChevronDown className="w-6 h-6 animate-bounce" style={{ animationDuration: '2s' }} />
-                                <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors rounded-full" />
+                                <ChevronDown className="w-7 h-7 animate-bounce" style={{ animationDuration: '2.5s' }} />
+                                <div className="absolute inset-0 bg-white/5 group-hover:bg-white/10 transition-colors rounded-[24px]" />
                             </motion.button>
                         )}
                     </AnimatePresence>
                 </div>
 
-                {/* Input Area */}
-                <div className="relative p-4 pb-10 bg-white/20 backdrop-blur-3xl border-t border-white/20">
+                {/* Input Area - Fully Transparent for Motion Background */}
+                <div className="relative p-4 pb-8 bg-transparent transition-colors">
                     {/* Reply Preview */}
-                    {replyTo && (
-                        <div className="absolute bottom-full left-4 right-4 mb-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl p-3 border border-white/40 z-[100] animate-in slide-in-from-bottom flex items-center justify-between gap-3">
-                            <div className="flex-1 min-w-0 border-l-4 border-primary pl-3">
-                                <p className="text-[10px] font-black text-primary uppercase">Replying to {replyTo.senderName}</p>
-                                <p className="text-xs text-slate-600 truncate">{replyTo.text || (replyTo.type === 'image' ? 'Photo' : 'Media')}</p>
-                            </div>
-                            <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-slate-100 rounded-full">
-                                <X className="w-4 h-4 text-slate-400" />
-                            </button>
-                        </div>
-                    )}
+                    {/* Floating Native Input Shell */}
+                    <div className="flex items-end gap-3 max-w-[95%] mx-auto relative z-[100]">
+                        {/* Main Glass Pill - More Transparent/Glassy */}
+                        <div className="flex-1 bg-black/40 backdrop-blur-3xl rounded-[32px] shadow-2xl border border-white/5 p-1.5 flex items-center min-h-[56px] transition-all">
+                            {!isRecording && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowMediaMenu(!showMediaMenu)}
+                                    className={`p-2.5 rounded-full hover:bg-white/5 transition-all ${showMediaMenu ? 'rotate-45 text-[#D4AF37] bg-[#D4AF37]/10' : 'text-[#D4AF37]'}`}
+                                >
+                                    <Plus className="w-6 h-6" strokeWidth={3} />
+                                </button>
+                            )}
 
-                    {/* Edit Preview */}
-                    {editingMessage && (
-                        <div className="absolute bottom-full left-4 right-4 mb-2 bg-primary/10 backdrop-blur-xl rounded-2xl shadow-xl p-3 border border-primary/20 z-[100] animate-in slide-in-from-bottom flex items-center justify-between gap-3">
-                            <div className="flex-1 min-w-0 border-l-4 border-primary pl-3">
-                                <span className="text-[10px] font-black text-primary uppercase flex items-center gap-1">
-                                    <Pencil className="w-3 h-3" /> Editing Message
-                                </span>
-                                <p className="text-xs text-slate-600 truncate">{editingMessage.text}</p>
-                            </div>
-                            <button onClick={() => {
-                                setEditingMessage(null);
-                                setNewMessage('');
-                            }} className="p-1 hover:bg-white/50 rounded-full">
-                                <X className="w-4 h-4 text-slate-400" />
-                            </button>
-                        </div>
-                    )}
-                    {/* Media Menu */}
-                    {showMediaMenu && (
-                        <div className="absolute bottom-full left-4 mb-4 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-4 grid grid-cols-4 gap-4 animate-in slide-in-from-bottom border border-white/40 z-[100]">
-                            <button onClick={handleLocationShare} className="flex flex-col items-center gap-1 p-2 hover:bg-primary/10 rounded-xl transition-colors">
-                                <MapPin className="text-blue-500" />
-                                <span className="text-[10px] font-bold">Location</span>
-                            </button>
-                            <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-1 p-2 hover:bg-primary/10 rounded-xl transition-colors">
-                                <ImageIcon className="text-purple-500" />
-                                <span className="text-[10px] font-bold">Gallery</span>
-                            </button>
-                            <button className="flex flex-col items-center gap-1 p-2 hover:bg-primary/10 rounded-xl transition-colors">
-                                <Video className="text-red-500" />
-                                <span className="text-[10px] font-bold">Video</span>
-                            </button>
-                            <button className="flex flex-col items-center gap-1 p-2 hover:bg-primary/10 rounded-xl transition-colors">
-                                <Paperclip className="text-orange-500" />
-                                <span className="text-[10px] font-bold">Files</span>
-                            </button>
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSend} className="bg-white/40 border border-white/60 rounded-[28px] p-1.5 flex items-center gap-2 shadow-inner">
-                        {!isRecording && (
-                            <button
-                                type="button"
-                                onClick={() => setShowMediaMenu(!showMediaMenu)}
-                                className={`p-2 rounded-full hover:bg-white/60 transition-all ${showMediaMenu ? 'rotate-45 text-primary' : 'text-slate-600'}`}
-                            >
-                                <Plus className="w-6 h-6" />
-                            </button>
-                        )}
-
-                        {/* Input Field Overlay */}
-                        <div className="flex-1 bg-white/40 rounded-2xl p-1 px-3 flex items-center gap-2">
-                            {isRecording ? (
-                                <div className="flex-1 flex items-center gap-3 px-2">
-                                    <button
-                                        type="button"
-                                        onClick={cancelVoiceRecording}
-                                        className="p-1.5 px-3 rounded-2xl bg-red-50 text-red-600 hover:bg-red-100 transition-all flex items-center gap-2 border border-red-200 shadow-sm group active:scale-95"
-                                        title="Cancel Recording"
-                                    >
-                                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                        <span className="text-[10px] font-black tracking-tighter uppercase">Cancel</span>
-                                    </button>
-                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                                    <span className="text-[11px] font-black text-red-600 uppercase tracking-widest flex-1">
-                                        Recording {Math.floor(recordingDuration / 60)}:{String(recordingDuration % 60).padStart(2, '0')}
-                                    </span>
-                                </div>
-                            ) : (
-                                <>
+                            <div className="flex-1 flex items-center min-h-[44px]">
+                                {isRecording ? (
+                                    <div className="flex-1 flex items-center gap-3 px-3">
+                                        <button
+                                            type="button"
+                                            onClick={cancelVoiceRecording}
+                                            className="p-2 rounded-full bg-red-600/10 text-red-500 hover:bg-red-600/20 transition-all border border-red-500/20"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                        <span className="text-[14px] font-black text-white tracking-tight flex-1">
+                                            {Math.floor(recordingDuration / 60)}:{String(recordingDuration % 60).padStart(2, '0')}
+                                        </span>
+                                    </div>
+                                ) : (
                                     <input
                                         type="text"
                                         value={newMessage}
@@ -587,65 +539,136 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                                             setNewMessage(e.target.value);
                                             handleTyping();
                                         }}
-                                        placeholder="Message..."
-                                        onClick={() => setShowEmojiPicker(false)}
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 font-bold text-slate-800 placeholder:text-slate-400"
+                                        placeholder="Royal Transmission..."
+                                        className="w-full bg-transparent border-none focus:ring-0 text-[15px] font-black text-white placeholder:text-zinc-600 py-2.5 px-3"
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                                        className={`p-1 transition-colors ${showEmojiPicker ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
-                                    >
-                                        <Smile className="w-5 h-5" />
-                                    </button>
-                                </>
+                                )}
+                            </div>
+
+                            {!isRecording && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                    className={`p-2.5 rounded-full hover:bg-white/5 transition-all ${showEmojiPicker ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-[#D4AF37]'}`}
+                                >
+                                    <Smile className="w-6 h-6" />
+                                </button>
                             )}
                         </div>
 
-                        {/* Quick Emoji Picker */}
-                        {showEmojiPicker && (
-                            <div className="absolute bottom-full right-4 mb-4 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl p-4 grid grid-cols-6 gap-3 animate-in fade-in zoom-in-50 duration-200 border border-white/40 z-[100] max-w-[280px]">
-                                {['❤️', '👍', '😂', '😮', '😢', '🙏', '🔥', '✨', '🙌', '✅', '❌', '📍'].map(emoji => (
-                                    <button
-                                        key={emoji}
-                                        type="button"
-                                        onClick={() => {
-                                            setNewMessage(prev => prev + emoji);
-                                            setShowEmojiPicker(false);
-                                        }}
-                                        className="text-xl hover:scale-125 transition-transform p-1"
-                                    >
-                                        {emoji}
-                                    </button>
-                                ))}
-                            </div>
+                        {/* Direct Action Circle */}
+                        <div className="flex-shrink-0">
+                            {newMessage.trim() || isRecording ? (
+                                <button
+                                    onClick={handleSend}
+                                    className="w-14 h-14 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-90 transition-all border border-white/20"
+                                >
+                                    <Send className="w-6 h-6 translate-x-0.5" strokeWidth={3} />
+                                </button>
+                            ) : (
+                                <button
+                                    onMouseDown={startVoiceRecording}
+                                    onMouseUp={stopVoiceRecording}
+                                    onTouchStart={startVoiceRecording}
+                                    onTouchEnd={stopVoiceRecording}
+                                    className="w-14 h-14 bg-white/5 backdrop-blur-3xl text-[#D4AF37] rounded-full flex items-center justify-center shadow-2xl border border-white/10 hover:bg-white/10 active:scale-95 transition-all"
+                                >
+                                    <Mic className="w-6 h-6" strokeWidth={3} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Menus Overlay */}
+                    <AnimatePresence>
+                        {showMediaMenu && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                                className="absolute bottom-[calc(100%+12px)] left-4 mb-4 bg-black/80 backdrop-blur-3xl rounded-[28px] shadow-2xl p-4 grid grid-cols-4 gap-4 border border-white/10 z-[110]"
+                            >
+                                <button onClick={handleLocationShare} className="flex flex-col items-center gap-1.5 p-3 hover:bg-[#1A7CCC]/5 rounded-2xl transition-all">
+                                    <div className="p-3 bg-blue-500/10 rounded-xl"><MapPin className="text-blue-500 w-6 h-6" /></div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</span>
+                                </button>
+                                <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-1.5 p-3 hover:bg-[#1A7CCC]/5 rounded-2xl transition-all">
+                                    <div className="p-3 bg-purple-500/10 rounded-xl"><ImageIcon className="text-purple-500 w-6 h-6" /></div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Gallery</span>
+                                </button>
+                                <button className="flex flex-col items-center gap-1.5 p-3 hover:bg-[#1A7CCC]/5 rounded-2xl transition-all">
+                                    <div className="p-3 bg-red-500/10 rounded-xl"><Video className="text-red-500 w-6 h-6" /></div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Video</span>
+                                </button>
+                                <button className="flex flex-col items-center gap-1.5 p-3 hover:bg-[#1A7CCC]/5 rounded-2xl transition-all">
+                                    <div className="p-3 bg-orange-500/10 rounded-xl"><Paperclip className="text-orange-500 w-6 h-6" /></div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Files</span>
+                                </button>
+                            </motion.div>
                         )}
 
-                        {editingMessage ? (
-                            <button
-                                type="submit"
-                                className="p-3 bg-green-500 text-white rounded-full shadow-lg shadow-green-500/30 active:scale-90 transition-all"
+                        {showEmojiPicker && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                                className="absolute bottom-[calc(100%+12px)] right-4 mb-4 bg-black/80 backdrop-blur-3xl rounded-[28px] shadow-2xl p-5 border border-white/10 z-[110] max-w-[280px]"
                             >
-                                <Check className="w-5 h-5" />
-                            </button>
-                        ) : newMessage.trim() === '' ? (
-                            <button
-                                type="button"
-                                onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
-                                className={`p-3 rounded-full transition-all ${isRecording ? 'bg-red-500 scale-110 shadow-red-500/50' : 'bg-white/60 text-slate-600'} shadow-lg active:scale-95`}
-                                title={isRecording ? "Stop and Send" : "Record Voice Note"}
-                            >
-                                <Mic className={`w-5 h-5 ${isRecording ? 'text-white translate-y-[-1px] animate-pulse' : ''}`} />
-                            </button>
-                        ) : (
-                            <button
-                                type="submit"
-                                className="p-3 bg-primary text-white rounded-full shadow-lg shadow-primary/30 active:scale-90 transition-all"
-                            >
-                                <Send className="w-5 h-5" />
-                            </button>
+                                <div className="grid grid-cols-6 gap-3">
+                                    {['❤️', '👍', '😂', '😮', '😢', '🙏', '🔥', '✨', '🙌', '✅', '❌', '📍'].map(emoji => (
+                                        <button
+                                            key={emoji}
+                                            type="button"
+                                            onClick={() => {
+                                                setNewMessage(prev => prev + emoji);
+                                                setShowEmojiPicker(false);
+                                            }}
+                                            className="text-2xl hover:scale-125 transition-transform p-1"
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
                         )}
-                    </form>
+
+                        {replyTo && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                className="absolute bottom-[calc(100%+8px)] left-4 right-4 bg-black/80 backdrop-blur-3xl rounded-[24px] shadow-2xl p-4 border border-white/10 z-[105] flex items-center justify-between gap-4"
+                            >
+                                <div className="flex-1 min-w-0 border-l-4 border-[#D4AF37] pl-4">
+                                    <p className="text-[10px] font-black text-[#D4AF37] uppercase tracking-widest font-heading mb-0.5">Replying to {replyTo.senderName}</p>
+                                    <p className="text-sm text-slate-600 truncate font-semibold">{replyTo.text || (replyTo.type === 'image' ? 'Photo' : 'Media')}</p>
+                                </div>
+                                <button onClick={() => setReplyTo(null)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors">
+                                    <X className="w-4 h-4 text-slate-500" />
+                                </button>
+                            </motion.div>
+                        )}
+
+                        {editingMessage && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                className="absolute bottom-[calc(100%+8px)] left-4 right-4 bg-black/80 backdrop-blur-3xl rounded-[24px] shadow-2xl p-4 border border-white/10 z-[105] flex items-center justify-between gap-4"
+                            >
+                                <div className="flex-1 min-w-0 border-l-4 border-[#D4AF37] pl-4">
+                                    <p className="text-[10px] font-black text-[#D4AF37] uppercase tracking-widest font-heading mb-0.5">Editing Message</p>
+                                    <p className="text-sm text-slate-600 truncate font-semibold">{editingMessage.text}</p>
+                                </div>
+                                <button onClick={() => {
+                                    setEditingMessage(null);
+                                    setNewMessage('');
+                                }} className="p-2 bg-indigo-100 hover:bg-indigo-200 rounded-full transition-colors">
+                                    <X className="w-4 h-4 text-indigo-500" />
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     <input
                         type="file"
                         ref={fileInputRef}

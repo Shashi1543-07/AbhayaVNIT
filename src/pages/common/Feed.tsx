@@ -50,31 +50,31 @@ export default function Feed() {
                 {/* Header Card */}
                 <motion.div
                     variants={cardVariant}
-                    className="glass-card p-6 rounded-[2rem] border border-white/50 shadow-2xl flex items-center justify-between"
+                    className="glass p-8 rounded-[2.5rem] border border-[#D4AF37]/20 shadow-2xl flex items-center justify-between bg-black/40"
                 >
                     <div>
-                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">Community Feed</h2>
-                        <p className="text-sm text-slate-500 font-medium opacity-80">
-                            {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+                        <h2 className="text-2xl font-black text-white tracking-tight font-heading drop-shadow-sm">Campus <span className="text-[#D4AF37]">Feed</span></h2>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">
+                            {posts.length} {posts.length === 1 ? 'INTEL POST' : 'INTEL POSTS'}
                         </p>
                     </div>
-                    <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-sm text-primary">
-                        <Newspaper className="w-8 h-8" />
+                    <div className="w-14 h-14 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center border border-[#D4AF37]/20 shadow-2xl text-[#D4AF37]">
+                        <Newspaper className="w-8 h-8" strokeWidth={3} />
                     </div>
                 </motion.div>
 
                 {/* Posts List */}
                 {loading ? (
-                    <motion.div variants={cardVariant} className="glass-card p-12 rounded-[2.5rem] text-center border border-white/50 shadow-xl">
-                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                        <p className="text-slate-400 font-bold">Loading posts...</p>
+                    <motion.div variants={cardVariant} className="glass p-12 rounded-[2.5rem] text-center border border-white/5 shadow-2xl">
+                        <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto mb-6" />
+                        <p className="text-zinc-500 font-black uppercase tracking-widest text-xs">Accessing Intel...</p>
                     </motion.div>
                 ) : posts.length === 0 ? (
-                    <motion.div variants={cardVariant} className="glass-card p-12 rounded-[2.5rem] text-center border border-white/50 shadow-xl">
-                        <Newspaper className="w-12 h-12 text-slate-300 mx-auto mb-4 opacity-50" />
-                        <p className="text-slate-400 font-bold">No posts yet</p>
+                    <motion.div variants={cardVariant} className="glass p-12 rounded-[2.5rem] text-center border border-white/5 shadow-2xl">
+                        <Newspaper className="w-16 h-16 text-zinc-800 mx-auto mb-6 opacity-20" />
+                        <p className="text-white font-black uppercase tracking-widest text-sm mb-2">Network is Quiet</p>
                         {isStudent && (
-                            <p className="text-xs text-slate-400 mt-2">Be the first to share!</p>
+                            <p className="text-xs text-zinc-500 font-bold">Be the first to broadcast!</p>
                         )}
                     </motion.div>
                 ) : (
@@ -98,9 +98,9 @@ export default function Feed() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => navigate('/student/create-post')}
-                            className="absolute bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white rounded-2xl shadow-2xl flex items-center justify-center pointer-events-auto border border-white/20"
+                            className="absolute bottom-24 right-6 w-16 h-16 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black rounded-3xl shadow-[0_10px_30px_rgba(212,175,55,0.3)] flex items-center justify-center pointer-events-auto border border-white/20 active:scale-90 transition-all"
                         >
-                            <Plus className="w-6 h-6" strokeWidth={3} />
+                            <Plus className="w-8 h-8" strokeWidth={4} />
                         </motion.button>
                     </div>
                 </div>

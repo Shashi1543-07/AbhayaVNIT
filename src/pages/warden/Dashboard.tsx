@@ -109,13 +109,13 @@ export default function WardenDashboard() {
 
                 {/* Active SOS Section */}
                 <motion.div variants={cardVariant}>
-                    <h3 className="text-sm font-bold text-primary mb-3 ml-1">Active Emergencies</h3>
+                    <h3 className="text-sm font-bold text-[#D4AF37] mb-3 ml-1 uppercase tracking-tighter">Active Emergencies</h3>
                     <WardenActiveSOS hostelId={wardenHostelId} />
                 </motion.div>
 
                 {/* Active Safe Walks Section */}
                 <motion.div variants={cardVariant}>
-                    <h3 className="text-sm font-bold text-primary mb-3 ml-1">Active Safe Walks</h3>
+                    <h3 className="text-sm font-bold text-[#D4AF37] mb-3 ml-1 uppercase tracking-tighter">Active Safe Walks</h3>
                     <ActiveWalksList
                         onSelectWalk={(walk) => navigate(`/warden/safe-walk/${walk.id}`)}
                     />
@@ -125,20 +125,20 @@ export default function WardenDashboard() {
                 {/* Recent Incidents Preview */}
                 <motion.div variants={cardVariant}>
                     <div className="flex justify-between items-center mb-3 ml-1">
-                        <h3 className="text-sm font-bold text-primary">Recent Incidents</h3>
-                        <button className="text-xs text-primary font-medium">View All</button>
+                        <h3 className="text-sm font-bold text-[#D4AF37] uppercase tracking-tighter">Recent Incidents</h3>
+                        <button className="text-xs text-[#D4AF37]/60 font-medium">View All</button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {incidents.length === 0 ? (
-                            <div className="text-center py-4 text-muted text-xs col-span-full">
+                            <div className="text-center py-4 text-zinc-500 text-xs col-span-full">
                                 No recent incidents reported.
                             </div>
                         ) : (
                             incidents.map((incident) => (
-                                <div key={incident.id} className="glass-card-soft rounded-2xl p-4 flex justify-between items-center" onClick={() => navigate('/warden/reports')}>
-                                    <div>
-                                        <p className="font-bold text-sm text-primary">{incident.category}</p>
-                                        <p className="text-xs text-muted">
+                                <div key={incident.id} className="glass rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-colors border border-white/5" onClick={() => navigate(`/warden/reports/${incident.id}`)}>
+                                    <div className="min-w-0 pr-2">
+                                        <p className="font-bold text-sm text-[#D4AF37] truncate">{incident.category}</p>
+                                        <p className="text-xs text-zinc-400 truncate">
                                             {incident.reporterName || 'Student'} • {incident.createdAt?.seconds ? new Date(incident.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                                         </p>
                                     </div>
@@ -169,7 +169,7 @@ export default function WardenDashboard() {
                         icon={Newspaper}
                         label="Campus Feed"
                         variant="default"
-                        className="w-full flex-row justify-start px-6 py-4 gap-4 border-blue-200 bg-blue-50/50"
+                        className="w-full flex-row justify-start px-6 py-4 gap-4"
                         onClick={() => navigate('/feed')}
                     />
                 </motion.div>
@@ -181,19 +181,19 @@ export default function WardenDashboard() {
                 <motion.button
                     variants={cardVariant}
                     onClick={() => setShowBroadcasts(true)}
-                    className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] p-1 rounded-2xl shadow-lg active:scale-95 transition-all mb-4"
+                    className="w-full bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] p-[1.5px] rounded-[24px] shadow-2xl active:scale-95 transition-all mb-4 group"
                 >
-                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between">
+                    <div className="bg-black/80 backdrop-blur-2xl rounded-[22px] p-4 flex items-center justify-between border border-white/5">
                         <div className="flex items-center gap-3">
-                            <div className="bg-white/30 p-2 rounded-full">
-                                <Megaphone className="w-5 h-5 text-white" />
+                            <div className="bg-[#D4AF37]/10 p-2.5 rounded-2xl border border-[#D4AF37]/20">
+                                <Megaphone className="w-5 h-5 text-[#D4AF37]" />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold text-white text-sm">Admin Broadcasts</h3>
-                                <p className="text-xs text-white/90">Click to view official alerts</p>
+                                <h3 className="font-black text-white text-sm font-heading tracking-tight">Admin Broadcasts</h3>
+                                <p className="text-[10px] text-[#D4AF37] font-bold opacity-60">Official alerts & info</p>
                             </div>
                         </div>
-                        <div className="bg-white/30 px-3 py-1 rounded-full text-xs font-bold text-white">
+                        <div className="bg-[#D4AF37] px-3 py-1.5 rounded-xl text-[10px] font-black text-black uppercase tracking-widest shadow-lg">
                             View
                         </div>
                     </div>

@@ -41,9 +41,10 @@ export default function EventMapPage() {
     if (loading) {
         return (
             <MobileWrapper>
-                <TopHeader title="Loading Map..." showBackButton={true} />
-                <div className="flex items-center justify-center h-screen">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <TopHeader title="Operational Map" showBackButton={true} />
+                <div className="flex flex-col items-center justify-center h-screen bg-black">
+                    <div className="w-16 h-16 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(212,175,55,0.3)]"></div>
+                    <p className="text-[10px] text-[#D4AF37] font-black uppercase tracking-[0.3em]">Calibrating Satellite...</p>
                 </div>
             </MobileWrapper>
         );
@@ -61,8 +62,8 @@ export default function EventMapPage() {
     }
 
     return (
-        <MobileWrapper className="pb-0 bg-slate-100">
-            <TopHeader title={`${event.userName}'s Location`} showBackButton={true} transparent={true} />
+        <MobileWrapper className="pb-0 overflow-hidden">
+            <TopHeader title={`${event.userName} LOC-INTEL`} showBackButton={true} transparent={true} />
 
             <motion.div
                 initial={{ opacity: 0 }}

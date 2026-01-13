@@ -44,16 +44,16 @@ export default function ActiveWalksList({ onSelectWalk, hostelFilter }: ActiveWa
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as any)}
-                    className="w-full bg-white/20 backdrop-blur-md p-4 rounded-2xl border border-white/40 text-sm font-black text-slate-700 uppercase tracking-widest outline-none appearance-none shadow-lg cursor-pointer transition-all hover:bg-white/30"
+                    className="w-full bg-[#D4AF37]/5 backdrop-blur-md p-4 rounded-2xl border border-[#D4AF37]/20 text-sm font-black text-[#D4AF37] uppercase tracking-widest outline-none appearance-none shadow-lg cursor-pointer transition-all hover:bg-[#D4AF37]/10 focus:ring-2 focus:ring-[#D4AF37]/30"
                 >
-                    <option value="all">Live Overview ({walks.length})</option>
-                    <option value="active">Active Track</option>
-                    <option value="delayed">Delay Alerts</option>
-                    <option value="danger">Emergency</option>
-                    <option value="escort">Escort Req.</option>
+                    <option value="all" className="bg-black text-[#D4AF37]">Live Overview ({walks.length})</option>
+                    <option value="active" className="bg-black text-[#D4AF37]">Active Track</option>
+                    <option value="delayed" className="bg-black text-white">Delay Alerts</option>
+                    <option value="danger" className="bg-black text-red-500">Emergency</option>
+                    <option value="escort" className="bg-black text-white">Escort Req.</option>
                 </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                    <Shield className="w-4 h-4 text-slate-800" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-60">
+                    <Shield className="w-4 h-4 text-[#D4AF37]" />
                 </div>
             </div>
 
@@ -76,36 +76,36 @@ export default function ActiveWalksList({ onSelectWalk, hostelFilter }: ActiveWa
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-white/60 to-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center font-black text-slate-700 border border-white/80 shadow-sm text-lg">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl flex items-center justify-center font-black text-white border border-white/20 shadow-sm text-lg">
                                         {walk.userName.charAt(0)}
                                     </div>
                                     <div>
-                                        <h4 className="font-black text-slate-800 text-lg leading-tight">{walk.userName}</h4>
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{walk.userHostel || 'Campus'}</p>
+                                        <h4 className="font-black text-white text-lg leading-tight">{walk.userName}</h4>
+                                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">{walk.userHostel || 'Campus'}</p>
                                     </div>
                                 </div>
-                                <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.1em] border shadow-sm ${walk.status === 'danger' ? 'bg-red-500/10 text-red-600 border-red-500/20' :
-                                    walk.status === 'delayed' ? 'bg-orange-500/10 text-orange-600 border-orange-500/20' :
-                                        'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.1em] border shadow-sm ${walk.status === 'danger' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                    walk.status === 'delayed' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                        'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                                     }`}>
                                     {walk.status}
                                 </span>
                             </div>
 
-                            <div className="bg-white/30 backdrop-blur-md p-4 rounded-2xl border border-white/60 space-y-3 shadow-sm text-sm">
+                            <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10 space-y-3 shadow-sm text-sm">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-1.5 bg-emerald-100/50 rounded-lg">
-                                        <MapPin className="w-4 h-4 text-emerald-600" />
+                                    <div className="p-1.5 bg-emerald-500/20 rounded-lg">
+                                        <MapPin className="w-4 h-4 text-emerald-400" />
                                     </div>
-                                    <span className="font-bold text-slate-700 truncate">{walk.destination.name}</span>
+                                    <span className="font-bold text-zinc-200 truncate">{walk.destination.name}</span>
                                 </div>
 
-                                <div className="flex justify-between items-center pt-3 border-t border-white/40 text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                                <div className="flex justify-between items-center pt-3 border-t border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-[0.1em]">
                                     <span className="flex items-center gap-2">
-                                        <Clock className="w-4 h-4 text-primary opacity-60" />
+                                        <Clock className="w-4 h-4 text-zinc-400 opacity-60" />
                                         {walk.expectedDuration}m limit
                                     </span>
-                                    {walk.assignedEscort && <span className="text-emerald-600 font-black">Escort: {walk.assignedEscort}</span>}
+                                    {walk.assignedEscort && <span className="text-emerald-400 font-black">Escort: {walk.assignedEscort}</span>}
                                 </div>
                             </div>
                         </motion.div>

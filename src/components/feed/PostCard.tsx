@@ -45,24 +45,24 @@ export default function PostCard({ post }: PostCardProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="glass-card p-6 rounded-[2.2rem] border border-white/50 shadow-xl relative"
+            className="glass p-6 rounded-[2.5rem] border border-[#D4AF37]/10 shadow-2xl relative bg-black/40"
         >
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                     {/* Avatar */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl flex items-center justify-center font-black text-primary border border-white/60 shadow-sm">
+                    <div className="w-12 h-12 bg-white/5 backdrop-blur-3xl rounded-[18px] flex items-center justify-center font-black text-[#D4AF37] border border-white/10 shadow-2xl">
                         {post.authorName.charAt(0).toUpperCase()}
                     </div>
                     {/* Author Info */}
                     <div>
-                        <h3 className="font-black text-slate-800 text-sm leading-tight">{post.authorName}</h3>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <h3 className="font-black text-white text-sm leading-tight drop-shadow-sm font-heading">{post.authorName}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[9px] font-black text-[#D4AF37]/60 uppercase tracking-[0.1em]">
                                 {post.hostelId}
                             </span>
-                            <span className="text-[10px] text-slate-400">•</span>
-                            <span className="text-[10px] text-slate-400 font-medium">
+                            <span className="text-[9px] text-[#D4AF37]/40">•</span>
+                            <span className="text-[9px] text-zinc-500 font-black uppercase font-mono">
                                 {getRelativeTime(post.createdAt)}
                             </span>
                         </div>
@@ -74,7 +74,7 @@ export default function PostCard({ post }: PostCardProps) {
                     <button
                         onClick={handleDelete}
                         disabled={deleting}
-                        className="p-2 rounded-xl bg-red-100/50 hover:bg-red-100 text-red-600 transition-all disabled:opacity-50"
+                        className="p-2.5 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/20 transition-all disabled:opacity-50 active:scale-90"
                         title="Delete post"
                     >
                         <Trash2 className="w-4 h-4" />
@@ -83,17 +83,17 @@ export default function PostCard({ post }: PostCardProps) {
             </div>
 
             {/* Content */}
-            <p className="text-sm text-slate-700 font-medium leading-relaxed mb-4 whitespace-pre-wrap">
+            <p className="text-sm text-zinc-300 font-bold leading-relaxed mb-5 whitespace-pre-wrap pl-1">
                 {post.text}
             </p>
 
             {/* Image */}
             {post.imageUrl && (
-                <div className="rounded-2xl overflow-hidden border border-white/60 shadow-sm">
+                <div className="rounded-[24px] overflow-hidden border border-white/10 shadow-2xl bg-black/50">
                     <img
                         src={post.imageUrl}
                         alt="Post image"
-                        className="w-full max-h-96 object-cover"
+                        className="w-full max-h-[400px] object-cover hover:scale-105 transition-transform duration-700"
                         loading="lazy"
                     />
                 </div>

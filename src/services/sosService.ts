@@ -1,14 +1,22 @@
-import { db } from '../lib/firebase';
+import { db, rtdb } from '../lib/firebase'; // Added rtdb here
+import SOSPlugin from './nativeSOS';
+import { Capacitor } from '@capacitor/core';
 import {
     collection,
-    addDoc,
     updateDoc,
     doc,
     onSnapshot,
     query,
     where,
-    serverTimestamp
+    getDoc,
+    getDocs,
+    setDoc,
+    serverTimestamp,
+    runTransaction,
+    arrayUnion
 } from 'firebase/firestore';
+import { ref, set, serverTimestamp as rtdbTimestamp } from 'firebase/database';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface SOSEvent {
     id: string;
@@ -81,12 +89,10 @@ export const sosService = {
         user: any,
         location: { lat: number; lng: number },
         emergencyType: 'medical' | 'harassment' | 'other' | 'general' = 'other',
-        triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button' = 'manual_gesture',
-        audioUrl?: string
+        triggerMethod: 'manual_gesture' | 'shake' | 'voice' | 'button' = 'manual_gesture'
     ) => {
         try {
             // Check if user already has an active (unresolved) SOS
-            const { getDocs } = await import('firebase/firestore');
             const activeQuery = query(
                 collection(db, 'sos_events'),
                 where('userId', '==', user.uid),
@@ -94,79 +100,111 @@ export const sosService = {
             );
             const activeSnapshot = await getDocs(activeQuery);
             if (!activeSnapshot.empty) {
-                throw new Error("You already have an active SOS. Please wait for it to be resolved.");
+                const activeId = activeSnapshot.docs[0].id;
+                const savedToken = localStorage.getItem(`sos_token_${activeId}`);
+                if (savedToken && Capacitor.isNativePlatform()) {
+                    const idToken = await user.getIdToken();
+                    await SOSPlugin.startSOSService({
+                        sosId: activeId,
+                        sosToken: savedToken,
+                        idToken,
+                        userId: user.uid
+                    });
+                }
+                throw new Error("You already have an active SOS.");
             }
 
-            // 1. Create SOS Event Doc first to get ID
-            const sosData = {
-                // Student information
+            // Fetch User Profile for Hostel/Room details
+            let studentProfile: any = {};
+            try {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    studentProfile = userDoc.data();
+                }
+            } catch (err) {
+                console.error("Error fetching student profile for SOS:", err);
+            }
+
+            // Create SOS ID and Token
+            const sosId = uuidv4();
+            const sosToken = uuidv4() + "-" + Date.now();
+
+            // 1. Create SOS Event record
+            const sosEvent = {
+                id: sosId,
                 userId: user.uid,
-                userName: user.name || user.displayName || 'Unknown Student',
+                userName: studentProfile.name || user.displayName || 'Unknown',
                 studentId: user.uid,
-                studentName: user.name || user.displayName || 'Unknown Student',
-                userPhone: user.phoneNumber || '',
-                role: user.role || 'student',
-
-                // Location details
-                hostelId: user.hostelId || user.hostel || null,
-                hostel: user.hostelId || user.hostel || 'Unknown',
-                roomNo: user.roomNo || null,
-                roomNumber: user.roomNo || user.roomNumber || 'N/A',
-
-                // New status structure
+                studentName: studentProfile.name || user.displayName || 'Unknown',
+                userPhone: studentProfile.phoneNumber || studentProfile.phone || user.phoneNumber || '',
+                role: 'student',
+                hostelId: studentProfile.hostelId || studentProfile.hostel || null,
+                hostel: studentProfile.hostelId || studentProfile.hostel || 'Unknown',
+                roomNumber: studentProfile.roomNo || studentProfile.roomNumber || 'N/A',
+                roomNo: studentProfile.roomNo || studentProfile.roomNumber || 'N/A', // Add both for compatibility
                 status: {
                     recognised: false,
                     resolved: false
                 },
-
-                // Security assignment (initially null)
                 recognisedBy: null,
                 assignedTo: null,
-
-                // Timestamps
                 triggeredAt: Date.now(),
                 createdAt: serverTimestamp(),
                 resolvedAt: null,
-
-                // Location
-                location,
+                location: location,
                 liveLocation: location,
-
-                // Timeline
                 timeline: [{
                     time: Date.now(),
-                    action: 'SOS Triggered',
+                    action: "SOS Triggered",
                     by: user.uid,
                     note: `Emergency: ${emergencyType} (${triggerMethod})`
                 }],
-
-                // Emergency details
-                audioUrl: audioUrl || null,
-                emergencyType,
-                triggerMethod,
-                isDetailsAdded: false,
-                chatId: '' // Will update after
+                emergencyType: emergencyType || "other",
+                triggerMethod: triggerMethod || "button",
+                isDetailsAdded: true,
+                sosToken: sosToken // Store token for recovery/unauthenticated cancel
             };
 
-            const docRef = await addDoc(collection(db, 'sos_events'), sosData);
-            const sosId = docRef.id;
+            await setDoc(doc(db, 'sos_events', sosId), sosEvent);
 
-            // 2. Create Conversation with Deterministic ID: "sos_{sosId}"
-            const { chatService } = await import('./chatService');
+            // 2. Create Session record for recovery
+            await setDoc(doc(db, 'sos_sessions', sosId), {
+                sosId,
+                userId: user.uid,
+                token: sosToken,
+                createdAt: serverTimestamp(),
+                isActive: true
+            });
 
-            // We use 'sos' as type, and sos_{sosId} as the custom conversation ID
-            const chatId = await chatService.createConversation(
-                'sos',
-                [
-                    { uid: user.uid, name: user.name || user.displayName || 'Student', role: user.role || 'student' }
-                ],
-                `sos_${sosId}`
-            );
+            // 3. Initial RTDB update for live map
+            await set(ref(rtdb, `live_locations/${user.uid}`), {
+                latitude: location.lat,
+                longitude: location.lng,
+                lastUpdated: rtdbTimestamp(),
+                sosId: sosId
+            });
 
-            // 3. Link back to SOS Event
-            await updateDoc(docRef, { chatId: chatId });
+            // Store token locally for recovery/logout resilience
+            localStorage.setItem('active_sos_id', sosId);
+            localStorage.setItem(`sos_token_${sosId}`, sosToken);
 
-            return { sosId, chatId };
+            // Start Native Service if on Android/iOS
+            if (Capacitor.isNativePlatform()) {
+                try {
+                    // Pass the ID token and user ID for RTDB rest calls
+                    const idToken = await user.getIdToken();
+                    await SOSPlugin.startSOSService({
+                        sosId,
+                        sosToken,
+                        idToken,
+                        userId: user.uid
+                    });
+                } catch (nativeErr) {
+                    console.error("Failed to start native SOS service:", nativeErr);
+                }
+            }
+
+            return { sosId };
         } catch (error) {
             console.error("Error triggering SOS:", error);
             throw error;
@@ -174,9 +212,9 @@ export const sosService = {
     },
 
     // 1.5 Update SOS Details (Post-Trigger)
+    // 1.5 Update SOS Details (Post-Trigger)
     updateSOSDetails: async (sosId: string, details: { emergencyType: string; description?: string; voiceTranscript?: string }) => {
         const sosRef = doc(db, 'sos_events', sosId);
-        const { arrayUnion } = await import('firebase/firestore');
 
         await updateDoc(sosRef, {
             ...details,
@@ -184,7 +222,7 @@ export const sosService = {
             timeline: arrayUnion({
                 time: Date.now(),
                 action: 'Details Added',
-                by: 'student', // or userId if available
+                by: 'student',
                 note: `Type: ${details.emergencyType}`
             })
         });
@@ -192,17 +230,14 @@ export const sosService = {
 
     // 2. Subscribe to Active SOS Events (Real-time)
     subscribeToActiveSOS: (callback: (events: SOSEvent[]) => void, hostelId?: string) => {
-        // Query for SOS events where status.resolved = false
         let q;
         if (hostelId) {
-            console.log("sosService: Subscribing to SOS with hostelId:", hostelId);
             q = query(
                 collection(db, 'sos_events'),
                 where('status.resolved', '==', false),
                 where('hostelId', '==', hostelId)
             );
         } else {
-            console.log("sosService: Subscribing to ALL SOS events (Security/Admin view)");
             q = query(
                 collection(db, 'sos_events'),
                 where('status.resolved', '==', false)
@@ -215,13 +250,11 @@ export const sosService = {
                 return {
                     id: doc.id,
                     ...data,
-                    timeline: data.timeline || [] // Ensure timeline exists
+                    timeline: data.timeline || []
                 };
             }) as SOSEvent[];
 
-            // Sort client-side
             events.sort((a, b) => b.triggeredAt - a.triggeredAt);
-
             callback(events);
         }, (error) => {
             console.error("sosService: [DEBUG] SOS Subscription Error:", error);
@@ -231,7 +264,6 @@ export const sosService = {
     // 3. Recognise SOS (Security Only)
     recogniseSOS: async (sosId: string, securityId: string, securityName: string) => {
         const sosRef = doc(db, 'sos_events', sosId);
-        const { arrayUnion } = await import('firebase/firestore');
 
         await updateDoc(sosRef, {
             'status.recognised': true,
@@ -250,44 +282,101 @@ export const sosService = {
         });
     },
 
-    // 3.5 Assign Guard (Deprecated - keeping for backward compatibility)
+    // 3.5 Assign Guard
     assignGuard: async (sosId: string, guard: { id: string; name: string; role: string }) => {
-        // This now calls recogniseSOS
         await sosService.recogniseSOS(sosId, guard.id, guard.name);
     },
 
-    // 4. Resolve SOS (Security Only - must be recognised first)
-    resolveSOS: async (sosId: string, securityId: string, summary: string) => {
-        const sosRef = doc(db, 'sos_events', sosId);
-        const { arrayUnion, getDoc } = await import('firebase/firestore');
+    // 4. Resolve SOS (Security Only)
+    // 4. Resolve SOS (Security Only)
+    resolveSOS: async (sosId: string, summary: string) => {
+        try {
+            const sosRef = doc(db, 'sos_events', sosId);
+            const sessionRef = doc(db, 'sos_sessions', sosId);
 
-        // Check if SOS is recognised first
-        const sosDoc = await getDoc(sosRef);
-        if (!sosDoc.exists()) {
-            throw new Error('SOS event not found');
+            await runTransaction(db, async (transaction) => {
+                transaction.update(sosRef, {
+                    "status.resolved": true,
+                    resolvedAt: serverTimestamp(),
+                    resolutionSummary: summary || "Resolved",
+                    timeline: arrayUnion({
+                        time: Date.now(),
+                        action: "Resolved",
+                        by: 'Security',
+                        note: summary || "Emergency Resolved"
+                    })
+                });
+                transaction.update(sessionRef, {
+                    isActive: false
+                });
+            });
+
+            // Stop Native Service
+            if (Capacitor.isNativePlatform()) {
+                try {
+                    await SOSPlugin.stopSOSService();
+                } catch (nativeErr) {
+                    console.error("Failed to stop native SOS service:", nativeErr);
+                }
+            }
+
+            localStorage.removeItem('active_sos_id');
+            localStorage.removeItem(`sos_token_${sosId}`);
+
+            return { success: true };
+        } catch (error) {
+            console.error("Error resolving SOS:", error);
+            throw error;
         }
+    },
 
-        const sosData = sosDoc.data() as SOSEvent;
-        if (!sosData.status.recognised) {
-            throw new Error('SOS must be recognised before it can be resolved');
+    // 4.5 Cancel SOS (Student)
+    cancelSOS: async (sosId: string) => {
+        console.log("sosService: Attempting to cancel SOS:", sosId);
+        try {
+            const savedToken = localStorage.getItem(`sos_token_${sosId}`);
+            const sosRef = doc(db, 'sos_events', sosId);
+
+            // We use direct Firestore update here. 
+            // If the user is logged in, the auth rules will pass.
+            // If logged out, the token-based rule will pass.
+            await updateDoc(sosRef, {
+                "status.resolved": true,
+                resolvedAt: serverTimestamp(),
+                resolutionSummary: 'Cancelled by student',
+                sosToken: savedToken, // Passing token to satisfy rules if unauthenticated
+                timeline: arrayUnion({
+                    time: Date.now(),
+                    action: "Cancelled",
+                    by: 'Student',
+                    note: "SOS stopped via Client"
+                })
+            });
+
+            // Also try to update session if possible (requires auth)
+            try {
+                const sessionRef = doc(db, 'sos_sessions', sosId);
+                await updateDoc(sessionRef, { isActive: false });
+            } catch (e) {
+                console.warn("Could not update session record (might be unauthenticated)");
+            }
+
+            if (Capacitor.isNativePlatform()) {
+                await SOSPlugin.stopSOSService();
+            }
+
+            localStorage.removeItem('active_sos_id');
+            localStorage.removeItem(`sos_token_${sosId}`);
+
+            return { success: true };
+        } catch (error) {
+            console.error("Error cancelling SOS:", error);
+            throw error;
         }
-
-        await updateDoc(sosRef, {
-            'status.resolved': true,
-            resolvedAt: Date.now(),
-            resolutionSummary: summary,
-            timeline: arrayUnion({
-                time: Date.now(),
-                action: 'Resolved',
-                by: securityId,
-                note: summary
-            })
-        });
     },
 
     acknowledgeSOS: async (sosId: string, userId: string) => {
         const sosRef = doc(db, 'sos_events', sosId);
-        const { arrayUnion } = await import('firebase/firestore');
 
         await updateDoc(sosRef, {
             timeline: arrayUnion({
@@ -303,8 +392,6 @@ export const sosService = {
         const q = query(
             collection(db, 'sos_events'),
             where('status.resolved', '==', true)
-            // orderBy('resolvedAt', 'desc'), // Removed to avoid index requirement
-            // limit(50)
         );
 
         return onSnapshot(q, (snapshot) => {
@@ -317,9 +404,7 @@ export const sosService = {
                 };
             }) as SOSEvent[];
 
-            // Sort client-side
-            events.sort((a, b) => (b.resolvedAt || 0) - (a.resolvedAt || 0)); // Assuming resolvedAt is number (timestamp)
-
+            events.sort((a, b) => (b.resolvedAt || 0) - (a.resolvedAt || 0));
             callback(events);
         });
     }

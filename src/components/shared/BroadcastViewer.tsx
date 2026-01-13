@@ -57,118 +57,110 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                    />
+                <div className="fixed inset-0 z-[120] flex flex-col bg-black">
+                    {/* Background Layer */}
+                    <div className="absolute inset-0 bg-black z-0" />
 
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-[400px] sm:max-w-[440px] glass-card bg-white/90 rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col mx-auto"
-                    >
-                        {/* Header */}
-                        <div className="p-6 border-b border-slate-200/50 flex justify-between items-center bg-white/40">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg">
-                                    <Megaphone className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-800">Campus Announcements</h2>
-                                    <p className="text-xs text-slate-500">Official alerts and updates</p>
-                                </div>
+                    {/* Header - Tactical Style */}
+                    <div className="relative z-10 px-6 pb-6 pt-12 flex items-end justify-between bg-black/40 backdrop-blur-xl border-b border-white/5">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/5 rounded-2xl border border-[#D4AF37]/20 shadow-[0_0_15px_rgba(212,175,55,0.1)]">
+                                <Megaphone className="w-6 h-6 text-[#D4AF37]" strokeWidth={3} />
                             </div>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                            <div>
+                                <h2 className="text-xl font-black text-white font-heading tracking-tight uppercase tracking-[0.2em]">Campus News</h2>
+                                <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest font-heading">Official Alerts</p>
+                            </div>
                         </div>
+                        <button
+                            onClick={onClose}
+                            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all text-zinc-400 border border-white/10 active:scale-90"
+                        >
+                            <X className="w-5 h-5" strokeWidth={3} />
+                        </button>
+                    </div>
 
-                        {/* Content */}
-                        <div className="overflow-y-auto p-6 space-y-4 min-h-[300px]">
-                            {loading ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-2"></div>
-                                    <p className="text-sm">Loading announcements...</p>
+                    {/* Content Area */}
+                    <div className="relative z-10 flex-1 overflow-y-auto p-6 space-y-5 pb-nav-safe">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+                                <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(212,175,55,0.2)]" />
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] mt-6">Scanning Channels...</p>
+                            </div>
+                        ) : broadcasts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-zinc-500 text-center">
+                                <div className="bg-white/5 p-6 rounded-full mb-6 border border-white/5">
+                                    <Megaphone className="w-10 h-10 opacity-20 text-[#D4AF37]" />
                                 </div>
-                            ) : broadcasts.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-center">
-                                    <div className="bg-slate-100 p-4 rounded-full mb-3">
-                                        <Megaphone className="w-8 h-8 opacity-40" />
+                                <p className="font-black text-white uppercase tracking-widest text-xs">No active broadcasts</p>
+                                <p className="text-[10px] font-bold mt-2 opacity-40 uppercase">You are fully synchronized</p>
+                            </div>
+                        ) : (
+                            broadcasts.map((item) => (
+                                <motion.div
+                                    key={item.id}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className={`relative p-6 rounded-[32px] border transition-all hover:bg-white/5 overflow-hidden ${item.priority === 'emergency'
+                                        ? 'bg-red-600/10 border-red-500/30'
+                                        : item.priority === 'warning'
+                                            ? 'bg-amber-500/10 border-amber-500/30'
+                                            : 'bg-white/5 border-white/5'
+                                        }`}
+                                >
+                                    {/* Glass Overlay for depth */}
+                                    <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-3xl pointer-events-none" />
+
+                                    {/* Priority Badge */}
+                                    <div className="relative z-10 flex justify-between items-center mb-5">
+                                        <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest font-heading shadow-lg border
+                                            ${item.priority === 'emergency'
+                                                ? 'bg-red-600 text-white border-red-400/50 pulse-border'
+                                                : item.priority === 'warning'
+                                                    ? 'bg-amber-500 text-black border-amber-300/50'
+                                                    : 'bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/30'
+                                            }`}
+                                        >
+                                            {item.priority}
+                                        </span>
+                                        <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-black font-heading uppercase tracking-widest">
+                                            <Clock className="w-4 h-4" strokeWidth={3} />
+                                            <span>
+                                                {item.createdAt?.seconds
+                                                    ? new Date(item.createdAt.seconds * 1000).toLocaleDateString()
+                                                    : 'Active'}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <p className="font-medium text-slate-600">No recent announcements</p>
-                                    <p className="text-sm mt-1">You're all caught up!</p>
-                                </div>
-                            ) : (
-                                broadcasts.map((item) => (
-                                    <motion.div
-                                        key={item.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className={`relative p-5 rounded-xl border ${item.priority === 'emergency'
-                                            ? 'bg-red-50/80 border-red-200 shadow-red-100'
-                                            : item.priority === 'warning'
-                                                ? 'bg-orange-50/80 border-orange-200 shadow-orange-100'
-                                                : 'bg-white/60 border-indigo-100 shadow-sm'
-                                            } shadow-md transition-all hover:shadow-lg`}
-                                    >
-                                        {/* Priority Badge */}
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
-                                                ${item.priority === 'emergency'
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : item.priority === 'warning'
-                                                        ? 'bg-orange-100 text-orange-700'
-                                                        : 'bg-indigo-100 text-indigo-700'
-                                                }`}
-                                            >
-                                                {item.priority}
-                                            </span>
-                                            <div className="flex items-center gap-1 text-xs text-slate-400">
-                                                <Clock className="w-3 h-3" />
-                                                <span>
-                                                    {item.createdAt?.seconds
-                                                        ? new Date(item.createdAt.seconds * 1000).toLocaleDateString()
-                                                        : 'Just now'}
-                                                </span>
-                                            </div>
-                                        </div>
 
-                                        <h3 className="text-lg font-bold text-slate-800 mb-2 leading-tight">
-                                            {item.title}
-                                        </h3>
+                                    <h3 className="relative z-10 text-xl font-black text-white mb-3 leading-tight font-heading tracking-tight uppercase">
+                                        {item.title}
+                                    </h3>
 
-                                        <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">
-                                            {item.message}
-                                        </div>
+                                    <div className="relative z-10 text-zinc-400 text-[15px] leading-relaxed font-bold opacity-80 mb-6">
+                                        {item.message}
+                                    </div>
 
-                                        <div className="mt-4 pt-3 border-t border-slate-200/50 flex items-center justify-between">
-                                            <span className={`text-[10px] font-bold uppercase py-1 px-2 rounded-md ${item.senderRole === 'admin' ? 'bg-indigo-50 text-indigo-600' :
-                                                item.senderRole === 'security' ? 'bg-purple-100 text-purple-700' :
-                                                    'bg-blue-50 text-blue-600'
+                                    <div className="relative z-10 pt-5 border-t border-white/5 flex flex-wrap gap-2 items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[9px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-xl font-heading bg-white/5 border border-white/10 ${item.senderRole === 'admin' ? 'text-[#D4AF37]' :
+                                                    item.senderRole === 'security' ? 'text-red-400' :
+                                                        'text-purple-400'
                                                 }`}>
-                                                From: {item.senderRole}
-                                                {item.senderRole === 'warden' && ` (Hostel ${item.hostelId})`}
+                                                Origin: {item.senderRole}
+                                                {item.senderRole === 'warden' && ` (H-${item.hostelId})`}
                                             </span>
-                                            {item.targetGroup && item.targetGroup !== 'all' && (
-                                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded">
-                                                    Target: {item.targetGroup}
-                                                </span>
-                                            )}
                                         </div>
-                                    </motion.div>
-                                ))
-                            )}
-                        </div>
-                    </motion.div>
+                                        {item.targetGroup && item.targetGroup !== 'all' && (
+                                            <span className="text-[9px] font-black uppercase tracking-[0.15em] bg-[#D4AF37]/5 text-[#D4AF37]/60 px-4 py-2 rounded-xl font-heading border border-[#D4AF37]/10">
+                                                Scope: {item.targetGroup}
+                                            </span>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            ))
+                        )}
+                    </div>
                 </div>
             )}
         </AnimatePresence>

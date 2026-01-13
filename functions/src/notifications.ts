@@ -1,69 +1,64 @@
-import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import * as admin from "firebase-admin";
+import * as logger from "firebase-functions/logger";
 
-// Ensure firebase-admin is initialized (it might be initialized in index.ts, but safe to check/init)
 if (!admin.apps.length) {
     admin.initializeApp();
 }
 
 /**
  * Triggered when a new SOS event is created in Firestore.
- * This function handles the dispatch of notifications to Wardens and Security.
  */
-export const onSOSCreated = functions.firestore
-    .document('sos_events/{eventId}')
-    .onCreate(async (snapshot, context) => {
-        const sosData = snapshot.data();
-        const eventId = context.params.eventId;
+export const onSOSCreated = onDocumentCreated("sos_events/{eventId}", async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) {
+        logger.error("No data found for SOS Event");
+        return;
+    }
 
-        if (!sosData) {
-            console.error('No data found for SOS Event:', eventId);
-            return;
-        }
+    const sosData = snapshot.data();
+    const eventId = event.params.eventId;
 
-        console.log(`Processing SOS Event: ${eventId} for user: ${sosData.userId}`);
+    logger.info(`Processing SOS Event: ${eventId} for user: ${sosData.userId}`);
 
-        const notificationPromises: Promise<any>[] = [];
+    const notificationPromises: any[] = [];
 
-        // 1. Prepare Notification Payload
-        const payload = {
+    // 1. Prepare Notification Payload
+    const payload = {
+        notification: {
+            title: '🚨 SOS ALERT! 🚨',
+            body: `Emergency at ${sosData.location?.address || 'Unknown Location'}! Student: ${sosData.userName}`,
+        },
+        data: {
+            type: 'SOS_ALERT',
+            eventId: eventId,
+            lat: String(sosData.location?.lat || ''),
+            lng: String(sosData.location?.lng || ''),
+            studentName: String(sosData.userName || ''),
+        },
+        android: {
+            priority: 'high' as const,
             notification: {
-                title: '🚨 SOS ALERT! 🚨',
-                body: `Emergency at ${sosData.location?.address || 'Unknown Location'}! Student: ${sosData.userName}`,
-                sound: 'default', // In a real app, use a custom critical alert sound
-            },
-            data: {
-                type: 'SOS_ALERT',
-                eventId: eventId,
-                lat: String(sosData.location?.lat),
-                lng: String(sosData.location?.lng),
-                studentName: sosData.userName,
-            },
-            android: {
-                priority: 'high' as const,
-                notification: {
-                    channelId: 'emergency_alerts',
-                    priority: 'max' as const,
-                    visibility: 'public' as const,
-                }
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        sound: 'default',
-                        critical: true, // For iOS Critical Alerts (requires entitlement)
-                    }
+                channelId: 'emergency_alerts',
+                priority: 'max' as const,
+                visibility: 'public' as const,
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    sound: 'default',
+                    critical: true,
                 }
             }
-        };
+        }
+    };
 
-        // 2. Identify Recipients
-
-        // A. Security Guards (Notify ALL active security personnel)
-        // We assume security guards have a topic subscription or we query their tokens
-        // For simplicity, let's query users with role 'security'
+    // 2. Identify Recipients
+    try {
+        // A. Security Guards
         const securityQuery = await admin.firestore().collection('users')
-            .where('role', '==', 'security')
+            .where('role', 'in', ['security', 'Security'])
             .get();
 
         const securityTokens: string[] = [];
@@ -75,7 +70,6 @@ export const onSOSCreated = functions.firestore
         });
 
         if (securityTokens.length > 0) {
-            console.log(`Notifying ${securityTokens.length} security guards.`);
             notificationPromises.push(
                 admin.messaging().sendEachForMulticast({
                     tokens: securityTokens,
@@ -87,11 +81,12 @@ export const onSOSCreated = functions.firestore
             );
         }
 
-        // B. Warden (Notify only the warden of the student's hostel)
-        if (sosData.hostelId) {
+        // B. Warden
+        const hostelId = sosData.hostelId || sosData.hostel;
+        if (hostelId) {
             const wardenQuery = await admin.firestore().collection('users')
-                .where('role', '==', 'warden')
-                .where('hostelId', '==', sosData.hostelId)
+                .where('role', 'in', ['warden', 'Warden'])
+                .where('hostelId', '==', hostelId)
                 .get();
 
             const wardenTokens: string[] = [];
@@ -103,7 +98,6 @@ export const onSOSCreated = functions.firestore
             });
 
             if (wardenTokens.length > 0) {
-                console.log(`Notifying ${wardenTokens.length} wardens for hostel ${sosData.hostelId}.`);
                 notificationPromises.push(
                     admin.messaging().sendEachForMulticast({
                         tokens: wardenTokens,
@@ -116,18 +110,15 @@ export const onSOSCreated = functions.firestore
             }
         }
 
-        // 3. Mark SOS as "Notification Sent" (Optional, for auditing)
-        // We don't wait for this to finish to send notifications
+        // 3. Mark SOS as "Notification Sent"
         await snapshot.ref.update({
             notificationSent: true,
             notificationTimestamp: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        // 4. Execute all notification sends
-        try {
-            await Promise.all(notificationPromises);
-            console.log('All notifications dispatched successfully.');
-        } catch (error) {
-            console.error('Error sending notifications:', error);
-        }
-    });
+        await Promise.all(notificationPromises);
+        logger.info('All notifications dispatched successfully.');
+    } catch (error: any) {
+        logger.error('Error processing SOS notifications:', error);
+    }
+});

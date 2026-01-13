@@ -7,6 +7,10 @@
             }
         },
         "live_locations": {
+            "$userId": {
+                ".read": "auth != null",
+                ".write": "auth != null && auth.uid == $userId"
+            },
             ".read": "auth != null",
             ".write": "auth != null"
         }

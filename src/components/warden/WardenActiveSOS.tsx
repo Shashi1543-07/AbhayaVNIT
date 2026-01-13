@@ -10,10 +10,26 @@ export default function WardenActiveSOS({ hostelId }: WardenActiveSOSProps) {
     const [allEvents, setAllEvents] = useState<SOSEvent[]>([]);
 
     useEffect(() => {
-        // Subscribe to SOS events filtered by hostelId if provided
+        // Subscribe to ALL active SOS events and filter client-side for robustness
         const unsubscribe = sosService.subscribeToActiveSOS((events) => {
-            setAllEvents(events);
-        }, hostelId);
+            if (!hostelId) {
+                setAllEvents(events);
+                return;
+            }
+
+            // Robust client-side filtering
+            const filtered = events.filter(event => {
+                const hId = hostelId.toLowerCase().trim();
+                const eventHId = (event.hostelId || '').toLowerCase().trim();
+                const eventHostel = (event.hostel || '').toLowerCase().trim();
+
+                return eventHId === hId ||
+                    eventHostel === hId ||
+                    eventHId.includes(hId) ||
+                    hId.includes(eventHId);
+            });
+            setAllEvents(filtered);
+        }); // Removed hostelId param to fetch all
         return () => unsubscribe();
     }, [hostelId]);
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import Layout from '../../components/Layout';
+import MobileWrapper from '../../components/layout/MobileWrapper';
+import BottomNav from '../../components/layout/BottomNav';
+import { adminNavItems } from '../../lib/navItems';
 import { Settings, Save, Plus, Trash2, Phone, MapPin } from 'lucide-react';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -96,39 +98,44 @@ export default function SystemSettings() {
         });
     };
 
-    if (loading) return <Layout role="admin"><div className="p-8 text-center">Loading settings...</div></Layout>;
+    if (loading) return (
+        <MobileWrapper>
+            <div className="flex items-center justify-center min-h-screen text-[#D4AF37] font-bold uppercase tracking-widest text-xs">Loading settings...</div>
+        </MobileWrapper>
+    );
 
     return (
-        <Layout role="admin">
+        <MobileWrapper>
             <TopHeader title="System Configuration" showBackButton={true} />
 
             <div className="mb-8 flex justify-between items-center pt-nav-safe pb-nav-safe px-4">
                 <div>
-                    {/* Title removed, managed by TopHeader - but description might be useful? Keeping desc only if needed, or removing block */}
-                    <p className="text-slate-600">Manage global app settings and resources.</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-wide">Manage global app settings and resources.</p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-md disabled:opacity-50"
+                    className="flex items-center gap-2 bg-gradient-to-r from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black px-6 py-3 rounded-xl font-black uppercase tracking-wider text-xs hover:shadow-lg hover:shadow-[#D4AF37]/20 hover:brightness-110 transition-all disabled:opacity-50"
                 >
                     <Save className="w-5 h-5" />
                     {saving ? 'Saving...' : 'Save Changes'}
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 pb-24">
                 {/* General Settings */}
-                <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 space-y-6">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200/50 pb-4">
-                        <Settings className="w-5 h-5 text-indigo-600" />
+                <div className="glass-card bg-black/40 p-6 rounded-[24px] shadow-sm border border-white/10 space-y-6">
+                    <h2 className="text-lg font-heading font-black text-white flex items-center gap-3 border-b border-white/10 pb-4 uppercase tracking-tight">
+                        <div className="p-2 bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
+                            <Settings className="w-5 h-5 text-[#D4AF37]" />
+                        </div>
                         General Preferences
                     </h2>
 
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="font-medium text-slate-800">Anonymous Incident Reporting</p>
-                            <p className="text-sm text-slate-500">Allow students to report incidents without revealing identity.</p>
+                            <p className="font-bold text-white text-sm uppercase tracking-wide">Anonymous Reporting</p>
+                            <p className="text-[10px] text-zinc-500 font-medium mt-1">Allow students to report incidents without revealing identity.</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input
@@ -137,18 +144,18 @@ export default function SystemSettings() {
                                 checked={settings.allowAnonymousReporting}
                                 onChange={e => setSettings({ ...settings, allowAnonymousReporting: e.target.checked })}
                             />
-                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                            <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#D4AF37] peer-checked:after:bg-black"></div>
                         </label>
                     </div>
 
                     <div>
-                        <label className="block font-medium text-slate-800 mb-1">Safe Walk Timeout (Minutes)</label>
-                        <p className="text-sm text-slate-500 mb-3">Time before an alert is triggered if a student doesn't reach destination.</p>
+                        <label className="block font-bold text-white text-sm uppercase tracking-wide mb-1">Safe Walk Timeout</label>
+                        <p className="text-[10px] text-zinc-500 font-medium mb-3">Time in minutes before an alert is triggered if destination is not reached.</p>
                         <input
                             type="number"
                             min="5"
                             max="60"
-                            className="w-full p-3 bg-white/50 border border-white/40 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none backdrop-blur-sm"
+                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold"
                             value={settings.safeWalkTimeoutMinutes}
                             onChange={e => setSettings({ ...settings, safeWalkTimeoutMinutes: parseInt(e.target.value) })}
                         />
@@ -156,20 +163,22 @@ export default function SystemSettings() {
                 </div>
 
                 {/* Emergency Contacts */}
-                <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 space-y-6">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200/50 pb-4">
-                        <Phone className="w-5 h-5 text-red-600" />
+                <div className="glass-card bg-black/40 p-6 rounded-[24px] shadow-sm border border-white/10 space-y-6">
+                    <h2 className="text-lg font-heading font-black text-white flex items-center gap-3 border-b border-white/10 pb-4 uppercase tracking-tight">
+                        <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
+                            <Phone className="w-5 h-5 text-red-500" />
+                        </div>
                         Emergency Contacts
                     </h2>
 
                     <div className="space-y-3">
                         {settings.emergencyContacts.map((contact, index) => (
-                            <div key={index} className="flex justify-between items-center p-3 bg-white/40 rounded-lg border border-white/40">
+                            <div key={index} className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/10 group hover:border-[#D4AF37]/30 transition-colors">
                                 <div>
-                                    <p className="font-bold text-slate-800">{contact.name}</p>
-                                    <p className="text-sm text-slate-600">{contact.phone}</p>
+                                    <p className="font-bold text-white text-sm group-hover:text-[#D4AF37] transition-colors uppercase tracking-wide">{contact.name}</p>
+                                    <p className="text-xs text-zinc-500 mt-0.5 font-mono">{contact.phone}</p>
                                 </div>
-                                <button onClick={() => removeContact(index)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-full transition-colors">
+                                <button onClick={() => removeContact(index)} className="text-zinc-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
@@ -180,20 +189,20 @@ export default function SystemSettings() {
                         <input
                             type="text"
                             placeholder="Name (e.g. Fire Station)"
-                            className="flex-1 p-2 bg-white/50 border border-white/40 rounded-lg text-sm outline-none backdrop-blur-sm focus:ring-2 focus:ring-purple-500"
+                            className="flex-1 p-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white placeholder:text-zinc-600 outline-none focus:border-[#D4AF37]/50"
                             value={newContact.name}
                             onChange={e => setNewContact({ ...newContact, name: e.target.value })}
                         />
                         <input
                             type="tel"
                             placeholder="Phone"
-                            className="w-32 p-2 bg-white/50 border border-white/40 rounded-lg text-sm outline-none backdrop-blur-sm focus:ring-2 focus:ring-purple-500"
+                            className="w-32 p-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white placeholder:text-zinc-600 outline-none focus:border-[#D4AF37]/50"
                             value={newContact.phone}
                             onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
                         />
                         <button
                             onClick={addContact}
-                            className="bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white p-2 rounded-lg hover:opacity-90 transition-opacity shadow-md"
+                            className="bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 p-3 rounded-xl hover:bg-[#D4AF37]/20 transition-all shadow-sm"
                         >
                             <Plus className="w-5 h-5" />
                         </button>
@@ -201,17 +210,19 @@ export default function SystemSettings() {
                 </div>
 
                 {/* Hostel Management */}
-                <div className="glass-card p-6 rounded-xl shadow-sm border border-white/40 space-y-6">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200/50 pb-4">
-                        <MapPin className="w-5 h-5 text-emerald-600" />
+                <div className="glass-card bg-black/40 p-6 rounded-[24px] shadow-sm border border-white/10 space-y-6">
+                    <h2 className="text-lg font-heading font-black text-white flex items-center gap-3 border-b border-white/10 pb-4 uppercase tracking-tight">
+                        <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                            <MapPin className="w-5 h-5 text-emerald-500" />
+                        </div>
                         Manage Hostels
                     </h2>
 
                     <div className="flex flex-wrap gap-2">
                         {settings.hostels.map(hostel => (
-                            <div key={hostel} className="bg-emerald-50/80 backdrop-blur-sm text-emerald-700 px-3 py-1 rounded-full flex items-center gap-2 border border-emerald-100">
-                                <span className="font-medium">{hostel}</span>
-                                <button onClick={() => removeHostel(hostel)} className="hover:text-emerald-900">
+                            <div key={hostel} className="bg-emerald-500/10 backdrop-blur-sm text-emerald-500 px-4 py-2 rounded-xl flex items-center gap-2 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors">
+                                <span className="font-black text-xs uppercase tracking-wider">{hostel}</span>
+                                <button onClick={() => removeHostel(hostel)} className="hover:text-emerald-300">
                                     <Trash2 className="w-3 h-3" />
                                 </button>
                             </div>
@@ -222,19 +233,21 @@ export default function SystemSettings() {
                         <input
                             type="text"
                             placeholder="New Hostel Name"
-                            className="flex-1 p-2 bg-white/50 border border-white/40 rounded-lg text-sm outline-none backdrop-blur-sm focus:ring-2 focus:ring-emerald-500"
+                            className="flex-1 p-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white placeholder:text-zinc-600 outline-none focus:border-[#D4AF37]/50"
                             value={newHostel}
                             onChange={e => setNewHostel(e.target.value)}
                         />
                         <button
                             onClick={addHostel}
-                            className="bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white p-2 rounded-lg hover:opacity-90 transition-opacity shadow-md"
+                            className="bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 p-3 rounded-xl hover:bg-[#D4AF37]/20 transition-all shadow-sm"
                         >
                             <Plus className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
             </div>
-        </Layout>
+
+            <BottomNav items={adminNavItems} />
+        </MobileWrapper>
     );
 }

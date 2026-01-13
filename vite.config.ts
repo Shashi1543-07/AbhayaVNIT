@@ -11,9 +11,8 @@ export default defineConfig({
     tailwindcss(),
     basicSsl(),
     VitePWA({
-
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['logo.png', 'vite.svg'],
       manifest: {
         name: "VNIT Girls' Safety App",
         short_name: 'VNIT Safety',
@@ -21,16 +20,19 @@ export default defineConfig({
         theme_color: '#ffffff',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'logo.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'logo.png',
             sizes: '512x512',
             type: 'image/png'
           }
         ]
+      },
+      workbox: {
+        globPatterns: []
       }
     })
   ],

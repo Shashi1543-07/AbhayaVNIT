@@ -40,35 +40,35 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Decorative Background Blobs */}
-            <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-            <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-secondary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-            <div className="absolute -bottom-32 left-20 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
+            {/* Tactical Operational Background */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,#D4AF37_0%,transparent_70%)] opacity-20" />
+            </div>
 
 
-            <div className="p-8 glass-card-auth w-full max-w-md relative z-10 pt-16">
+            <div className="p-8 glass rounded-[3rem] border border-white/5 shadow-2xl w-full max-w-md relative z-10 pt-16 bg-black/40">
                 <Link
                     to="/"
-                    className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/40 hover:bg-white/60 text-slate-700 transition-all text-xs font-bold border border-white/20 active:scale-95 shadow-sm"
+                    className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-500 transition-all text-xs font-black border border-white/10 active:scale-95 shadow-sm uppercase tracking-widest"
                 >
-                    <Home className="w-3.5 h-3.5" />
+                    <Home className="w-3.5 h-3.5" strokeWidth={3} />
                     Back to Home
                 </Link>
-                <h2 className="text-2xl font-bold mb-2 text-center text-primary">
+                <h2 className="text-2xl font-black mb-2 text-center text-white font-heading uppercase tracking-tight">
                     Reset your password
                 </h2>
-                <p className="text-center text-sm text-muted mb-6">
+                <p className="text-center text-sm text-zinc-500 font-bold mb-6 opacity-60">
                     Enter your institute email address and we'll send you a link to reset your password.
                 </p>
                 <form className="space-y-6" onSubmit={handleSubmit}>
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-muted">
+                        <label htmlFor="email" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">
                             Email address
                         </label>
                         <div className="mt-1 relative rounded-md shadow-sm">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Mail className="h-5 w-5 text-muted" />
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Mail className="h-5 w-5 text-zinc-600" strokeWidth={3} />
                             </div>
                             <input
                                 id="email"
@@ -78,7 +78,7 @@ const ForgotPassword = () => {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white/20 focus:bg-white/30 transition-all placeholder-gray-500"
+                                className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/10 rounded-2xl text-white placeholder:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 transition-all font-bold text-sm"
                                 placeholder="student@students.vnit.ac.in"
                             />
                         </div>
@@ -107,9 +107,9 @@ const ForgotPassword = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-3 rounded-2xl hover:opacity-90 hover:shadow-lg transition-all font-bold disabled:opacity-50 shadow-md border border-white/20"
+                            className="w-full bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black py-4 rounded-2xl hover:opacity-95 shadow-xl transition-all font-black uppercase tracking-[0.2em] text-[11px] disabled:opacity-50 border border-white/10"
                         >
-                            {loading ? 'Sending...' : 'Send Reset Link'}
+                            {loading ? 'Transmitting...' : 'Send Reset Link'}
                         </button>
                     </div>
                 </form>
@@ -117,9 +117,9 @@ const ForgotPassword = () => {
                 <div className="mt-4">
                     <Link
                         to="/login"
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 glass-button-secondary hover:bg-white/40 transition-all text-sm font-semibold"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-white/5 hover:bg-white/10 text-[#D4AF37] transition-all text-sm font-black rounded-2xl border border-white/10 uppercase tracking-widest text-[10px]"
                     >
-                        <ArrowLeft className="w-4 h-4" />
+                        <ArrowLeft className="w-4 h-4" strokeWidth={3} />
                         Back to Login
                     </Link>
                 </div>

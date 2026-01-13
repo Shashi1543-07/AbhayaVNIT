@@ -41,9 +41,9 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
     // Show deletion placeholder for globally deleted messages
     if (message.deletedGlobal) {
         return (
-            <div className="flex justify-center my-4 px-6">
-                <div className="bg-slate-200/50 backdrop-blur-sm text-slate-500 italic text-[11px] px-3 py-1.5 rounded-lg border border-slate-300/30 text-center shadow-sm">
-                    🚫 This message was deleted
+            <div className="flex justify-center my-6 px-10">
+                <div className="bg-black/40 backdrop-blur-xl text-zinc-500 italic text-[11px] px-5 py-2.5 rounded-2xl border border-white/5 text-center shadow-xl font-heading font-black opacity-60 uppercase tracking-widest">
+                    🚫 Message Revoked
                 </div>
             </div>
         );
@@ -52,9 +52,9 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
     // System message rendering
     if (message.isSystemMessage) {
         return (
-            <div className="flex justify-center my-4 px-6">
-                <div className="bg-[#FFF9C4]/80 backdrop-blur-sm text-slate-600 text-[11px] px-3 py-1 rounded-lg border border-[#FFF59D] text-center shadow-sm">
-                    {message.text}
+            <div className="flex justify-center my-6 px-10">
+                <div className="bg-[#D4AF37]/10 backdrop-blur-xl text-[#D4AF37] text-[10px] px-5 py-2 rounded-2xl border border-[#D4AF37]/20 text-center shadow-xl font-heading font-black uppercase tracking-widest leading-relaxed">
+                    🔐 {message.text}
                 </div>
             </div>
         );
@@ -95,13 +95,13 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
 
         switch (message.status) {
             case 'sent':
-                return <Check className="w-4 h-4 text-white/70" strokeWidth={2.5} />;
+                return <Check className="w-4 h-4 text-black/40" strokeWidth={3} />;
             case 'delivered':
-                return <CheckCheck className="w-4 h-4 text-white/70" strokeWidth={2.5} />;
+                return <CheckCheck className="w-4 h-4 text-black/50" strokeWidth={3} />;
             case 'seen':
-                return <CheckCheck className="w-4 h-4 text-blue-400 drop-shadow-lg" strokeWidth={2.5} />;
+                return <CheckCheck className="w-4 h-4 text-[#D4AF37] drop-shadow-[0_0_3px_rgba(212,175,55,0.5)]" strokeWidth={3} />;
             default:
-                return <Check className="w-4 h-4 text-white/50" strokeWidth={2.5} />;
+                return <Check className="w-4 h-4 text-black/30" strokeWidth={3} />;
         }
     };
 
@@ -149,19 +149,19 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
             <div className={`max-w-[80%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                 {/* Sender Name (if not me) */}
                 {!isMe && (message.senderRole !== 'student' || message.senderName) && (
-                    <span className="text-[10px] uppercase font-bold text-slate-500 ml-3 mb-1 block tracking-wider">
-                        {message.senderName || 'Staff'} <span className="bg-white/50 px-1.5 py-0.5 rounded text-primary border border-primary/10 ml-1 font-bold">{message.senderRole}</span>
+                    <span className="text-[10px] uppercase font-bold text-zinc-500 ml-3 mb-1 block tracking-wider">
+                        {message.senderName || 'Staff'} <span className="bg-[#D4AF37]/10 px-1.5 py-0.5 rounded text-[#D4AF37] border border-[#D4AF37]/20 ml-1 font-bold">{message.senderRole}</span>
                     </span>
                 )}
 
                 {/* Message Bubble with Long Press */}
                 <div
-                    className={`relative px-6 py-3.5 rounded-[28px] text-sm shadow-md backdrop-blur-md border border-white/50 transition-all duration-150
+                    className={`relative px-4 py-2.5 rounded-[24px] shadow-2xl backdrop-blur-3xl border transition-all duration-150 font-heading
                         ${isMe
-                            ? 'bg-gradient-to-br from-primary to-[#A78BFA] text-white rounded-br-lg'
-                            : 'bg-gradient-to-br from-[#FCE7F3]/90 via-[#FBCFE8]/80 to-[#F9A8D4]/70 text-slate-800 rounded-bl-lg'
+                            ? 'bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black border-white/20 shadow-xl rounded-br-none'
+                            : 'bg-[#1a1a1a]/80 backdrop-blur-xl text-white border-white/5 shadow-sm rounded-bl-none'
                         }
-                        ${isMe && isLongPressing ? 'scale-95 opacity-80' : ''}
+                        ${isMe && isLongPressing ? 'scale-95 opacity-80 shadow-none' : ''}
                     `}
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
@@ -172,9 +172,9 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
                     {message.replyTo && (
                         <div
                             onClick={handleReplyClick}
-                            className={`mb-2 p-2 rounded-xl bg-black/5 border-l-4 ${isMe ? 'border-white/50' : 'border-primary/50'} text-[11px] overflow-hidden cursor-pointer hover:bg-black/10 transition-colors`}
+                            className={`mb-2 p-2 rounded-xl bg-black/5 border-l-4 ${isMe ? 'border-white/50' : 'border-[#D4AF37]/50'} text-[11px] overflow-hidden cursor-pointer hover:bg-black/10 transition-colors`}
                         >
-                            <p className="font-black opacity-60 mb-0.5">{message.replyTo.senderName}</p>
+                            <p className="font-black opacity-60 mb-0.5 text-[#D4AF37]">{message.replyTo.senderName}</p>
                             <p className="italic truncate">{message.replyTo.text}</p>
                         </div>
                     )}
@@ -187,16 +187,16 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
                     )}
 
                     {message.type === 'location' && message.location && (
-                        <div className="mb-2 rounded-2xl overflow-hidden shadow-sm border border-white/20 bg-white/20 p-3 flex flex-col gap-2">
+                        <div className="mb-2 rounded-2xl overflow-hidden shadow-sm border border-white/20 bg-white/5 p-3 flex flex-col gap-2">
                             <div className="flex items-center gap-2">
-                                <MapPin className="text-primary w-5 h-5" />
-                                <span className="font-bold text-[12px]">Location Shared</span>
+                                <MapPin className="text-[#D4AF37] w-5 h-5" />
+                                <span className="font-bold text-[12px] text-white">Location Shared</span>
                             </div>
                             <a
                                 href={`https://www.google.com/maps?q=${message.location.latitude},${message.location.longitude}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-[10px] bg-primary text-white py-1.5 px-3 rounded-xl text-center font-bold hover:bg-primary/90 transition-colors"
+                                className="text-[10px] bg-gradient-to-br from-[#CF9E1B] to-[#8B6E13] text-black py-1.5 px-3 rounded-xl text-center font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
                             >
                                 View on Maps
                             </a>
@@ -204,13 +204,13 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
                     )}
 
                     {message.type === 'document' && (
-                        <div className="mb-2 rounded-2xl overflow-hidden shadow-sm border border-white/20 bg-white/20 p-3 flex items-center gap-3">
-                            <div className="p-2 bg-primary/20 rounded-xl">
-                                <FileText className="text-primary w-6 h-6" />
+                        <div className="mb-2 rounded-2xl overflow-hidden shadow-sm border border-white/20 bg-white/5 p-3 flex items-center gap-3">
+                            <div className="p-2 bg-[#D4AF37]/20 rounded-xl">
+                                <FileText className="text-[#D4AF37] w-6 h-6" />
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 text-white">
                                 <p className="font-bold text-[12px] truncate">{message.mediaName || 'Document'}</p>
-                                <p className="text-[9px] opacity-60 uppercase font-black">PDF / Doc</p>
+                                <p className="text-[9px] opacity-60 uppercase font-black text-[#D4AF37]">PDF / Doc</p>
                             </div>
                         </div>
                     )}
@@ -237,16 +237,16 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
                         </div>
                     ) : (
                         message.text && (
-                            <div className="pr-14 min-w-[60px] pb-1">
-                                <p className={`leading-relaxed font-bold ${/^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])+$/.test(message.text.trim()) && message.text.length <= 10
-                                    ? 'text-[32px] leading-tight'
-                                    : 'text-[13px]'
+                            <div className="pr-14 min-w-[70px] pb-1">
+                                <p className={`leading-relaxed font-bold tracking-tight ${/^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])+$/.test(message.text.trim()) && message.text.length <= 10
+                                    ? 'text-[44px] leading-tight'
+                                    : 'text-[15px]'
                                     }`}>
                                     {message.text}
                                 </p>
                                 {message.isEdited && (
-                                    <span className="text-[10px] opacity-40 font-black flex items-center gap-0.5 mt-0.5">
-                                        <Pencil className="w-2 h-2" /> edited
+                                    <span className="text-[10px] opacity-50 font-black flex items-center gap-1 mt-1 uppercase tracking-widest leading-none">
+                                        <Pencil className="w-2.5 h-2.5" /> edited
                                     </span>
                                 )}
                             </div>
@@ -265,7 +265,7 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
                     )}
 
                     {/* Time & Status */}
-                    <div className={`absolute bottom-1 right-2 flex items-center gap-1 ${isMe ? 'text-white/80' : 'text-slate-500/80'} bg-white/10 backdrop-blur-[2px] px-1.5 py-0.5 rounded-full`}>
+                    <div className={`absolute bottom-1 right-2 flex items-center gap-1 ${isMe ? 'text-black/60' : 'text-zinc-500'} bg-black/5 px-1.5 py-0.5 rounded-full`}>
                         <span className="text-[9px] font-black tracking-tighter">
                             {message.timestamp?.seconds
                                 ? format(new Date(message.timestamp.seconds * 1000), 'h:mm a')
@@ -289,9 +289,9 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
 
                 {/* Delete & Reaction Menu */}
                 {showMenu && (
-                    <div className={`message-menu-container absolute ${isMe ? 'right-0' : 'left-0'} top-full mt-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 overflow-hidden z-50 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200`}>
+                    <div className={`message-menu-container absolute ${isMe ? 'right-0' : 'left-0'} top-full mt-2 bg-black/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden z-50 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200`}>
                         {/* Reaction Picker */}
-                        <div className="flex justify-between px-4 py-3 bg-slate-50/50 border-b border-slate-200/50">
+                        <div className="flex justify-between px-4 py-3 bg-white/5 border-b border-white/5">
                             {commonEmojis.map(emoji => (
                                 <button
                                     key={emoji}
@@ -309,9 +309,9 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
                                     onReply?.();
                                     setShowMenu(false);
                                 }}
-                                className="w-full px-4 py-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                className="w-full px-4 py-3 text-left text-sm font-bold text-white hover:bg-white/5 transition-colors flex items-center gap-3"
                             >
-                                <ReplyIcon className="w-4 h-4 text-slate-500" />
+                                <ReplyIcon className="w-4 h-4 text-[#D4AF37]" />
                                 <span>Reply</span>
                             </button>
 
@@ -328,25 +328,25 @@ export default function MessageBubble({ message, isMe, conversationId, onReply, 
                                         }
                                         setShowMenu(false);
                                     }}
-                                    className="w-full px-4 py-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                    className="w-full px-4 py-3 text-left text-sm font-bold text-white hover:bg-white/5 transition-colors flex items-center gap-3"
                                 >
-                                    <Pencil className="w-4 h-4 text-slate-500" />
+                                    <Pencil className="w-4 h-4 text-[#D4AF37]" />
                                     <span>Edit</span>
                                 </button>
                             )}
 
                             <button
                                 onClick={() => handleDelete('me')}
-                                className="w-full px-4 py-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                className="w-full px-4 py-3 text-left text-sm font-bold text-white hover:bg-white/5 transition-colors flex items-center gap-3"
                             >
-                                <Trash2 className="w-4 h-4 text-slate-500" />
+                                <Trash2 className="w-4 h-4 text-[#D4AF37]" />
                                 <span>Delete for me</span>
                             </button>
 
                             {isMe && (
                                 <button
                                     onClick={() => handleDelete('everyone')}
-                                    className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3 border-t border-slate-100"
+                                    className="w-full px-4 py-3 text-left text-sm font-bold text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-3 border-t border-white/5"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                     <span>Delete for everyone</span>

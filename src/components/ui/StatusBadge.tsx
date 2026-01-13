@@ -17,7 +17,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, className = ''
     };
 
     return (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status]} ${className}`}>
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black font-heading uppercase tracking-widest border transition-all duration-300 ${styles[status]} ${className}`}>
             {label}
         </span>
     );

@@ -58,34 +58,34 @@ export default function SecurityBroadcasts() {
                 animate="visible"
             >
                 {/* Create Broadcast */}
-                <motion.div variants={cardVariant} className="glass-card rounded-2xl p-6 space-y-5 border border-white/20 shadow-xl">
+                <motion.div variants={cardVariant} className="glass-card bg-black/40 rounded-[32px] p-6 space-y-5 border border-[#D4AF37]/20 shadow-[0_0_30px_rgba(212,175,55,0.05)]">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-indigo-50 rounded-lg">
-                            <Megaphone className="w-5 h-5 text-indigo-600" />
+                        <div className="p-2.5 bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
+                            <Megaphone className="w-5 h-5 text-[#D4AF37]" strokeWidth={2.5} />
                         </div>
-                        <h2 className="font-bold text-slate-800 text-lg">New Campus Alert</h2>
+                        <h2 className="font-heading font-black text-white text-lg tracking-tight uppercase">New Campus Alert</h2>
                     </div>
 
                     <textarea
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Type your campus-wide announcement here..."
-                        className="w-full p-4 bg-white/50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400/30 min-h-[120px] shadow-inner text-slate-700 placeholder:text-slate-400"
+                        className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 min-h-[140px] shadow-inner text-white placeholder:text-zinc-600 font-bold transition-all text-sm"
                     />
 
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority:</span>
-                            <div className="flex gap-2 flex-1">
+                    <div className="flex flex-col gap-5">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest shrink-0">Priority:</span>
+                            <div className="flex gap-2 w-full">
                                 {['info', 'warning', 'emergency'].map((p) => (
                                     <button
                                         key={p}
                                         onClick={() => setPriority(p as any)}
-                                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex-1 border ${priority === p
-                                            ? p === 'emergency' ? 'bg-red-500 text-white border-red-600' :
-                                                p === 'warning' ? 'bg-amber-500 text-white border-amber-600' :
-                                                    'bg-indigo-600 text-white border-indigo-700'
-                                            : 'bg-white/50 text-slate-400 border-slate-100'
+                                        className={`px-1 py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex-1 border shadow-sm ${priority === p
+                                            ? p === 'emergency' ? 'bg-red-600 text-white border-red-500 shadow-red-900/20' :
+                                                p === 'warning' ? 'bg-amber-500 text-black border-amber-400 shadow-amber-900/20' :
+                                                    'bg-[#D4AF37] text-black border-[#FDE047] shadow-[#D4AF37]/20'
+                                            : 'bg-white/5 text-zinc-500 border-white/5 hover:bg-white/10'
                                             }`}
                                     >
                                         {p}
@@ -97,45 +97,48 @@ export default function SecurityBroadcasts() {
                         <button
                             onClick={handleSend}
                             disabled={loading || !message.trim()}
-                            className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white p-4 rounded-2xl font-bold shadow-lg hover:opacity-90 hover:shadow-purple-200/50 disabled:opacity-50 disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-3 border border-white/20"
+                            className="w-full bg-gradient-to-r from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black p-4 rounded-xl font-black uppercase tracking-wider text-xs shadow-lg hover:shadow-[#D4AF37]/20 hover:brightness-110 disabled:opacity-50 disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-3 border border-white/20"
                         >
-                            <Send className="w-5 h-5" />
-                            {loading ? 'Sending...' : 'Send Campus-Wide Broadcast'}
+                            <Send className="w-4 h-4" strokeWidth={3} />
+                            {loading ? 'Transmitting...' : 'Send Campus-Wide Broadcast'}
                         </button>
                     </div>
                 </motion.div>
 
                 {/* History */}
-                <motion.div variants={cardVariant}>
+                <motion.div variants={cardVariant} className="mt-8">
                     <div className="flex items-center gap-2 mb-4 ml-1">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <h3 className="text-sm font-bold text-slate-600 uppercase tracking-widest">Sent Alerts History</h3>
+                        <Clock className="w-4 h-4 text-[#D4AF37]" strokeWidth={2.5} />
+                        <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Sent Alerts History</h3>
                     </div>
 
                     <div className="space-y-4">
                         {broadcasts.length === 0 ? (
-                            <div className="text-center py-12 glass-card rounded-2xl opacity-60">
-                                <Megaphone className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                                <p className="text-slate-400 text-sm">No security broadcasts sent yet.</p>
+                            <div className="text-center py-12 bg-white/5 rounded-[32px] border border-white/5">
+                                <Megaphone className="w-10 h-10 text-[#D4AF37]/20 mx-auto mb-4" />
+                                <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest">No active transmissions</p>
                             </div>
                         ) : (
                             broadcasts.map(b => (
-                                <div key={b.id} className="glass-card rounded-2xl p-5 border-l-8 shadow-sm transition-all hover:bg-white/60" style={{
-                                    borderLeftColor: b.priority === 'emergency' ? '#fe3559' : b.priority === 'warning' ? '#f59e0b' : '#6366f1'
-                                }}>
-                                    <div className="flex justify-between items-start mb-3">
-                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${b.priority === 'emergency' ? 'bg-red-100 text-red-700' :
-                                            b.priority === 'warning' ? 'bg-amber-100 text-amber-700' :
-                                                'bg-indigo-100 text-indigo-700'
+                                <div key={b.id} className="relative bg-zinc-900/50 backdrop-blur-md rounded-[24px] p-6 border border-white/10 overflow-hidden group hover:border-[#D4AF37]/30 transition-all">
+                                    <div className={`absolute top-0 left-0 w-1 h-full ${b.priority === 'emergency' ? 'bg-red-600' :
+                                        b.priority === 'warning' ? 'bg-amber-500' :
+                                            'bg-[#D4AF37]'
+                                        }`} />
+
+                                    <div className="flex justify-between items-start mb-4 pl-2">
+                                        <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest border ${b.priority === 'emergency' ? 'bg-red-600/10 text-red-500 border-red-500/20' :
+                                            b.priority === 'warning' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                                'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20'
                                             }`}>
                                             {b.priority}
                                         </span>
-                                        <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                                        <span className="text-[10px] font-bold text-zinc-500/80 font-mono">
                                             {b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
                                         </span>
                                     </div>
-                                    <h4 className="font-bold text-slate-800 mb-1">{b.title}</h4>
-                                    <p className="text-slate-600 text-sm leading-relaxed">{b.message}</p>
+                                    <h4 className="font-black text-white text-lg mb-2 font-heading tracking-tight pl-2 group-hover:text-[#D4AF37] transition-colors">{b.title}</h4>
+                                    <p className="text-zinc-400 text-sm font-medium leading-relaxed pl-2">{b.message}</p>
                                 </div>
                             ))
                         )}

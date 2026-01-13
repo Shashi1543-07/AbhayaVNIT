@@ -59,9 +59,11 @@ export default function WardenBroadcasts() {
                 animate="show"
             >
                 {/* Create Broadcast */}
-                <div className="glass-card rounded-2xl p-4 space-y-4 border-2 border-black/15">
-                    <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                        <Megaphone className="w-5 h-5 text-primary" />
+                <div className="glass-card bg-black/40 rounded-[32px] p-6 space-y-5 border border-[#D4AF37]/20 shadow-[0_0_30px_rgba(212,175,55,0.05)]">
+                    <h2 className="font-heading font-black text-white text-lg tracking-tight uppercase flex items-center gap-3">
+                        <div className="p-2.5 bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
+                            <Megaphone className="w-5 h-5 text-[#D4AF37]" strokeWidth={2.5} />
+                        </div>
                         New Broadcast
                     </h2>
 
@@ -69,60 +71,68 @@ export default function WardenBroadcasts() {
                         value={newBroadcast}
                         onChange={(e) => setNewBroadcast(e.target.value)}
                         placeholder={`Message for ${wardenHostelId} students...`}
-                        className="glass-input w-full p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 min-h-[100px]"
+                        className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 min-h-[140px] shadow-inner text-white placeholder:text-zinc-600 font-bold transition-all text-sm"
                     />
 
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex gap-2">
-                            {['info', 'warning', 'emergency'].map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => setPriority(p as any)}
-                                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors capitalize ${priority === p
-                                        ? p === 'emergency' ? 'bg-red-100 text-red-700 ring-2 ring-red-500' :
-                                            p === 'warning' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500' :
-                                                'bg-blue-100 text-blue-700 ring-2 ring-blue-500'
-                                        : 'bg-white/30 backdrop-blur text-slate-700'
-                                        }`}
-                                >
-                                    {p}
-                                </button>
-                            ))}
+                    <div className="flex flex-col gap-5">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest shrink-0">Priority:</span>
+                            <div className="flex gap-2 w-full">
+                                {['info', 'warning', 'emergency'].map((p) => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setPriority(p as any)}
+                                        className={`px-1 py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex-1 border shadow-sm ${priority === p
+                                            ? p === 'emergency' ? 'bg-red-600 text-white border-red-500 shadow-red-900/20' :
+                                                p === 'warning' ? 'bg-amber-500 text-black border-amber-400 shadow-amber-900/20' :
+                                                    'bg-[#D4AF37] text-black border-[#FDE047] shadow-[#D4AF37]/20'
+                                            : 'bg-white/5 text-zinc-500 border-white/5 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         <button
                             onClick={handleSend}
                             disabled={loading || !newBroadcast.trim()}
-                            className="bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white p-3 rounded-xl shadow-lg hover:opacity-90 hover:shadow-purple-200/50 disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all border border-white/20"
+                            className="w-full bg-gradient-to-r from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black p-4 rounded-xl font-black uppercase tracking-wider text-xs shadow-lg hover:shadow-[#D4AF37]/20 hover:brightness-110 disabled:opacity-50 disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-3 border border-white/20"
                         >
-                            <Send className="w-5 h-5" />
+                            <Send className="w-4 h-4" strokeWidth={3} />
+                            {loading ? 'Transmitting...' : 'Send Broadcast'}
                         </button>
                     </div>
                 </div>
 
                 {/* History */}
-                <div>
-                    <h3 className="text-sm font-bold text-slate-800 mb-3 ml-1">Recent Broadcasts</h3>
-                    <div className="space-y-3">
+                <div className="mt-8">
+                    <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] mb-4 ml-1">Recent Broadcasts</h3>
+                    <div className="space-y-4">
                         {broadcasts.length === 0 ? (
-                            <p className="text-center text-slate-400 text-sm py-8">No broadcasts sent yet.</p>
+                            <div className="text-center py-12 bg-white/5 rounded-[32px] border border-white/5">
+                                <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest">No active transmissions</p>
+                            </div>
                         ) : (
                             broadcasts.map(broadcast => (
-                                <div key={broadcast.id} className="glass-card rounded-xl p-4 border-l-4" style={{
-                                    borderLeftColor: broadcast.priority === 'emergency' ? '#ef4444' : broadcast.priority === 'warning' ? '#f59e0b' : '#3b82f6'
-                                }}>
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${broadcast.priority === 'emergency' ? 'bg-red-100 text-red-700' :
-                                            broadcast.priority === 'warning' ? 'bg-amber-100 text-amber-700' :
-                                                'bg-blue-100 text-blue-700'
+                                <div key={broadcast.id} className="relative bg-zinc-900/50 backdrop-blur-md rounded-[24px] p-6 border border-white/10 overflow-hidden group hover:border-[#D4AF37]/30 transition-all">
+                                    <div className={`absolute top-0 left-0 w-1 h-full ${broadcast.priority === 'emergency' ? 'bg-red-600' :
+                                            broadcast.priority === 'warning' ? 'bg-amber-500' :
+                                                'bg-[#D4AF37]'
+                                        }`} />
+                                    <div className="flex justify-between items-start mb-4 pl-2">
+                                        <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest border ${broadcast.priority === 'emergency' ? 'bg-red-600/10 text-red-500 border-red-500/20' :
+                                                broadcast.priority === 'warning' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                                    'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20'
                                             }`}>
                                             {broadcast.priority}
                                         </span>
-                                        <span className="text-xs text-slate-400">
+                                        <span className="text-[10px] font-bold text-zinc-500/80 font-mono">
                                             {broadcast.createdAt?.seconds ? new Date(broadcast.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
                                         </span>
                                     </div>
-                                    <p className="text-slate-700 mt-2 text-sm">{broadcast.message}</p>
+                                    <p className="text-zinc-300 text-sm font-medium leading-relaxed pl-2">{broadcast.message}</p>
                                 </div>
                             ))
                         )}

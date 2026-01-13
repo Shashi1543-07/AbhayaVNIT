@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import Layout from '../../components/Layout';
+import MobileWrapper from '../../components/layout/MobileWrapper';
+import BottomNav from '../../components/layout/BottomNav';
+import { adminNavItems } from '../../lib/navItems';
 import SOSCard from '../../components/common/SOSCard';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { Users, Shield, UserCheck, UserX, Activity } from 'lucide-react';
@@ -82,8 +84,8 @@ export default function AdminDashboard() {
     }, []);
 
     return (
-        <Layout role="admin">
-            <TopHeader title="Admin Dashboard" showBackButton={false} />
+        <MobileWrapper>
+            <TopHeader title="Admin Control" showBackButton={false} />
 
             <motion.main
                 className="px-4 pt-nav-safe pb-nav-safe space-y-6"
@@ -91,70 +93,73 @@ export default function AdminDashboard() {
                 initial="hidden"
                 animate="visible"
             >
-                {/* Stats Grid - Responsive */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                    <motion.div variants={cardVariant} className="glass-card p-4 rounded-xl shadow-soft border border-white/40">
-                        <div className="bg-primary-50 w-10 h-10 rounded-lg flex items-center justify-center text-primary mb-2">
-                            <Users className="w-5 h-5" />
+                {/* Stats Grid - Premium Layout */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <motion.div variants={cardVariant} onClick={() => navigate('/admin/users')} className="glass-card bg-black/40 p-5 rounded-[24px] shadow-lg border border-white/10 cursor-pointer hover:border-[#D4AF37]/40 transition-all group active:scale-[0.98]">
+                        <div className="bg-[#D4AF37]/10 w-12 h-12 rounded-2xl flex items-center justify-center text-[#D4AF37] mb-3 border border-[#D4AF37]/20 group-hover:bg-[#D4AF37]/20 transition-colors">
+                            <Users className="w-6 h-6" />
                         </div>
-                        <p className="text-2xl font-bold text-gray-800">{loading ? '...' : stats.totalStudents}</p>
-                        <p className="text-xs text-slate-500 font-medium">Students</p>
+                        <p className="text-3xl font-black text-white font-heading">{loading ? '...' : stats.totalStudents}</p>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1 group-hover:text-[#D4AF37] transition-colors">Students</p>
                     </motion.div>
 
-                    <motion.div variants={cardVariant} className="glass-card p-4 rounded-xl shadow-soft border border-white/40">
-                        <div className="bg-success-50 w-10 h-10 rounded-lg flex items-center justify-center text-success mb-2">
-                            <UserCheck className="w-5 h-5" />
+                    <motion.div variants={cardVariant} onClick={() => navigate('/admin/users')} className="glass-card bg-black/40 p-5 rounded-[24px] shadow-lg border border-white/10 cursor-pointer hover:border-[#D4AF37]/40 transition-all group active:scale-[0.98]">
+                        <div className="bg-emerald-500/10 w-12 h-12 rounded-2xl flex items-center justify-center text-emerald-500 mb-3 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                            <UserCheck className="w-6 h-6" />
                         </div>
-                        <p className="text-2xl font-bold text-gray-800">{loading ? '...' : stats.totalWardens}</p>
-                        <p className="text-xs text-slate-500 font-medium">Wardens</p>
+                        <p className="text-3xl font-black text-white font-heading">{loading ? '...' : stats.totalWardens}</p>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1 group-hover:text-emerald-500 transition-colors">Wardens</p>
                     </motion.div>
 
-                    <motion.div variants={cardVariant} className="glass-card p-4 rounded-xl shadow-soft border border-white/40">
-                        <div className="bg-warning-50 w-10 h-10 rounded-lg flex items-center justify-center text-warning mb-2">
-                            <Shield className="w-5 h-5" />
+                    <motion.div variants={cardVariant} onClick={() => navigate('/admin/users')} className="glass-card bg-black/40 p-5 rounded-[24px] shadow-lg border border-white/10 cursor-pointer hover:border-[#D4AF37]/40 transition-all group active:scale-[0.98]">
+                        <div className="bg-blue-500/10 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-500 mb-3 border border-blue-500/20 group-hover:bg-blue-500/20 transition-colors">
+                            <Shield className="w-6 h-6" />
                         </div>
-                        <p className="text-2xl font-bold text-gray-800">{loading ? '...' : stats.totalSecurity}</p>
-                        <p className="text-xs text-slate-500 font-medium">Security</p>
+                        <p className="text-3xl font-black text-white font-heading">{loading ? '...' : stats.totalSecurity}</p>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1 group-hover:text-blue-500 transition-colors">Security</p>
                     </motion.div>
 
-                    <motion.div variants={cardVariant} className="glass-card p-4 rounded-xl shadow-soft border border-white/40">
-                        <div className="bg-emergency-50 w-10 h-10 rounded-lg flex items-center justify-center text-emergency mb-2">
-                            <UserX className="w-5 h-5" />
+                    <motion.div variants={cardVariant} className="glass-card bg-black/40 p-5 rounded-[24px] shadow-lg border border-white/10 group">
+                        <div className="bg-red-500/10 w-12 h-12 rounded-2xl flex items-center justify-center text-red-500 mb-3 border border-red-500/20">
+                            <UserX className="w-6 h-6" />
                         </div>
-                        <p className="text-2xl font-bold text-gray-800">{loading ? '...' : stats.disabledUsers}</p>
-                        <p className="text-xs text-slate-500 font-medium">Disabled</p>
+                        <p className="text-3xl font-black text-white font-heading">{loading ? '...' : stats.disabledUsers}</p>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Disabled</p>
                     </motion.div>
                 </div>
 
                 {/* Live SOS Alerts */}
-                <motion.div variants={cardVariant} className="glass-card p-5 rounded-xl shadow-sm border border-red-100/50">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-red-600 flex items-center gap-2">
+                <motion.div variants={cardVariant} className="glass-card bg-black/40 p-6 rounded-[32px] shadow-2xl border border-red-500/20 relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-6 relative z-10">
+                        <h3 className="text-xs font-black text-red-500 flex items-center gap-2 uppercase tracking-[0.2em] font-heading">
                             <Shield className="w-5 h-5 animate-pulse" />
-                            Live Monitor
+                            Emergency Live Monitor
                         </h3>
+                        <div className="px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20 text-[8px] font-black text-red-500 uppercase tracking-widest">Real-time</div>
                     </div>
 
                     {activeSOS.length === 0 ? (
-                        <div className="text-center py-6 bg-white/50 rounded-lg border border-white/60">
-                            <Shield className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                            <p className="text-sm text-slate-500">No active emergencies.</p>
+                        <div className="text-center py-12 bg-white/5 rounded-3xl border border-white/5 relative z-10">
+                            <Shield className="w-12 h-12 text-zinc-700 mx-auto mb-4 opacity-30" />
+                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">System clear • No active emergencies</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
                             {activeSOS.map(sos => (
                                 <SOSCard key={sos.id} event={sos} role="admin" />
                             ))}
                         </div>
                     )}
+                    {/* Background glow */}
+                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-red-500/5 rounded-full blur-[100px] z-0"></div>
                 </motion.div>
 
                 {/* Live Safe Walk Monitor */}
-                <motion.div variants={cardVariant} className="glass-card p-5 rounded-xl shadow-sm border border-white/40">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-                            <Activity className="w-5 h-5 text-primary" />
-                            Active Safe Walks
+                <motion.div variants={cardVariant} className="glass-card bg-black/40 p-6 rounded-[32px] shadow-2xl border border-white/10">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xs font-black text-[#D4AF37] flex items-center gap-3 uppercase tracking-[0.2em] font-heading">
+                            <Activity className="w-5 h-5 text-[#D4AF37]" strokeWidth={3} />
+                            Tactical Safe Walks
                         </h3>
                     </div>
                     <ActiveWalksList
@@ -163,34 +168,43 @@ export default function AdminDashboard() {
                 </motion.div>
 
                 {/* Live Recent Incidents */}
-                <motion.div variants={cardVariant} className="glass-card p-5 rounded-xl shadow-sm border border-white/40">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-                            <Activity className="w-5 h-5 text-primary" />
-                            Recent Incidents
+                <motion.div variants={cardVariant} className="glass-card bg-black/40 p-6 rounded-[32px] shadow-2xl border border-white/10">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xs font-black text-[#D4AF37] flex items-center gap-3 uppercase tracking-[0.2em] font-heading">
+                            <Activity className="w-5 h-5 text-[#D4AF37]" strokeWidth={3} />
+                            Recent Intelligence
                         </h3>
+                        <button className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] hover:brightness-125 transition-all bg-[#D4AF37]/10 px-4 py-2 rounded-xl border border-[#D4AF37]/20">Archive</button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {loading ? (
-                            <p className="text-slate-500 text-center py-4 text-sm col-span-full">Loading...</p>
+                            <p className="text-zinc-500 text-center py-8 text-[10px] font-black uppercase tracking-[0.3em] col-span-full">Processing data...</p>
                         ) : incidents.length === 0 ? (
-                            <p className="text-slate-500 text-center py-4 text-sm col-span-full">No recent incidents.</p>
+                            <div className="text-center py-12 bg-white/5 rounded-3xl border border-white/5 col-span-full">
+                                <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">No recent incident reports</p>
+                            </div>
                         ) : (
                             incidents.map(incident => (
-                                <div key={incident.id} className="glass-card-soft rounded-2xl p-4 flex justify-between items-center transition-all hover:bg-white/50">
-                                    <div className="min-w-0 pr-2">
-                                        <p className="font-bold text-sm text-primary truncate">{incident.category}</p>
-                                        <p className="text-[10px] text-muted truncate">
-                                            {incident.reporterName || 'Unknown'} • {incident.createdAt?.seconds ? new Date(incident.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                                        </p>
+                                <div key={incident.id} className="glass-card bg-white/5 rounded-2xl p-5 flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all border border-white/10 group active:scale-[0.98]" onClick={() => navigate(`/admin/sos/${incident.id}`)}>
+                                    <div className="min-w-0 pr-4">
+                                        <p className="font-black text-sm text-[#D4AF37] uppercase tracking-wide group-hover:brightness-125 transition-all">{incident.category}</p>
+                                        <div className="flex items-center gap-2 mt-1.5">
+                                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                                                {incident.reporterName || 'Unknown'}
+                                            </p>
+                                            <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
+                                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                                                {incident.createdAt?.seconds ? new Date(incident.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Tactical Now'}
+                                            </p>
+                                        </div>
                                     </div>
                                     <StatusBadge
                                         status={
                                             incident.status === 'resolved' ? 'success' :
                                                 incident.status === 'open' ? 'warning' : 'neutral'
                                         }
-                                        label={incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
+                                        label={incident.status.toUpperCase()}
                                     />
                                 </div>
                             ))
@@ -198,6 +212,8 @@ export default function AdminDashboard() {
                     </div>
                 </motion.div>
             </motion.main>
-        </Layout>
+
+            <BottomNav items={adminNavItems} />
+        </MobileWrapper>
     );
 }

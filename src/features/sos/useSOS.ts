@@ -82,19 +82,17 @@ export const useSOS = () => {
         }
     };
 
-    const resolveSOS = async (_eventId: string, _status: 'resolved' | 'false_alarm' = 'resolved') => {
-        // Students typically don't resolve their own SOS, but if needed:
-        // await sosService.resolveSOS(eventId, user.uid, "Resolved by student");
-        // For now, we'll keep the direct update if this function is used, 
-        // or better, remove it if students shouldn't resolve. 
-        // Leaving it as a placeholder or using service if available.
-        // Since sosService.resolveSOS requires a summary, we'll stick to basic update or implement properly.
-        // Actually, let's just use the service logic if we were to implement it, 
-        // but for now, let's assume students CANNOT resolve SOS from this hook 
-        // (as per requirements, only Security/Warden resolve).
-        // However, if the UI has a "Cancel" button, we might need it.
-        // Let's leave it empty or log a warning for now to enforce security rules.
-        console.warn("Students cannot resolve SOS directly. Contact Security.");
+    const resolveSOS = async (eventId: string) => {
+        setLoading(true);
+        try {
+            await sosService.cancelSOS(eventId);
+            setActiveSOS(null);
+        } catch (err: any) {
+            console.error('Error cancelling SOS:', err);
+            setError(err.message || 'Failed to cancel SOS');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return { activeSOS, triggerSOS, resolveSOS, loading, error };

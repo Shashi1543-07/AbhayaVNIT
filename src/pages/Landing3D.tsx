@@ -36,10 +36,11 @@ function ParticleField(props: any) {
             <Points ref={ref} positions={sphere} stride={3} frustumCulled={false} {...props}>
                 <PointMaterial
                     transparent
-                    color="#FF99AC"
+                    color="#D4AF37"
                     size={0.005}
                     sizeAttenuation={true}
                     depthWrite={false}
+                    opacity={0.4}
                 />
             </Points>
         </group>
@@ -60,8 +61,10 @@ function Scene() {
 export default function Landing3D() {
     return (
         <div
-            className="relative w-full h-screen overflow-hidden"
-            style={{ background: 'linear-gradient(20deg, #FF99AC 0%, #C084FC 35%, #89CFF0 70%, #FFFFFF 100%)' }}
+            className="relative w-full h-screen overflow-hidden bg-black"
+            style={{
+                background: 'radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%)'
+            }}
         >
             {/* 3D Background */}
             <div className="absolute inset-0 z-0">
@@ -79,10 +82,10 @@ export default function Landing3D() {
                     className="text-center w-full max-w-6xl mx-auto pointer-events-auto flex flex-col items-center px-4"
                 >
                     {/* VNIT Header - Full Width */}
-                    <div className="w-full mb-2 md:mb-3">
-                        <h3 className="text-sm md:text-lg lg:text-xl font-light tracking-[0.2em] md:tracking-[0.4em] leading-tight drop-shadow-sm">
-                            <span className="block font-serif italic text-[#0F4C81] drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">Visvesvaraya</span>
-                            <span className="block font-serif italic -mt-1 md:-mt-2 text-[#0F4C81] drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">National Institute of Technology</span>
+                    <div className="w-full mb-4 md:mb-6">
+                        <h3 className="text-sm md:text-lg lg:text-xl font-black tracking-[0.3em] md:tracking-[0.5em] leading-tight drop-shadow-2xl">
+                            <span className="block font-serif italic text-white/40">Visvesvaraya</span>
+                            <span className="block font-serif italic -mt-1 md:-mt-2 text-[#D4AF37] drop-shadow-[0_0_10px_rgba(212,175,55,0.3)]">National Institute of Technology</span>
                         </h3>
                     </div>
 
@@ -104,52 +107,50 @@ export default function Landing3D() {
                         </motion.div>
 
                         <div className="flex flex-col items-center justify-center min-w-0">
-                            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-[#1A7CCC] drop-shadow-lg font-sans text-center">
-                                ABHAYA CONNECT
+                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-white drop-shadow-2xl font-heading text-center">
+                                ABHAYA <span className="text-[#D4AF37]">CONNECT</span>
                             </h1>
-                            <h2 className="text-base md:text-lg lg:text-xl font-bold text-[#1A7CCC] font-hindi text-center mt-0.5">
+                            <h2 className="text-lg md:text-xl lg:text-2xl font-black text-[#D4AF37] font-hindi text-center mt-1 uppercase tracking-[0.2em] opacity-80">
                                 अभया कनेक्ट
                             </h2>
                         </div>
                     </div>
 
-                    <p className="text-sm md:text-base text-[#0F4C81] mb-3 md:mb-4 max-w-lg mx-auto leading-relaxed px-4 text-center font-medium drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)]">
-                        VNIT smart campus safety system.
+                    <p className="text-sm md:text-base text-zinc-400 mb-6 md:mb-8 max-w-lg mx-auto leading-relaxed px-4 text-center font-bold uppercase tracking-widest opacity-60">
+                        VNIT Smart Campus Security Protocol
                         <br className="hidden md:block" />
-                        <span className="text-[#0F4C81] font-bold block md:inline mt-1">Secure. Connected. Instant.</span>
+                        <span className="text-[#D4AF37] block mt-2">Secure • Connected • Instant</span>
                     </p>
 
-                    <div className="flex flex-col gap-2 md:gap-2 w-full max-w-[320px] md:max-w-sm mx-auto">
+                    <div className="flex flex-col gap-3 md:gap-4 w-full max-w-[320px] md:max-w-sm mx-auto">
                         <Link
                             to="/login?role=student"
-                            className="group px-4 py-3 md:px-5 md:py-3 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] backdrop-blur-md hover:opacity-90 rounded-xl transition-all flex flex-col items-center gap-0.5 text-center shadow-xl border border-white/20"
+                            className="group px-6 py-4 bg-white/5 backdrop-blur-3xl hover:bg-white/10 rounded-2xl transition-all flex flex-col items-center gap-0.5 text-center shadow-2xl border border-[#D4AF37]/20 active:scale-95"
                         >
-                            <span className="font-bold text-base md:text-base text-[#0F4C81] drop-shadow-sm">Student Login</span>
-                            <span className="text-xs md:text-[11px] text-[#0F4C81]/80 font-medium">Access your dashboard</span>
+                            <span className="font-black text-sm md:text-base text-[#D4AF37] uppercase tracking-widest">Student Portal</span>
+                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter opacity-60">Authorize Access</span>
                         </Link>
 
-                        <Link
-                            to="/login?role=warden"
-                            className="group px-4 py-3 md:px-5 md:py-3 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] backdrop-blur-md hover:opacity-90 rounded-xl transition-all flex flex-col items-center gap-0.5 text-center shadow-xl border border-white/20"
-                        >
-                            <span className="font-bold text-base md:text-base text-[#0F4C81] drop-shadow-sm">Warden Login</span>
-                            <span className="text-xs md:text-[11px] text-[#0F4C81]/80 font-medium">Manage hostel & students</span>
-                        </Link>
-
-                        <Link
-                            to="/login?role=security"
-                            className="group px-4 py-3 md:px-5 md:py-3 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] backdrop-blur-md hover:opacity-90 rounded-xl transition-all flex flex-col items-center gap-0.5 text-center shadow-xl border border-white/20"
-                        >
-                            <span className="font-bold text-base md:text-base text-[#0F4C81] drop-shadow-sm">Security Login</span>
-                            <span className="text-xs md:text-[11px] text-[#0F4C81]/80 font-medium">Patrols & Incident logs</span>
-                        </Link>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Link
+                                to="/login?role=warden"
+                                className="group px-4 py-4 bg-white/5 backdrop-blur-3xl hover:bg-white/10 rounded-2xl transition-all flex flex-col items-center text-center shadow-2xl border border-[#D4AF37]/20 active:scale-95"
+                            >
+                                <span className="font-black text-[11px] text-[#D4AF37] uppercase tracking-widest">Warden</span>
+                            </Link>
+                            <Link
+                                to="/login?role=security"
+                                className="group px-4 py-4 bg-white/5 backdrop-blur-3xl hover:bg-white/10 rounded-2xl transition-all flex flex-col items-center text-center shadow-2xl border border-[#D4AF37]/20 active:scale-95"
+                            >
+                                <span className="font-black text-[11px] text-[#D4AF37] uppercase tracking-widest">Security</span>
+                            </Link>
+                        </div>
 
                         <Link
                             to="/login?role=admin"
-                            className="group px-4 py-3 md:px-5 md:py-3 bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] backdrop-blur-md hover:opacity-90 rounded-xl transition-all flex flex-col items-center gap-0.5 text-center shadow-xl border border-white/20"
+                            className="group px-4 py-3 bg-transparent border border-white/5 hover:border-white/10 rounded-2xl transition-all flex items-center justify-center text-center active:scale-95"
                         >
-                            <span className="font-bold text-base md:text-base text-[#0F4C81] drop-shadow-sm">Admin Login</span>
-                            <span className="text-xs md:text-[11px] text-[#0F4C81]/80 font-medium">System control panel</span>
+                            <span className="font-black text-[9px] text-zinc-600 uppercase tracking-[0.3em] hover:text-zinc-400">System Command Center</span>
                         </Link>
                     </div>
                 </motion.div>

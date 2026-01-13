@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import Layout from '../../components/Layout';
+import MobileWrapper from '../../components/layout/MobileWrapper';
+import BottomNav from '../../components/layout/BottomNav';
+import { adminNavItems } from '../../lib/navItems';
 import { Search, Filter, Download } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -70,7 +72,7 @@ export default function AuditLogs() {
     };
 
     return (
-        <Layout role="admin">
+        <MobileWrapper>
             <TopHeader title="Audit Logs" showBackButton={true} />
 
             <motion.main
@@ -84,7 +86,7 @@ export default function AuditLogs() {
                         variants={cardVariant}
                         whileTap={{ scale: 0.95 }}
                         onClick={downloadLogs}
-                        className="flex items-center gap-2 bg-white/50 border border-purple-200 text-purple-700 px-4 py-2 rounded-xl hover:bg-white/80 font-bold shadow-sm transition-all"
+                        className="flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] px-4 py-2 rounded-xl hover:bg-[#D4AF37]/20 font-black uppercase tracking-wider text-xs shadow-sm transition-all"
                     >
                         <Download className="w-4 h-4" />
                         Export CSV
@@ -93,38 +95,38 @@ export default function AuditLogs() {
 
                 <motion.div
                     variants={cardVariant}
-                    className="glass-card rounded-xl shadow-sm border border-white/40 overflow-hidden"
+                    className="glass-card bg-black/40 rounded-[24px] shadow-sm border border-white/10 overflow-hidden"
                 >
-                    <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/30 backdrop-blur-md">
+                    <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-4 justify-between items-center">
                         <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                             <input
                                 type="text"
                                 placeholder="Search logs..."
-                                className="w-full pl-10 pr-4 py-2 bg-white/50 border border-white/40 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none backdrop-blur-sm placeholder:text-slate-400"
+                                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white placeholder:text-zinc-600 text-sm font-bold"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <Filter className="w-4 h-4 text-slate-500" />
+                            <Filter className="w-4 h-4 text-zinc-500" />
                             <select
-                                className="p-2 bg-white/50 border border-white/40 rounded-lg outline-none text-sm backdrop-blur-sm"
+                                className="p-2 bg-white/5 border border-white/10 rounded-xl outline-none text-xs font-bold text-zinc-300 focus:border-[#D4AF37]/50"
                                 value={actionFilter}
                                 onChange={(e) => setActionFilter(e.target.value)}
                             >
-                                <option value="all">All Actions</option>
-                                <option value="Create User">Create User</option>
-                                <option value="Update Settings">Update Settings</option>
-                                <option value="Bulk Create">Bulk Create</option>
-                                <option value="Delete User">Delete User</option>
+                                <option value="all" className="bg-zinc-900">All Actions</option>
+                                <option value="Create User" className="bg-zinc-900">Create User</option>
+                                <option value="Update Settings" className="bg-zinc-900">Update Settings</option>
+                                <option value="Bulk Create" className="bg-zinc-900">Bulk Create</option>
+                                <option value="Delete User" className="bg-zinc-900">Delete User</option>
                             </select>
                         </div>
                     </div>
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-white/30 text-slate-600 font-medium border-b border-white/40 backdrop-blur-md">
+                            <thead className="bg-white/5 text-zinc-500 font-black uppercase tracking-widest text-[10px] border-b border-white/10">
                                 <tr>
                                     <th className="p-4">Timestamp</th>
                                     <th className="p-4">Action</th>
@@ -133,21 +135,21 @@ export default function AuditLogs() {
                                     <th className="p-4">Details</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-white/5">
                                 {loading ? (
-                                    <tr><td colSpan={5} className="p-8 text-center text-slate-500">Loading logs...</td></tr>
+                                    <tr><td colSpan={5} className="p-8 text-center text-zinc-500 font-bold uppercase tracking-widest text-xs">Loading logs...</td></tr>
                                 ) : logs.length === 0 ? (
-                                    <tr><td colSpan={5} className="p-8 text-center text-slate-500">No logs found.</td></tr>
+                                    <tr><td colSpan={5} className="p-8 text-center text-zinc-500 font-bold uppercase tracking-widest text-xs">No logs found.</td></tr>
                                 ) : (
                                     logs.map(log => (
-                                        <tr key={log.id} className="hover:bg-white/40 transition-colors">
-                                            <td className="p-4 text-slate-500 whitespace-nowrap">
+                                        <tr key={log.id} className="hover:bg-white/5 transition-colors group">
+                                            <td className="p-4 text-zinc-500 text-xs font-bold whitespace-nowrap">
                                                 {log.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'N/A'}
                                             </td>
-                                            <td className="p-4 font-medium text-slate-800">{log.action}</td>
-                                            <td className="p-4 text-indigo-600">{log.target}</td>
-                                            <td className="p-4 text-slate-600">{log.performedBy}</td>
-                                            <td className="p-4 text-slate-500 max-w-xs truncate" title={log.details}>{log.details}</td>
+                                            <td className="p-4 font-bold text-white group-hover:text-[#D4AF37] transition-colors">{log.action}</td>
+                                            <td className="p-4 text-[#D4AF37] font-medium text-xs">{log.target}</td>
+                                            <td className="p-4 text-zinc-300 font-medium text-xs">{log.performedBy}</td>
+                                            <td className="p-4 text-zinc-500 text-xs font-medium max-w-xs truncate" title={log.details}>{log.details}</td>
                                         </tr>
                                     ))
                                 )}
@@ -156,6 +158,8 @@ export default function AuditLogs() {
                     </div>
                 </motion.div>
             </motion.main>
-        </Layout>
+
+            <BottomNav items={adminNavItems} />
+        </MobileWrapper>
     );
 }

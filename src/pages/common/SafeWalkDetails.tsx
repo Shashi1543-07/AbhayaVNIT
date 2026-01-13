@@ -129,22 +129,22 @@ export default function SafeWalkDetails() {
                 animate="visible"
             >
                 {/* Status Card */}
-                <motion.div variants={cardVariant} className="glass-card p-6 rounded-[2rem] border border-white/50 shadow-2xl flex items-center justify-between">
+                <motion.div variants={cardVariant} className="glass p-6 rounded-[2.5rem] border border-white/5 shadow-2xl flex items-center justify-between">
                     <div>
-                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">{walk.userName}</h2>
-                        <p className="text-sm text-slate-500 font-medium opacity-80">{walk.hostelId || 'Campus'}</p>
+                        <h2 className="text-2xl font-black text-white tracking-tight font-heading drop-shadow-sm">{walk.userName}</h2>
+                        <p className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest mt-1 opacity-80">{walk.hostelId || 'CAMPUS HUB'}</p>
                     </div>
-                    <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${walk.status === 'danger' ? 'bg-red-500/10 text-red-600 border-red-500/20' :
-                        walk.status === 'delayed' ? 'bg-orange-500/10 text-orange-600 border-orange-500/20' :
-                            'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                    <span className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-2xl backdrop-blur-3xl ${walk.status === 'danger' ? 'bg-red-600/20 text-red-500 border-red-500/40' :
+                        walk.status === 'delayed' ? 'bg-amber-500/20 text-amber-500 border-amber-500/40' :
+                            'bg-emerald-500/20 text-emerald-500 border-emerald-500/40'
                         }`}>
                         {walk.status}
                     </span>
                 </motion.div>
 
                 {/* Map Section */}
-                <motion.div variants={cardVariant} className="glass-card p-2 rounded-[2.5rem] border border-white/50 shadow-2xl overflow-hidden h-[300px] relative">
-                    <div className="w-full h-full rounded-[2.2rem] overflow-hidden border border-white/40">
+                <motion.div variants={cardVariant} className="glass p-2 rounded-[3rem] border border-white/5 shadow-2xl overflow-hidden h-[300px] relative">
+                    <div className="w-full h-full rounded-[2.8rem] overflow-hidden border border-white/10 shadow-inner">
                         <EventDetailMap
                             location={liveLocation}
                             center={walk.startLocation}
@@ -158,45 +158,45 @@ export default function SafeWalkDetails() {
 
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-4">
-                    <motion.div variants={cardVariant} className="glass-card p-5 rounded-3xl border border-white/40 shadow-xl">
-                        <Clock className="w-5 h-5 text-primary mb-2 opacity-60" />
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</p>
-                        <p className="text-lg font-black text-slate-800">{walk.expectedDuration}m</p>
+                    <motion.div variants={cardVariant} className="glass p-5 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <Clock className="w-6 h-6 text-[#D4AF37] mb-3 opacity-80" strokeWidth={3} />
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Expected Vol.</p>
+                        <p className="text-xl font-black text-white font-heading">{walk.expectedDuration} Min</p>
                     </motion.div>
-                    <motion.div variants={cardVariant} className="glass-card p-5 rounded-3xl border border-white/40 shadow-xl">
-                        <MapPin className="w-5 h-5 text-emerald-500 mb-2 opacity-60" />
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Destination</p>
-                        <p className="text-xs font-bold text-slate-800 truncate">{walk.destination.name}</p>
+                    <motion.div variants={cardVariant} className="glass p-5 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <MapPin className="w-6 h-6 text-emerald-500 mb-3 opacity-80" strokeWidth={3} />
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Objective</p>
+                        <p className="text-sm font-black text-white truncate font-heading">{walk.destination.name}</p>
                     </motion.div>
                 </div>
 
                 {/* Action Section for Security */}
                 {isSecurity ? (
                     <motion.div variants={cardVariant} className="space-y-6">
-                        <div className="glass-card p-6 rounded-[2.5rem] border border-white/50 shadow-2xl">
-                            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Shield className="w-5 h-5 text-primary" />
-                                Security Protocol
+                        <div className="glass p-6 rounded-[3rem] border border-white/10 shadow-2xl bg-black/40">
+                            <h3 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] mb-8 flex items-center gap-2 font-heading">
+                                <Shield className="w-5 h-5" strokeWidth={3} />
+                                HQ Security Protocol
                             </h3>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-2">Deploy Escort</p>
-                                    <div className="flex gap-2">
+                                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-4 mb-2">Deploy Field Escort</p>
+                                    <div className="flex gap-3">
                                         <select
                                             value={selectedEscort}
                                             onChange={(e) => setSelectedEscort(e.target.value)}
-                                            className="flex-1 bg-white/40 backdrop-blur-md p-4 rounded-2xl border border-white/60 text-sm font-bold text-slate-700 outline-none"
+                                            className="flex-1 bg-black/40 backdrop-blur-3xl p-4.5 rounded-[20px] border border-white/10 text-sm font-black text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/30 transition-all appearance-none"
                                         >
-                                            <option value="">Select Personnel...</option>
+                                            <option value="" className="bg-zinc-900">Select Personnel...</option>
                                             {SECURITY_PERSONNEL.map(p => (
-                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                                <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>
                                             ))}
                                         </select>
                                         <button
                                             onClick={handleAssignEscort}
                                             disabled={!selectedEscort || assigning}
-                                            className="p-4 bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-50"
+                                            className="px-6 bg-[#D4AF37] text-black rounded-[20px] font-black text-[11px] uppercase tracking-widest disabled:opacity-50 hover:scale-105 active:scale-95 transition-all shadow-lg"
                                         >
                                             {assigning ? '...' : 'Deploy'}
                                         </button>
@@ -204,21 +204,21 @@ export default function SafeWalkDetails() {
                                 </div>
 
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-2">Comms</p>
-                                    <div className="flex gap-2">
+                                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-4 mb-2">Official Comms</p>
+                                    <div className="flex gap-3">
                                         <input
                                             type="text"
                                             value={message}
                                             onChange={(e) => setMessage(e.target.value)}
-                                            placeholder="Message Student..."
-                                            className="flex-1 bg-white/40 backdrop-blur-md p-4 rounded-2xl border border-white/60 text-sm font-bold text-slate-700 outline-none placeholder:text-slate-400"
+                                            placeholder="Transmit Message..."
+                                            className="flex-1 bg-black/40 backdrop-blur-3xl p-4.5 rounded-[20px] border border-white/10 text-sm font-black text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/30 transition-all placeholder:text-zinc-700 shadow-inner"
                                         />
                                         <button
                                             onClick={handleSendMessage}
                                             disabled={!message.trim() || sending}
-                                            className="p-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-50"
+                                            className="p-4.5 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black rounded-[20px] font-black active:scale-95 transition-all shadow-xl border border-white/10"
                                         >
-                                            <Send className="w-5 h-5" />
+                                            <Send className="w-6 h-6" strokeWidth={3} />
                                         </button>
                                     </div>
                                 </div>
@@ -227,34 +227,34 @@ export default function SafeWalkDetails() {
 
                         <button
                             onClick={handleMarkCompleted}
-                            className="w-full py-5 bg-emerald-500 text-white font-black rounded-[2rem] shadow-xl active:scale-95 transition-all text-xs tracking-[0.2em] flex items-center justify-center gap-3"
+                            className="w-full py-5 bg-emerald-500 text-black font-black uppercase tracking-[0.2em] text-[11px] rounded-[24px] shadow-[0_10px_30px_rgba(16,185,129,0.3)] active:scale-95 transition-all border border-emerald-400/20 flex items-center justify-center gap-3"
                         >
-                            <CheckCircle className="w-5 h-5" />
+                            <CheckCircle className="w-6 h-6" strokeWidth={3} />
                             MARK COMPLETED
                         </button>
                     </motion.div>
                 ) : (
-                    <motion.div variants={cardVariant} className="glass-card p-8 rounded-[2.5rem] border border-white/50 shadow-2xl bg-primary/5">
-                        <Shield className="w-12 h-12 text-primary opacity-20 mx-auto mb-4" />
-                        <h3 className="text-center font-black text-slate-800 uppercase tracking-[0.2em] text-xs mb-3">Monitoring Mode</h3>
-                        <p className="text-center text-xs text-slate-500 font-bold leading-relaxed opacity-70">
-                            Warden and Admin views are read-only. Security is the designated response team for all Safe Walk protocols.
+                    <motion.div variants={cardVariant} className="glass p-8 rounded-[3rem] border border-white/5 shadow-2xl bg-black/40 text-center">
+                        <Shield className="w-16 h-16 text-[#D4AF37] opacity-20 mx-auto mb-6" strokeWidth={3} />
+                        <h3 className="font-black text-[#D4AF37] uppercase tracking-[0.3em] text-[10px] mb-4">Tactical Oversight</h3>
+                        <p className="text-[11px] text-zinc-500 font-bold leading-relaxed opacity-60 px-6">
+                            HQ Monitoring Mode. Security response teams are primary for all field operations.
                         </p>
                     </motion.div>
                 )}
 
                 {/* Timeline Section */}
                 {walk.timeline && walk.timeline.length > 0 && (
-                    <motion.div variants={cardVariant} className="glass-card p-6 rounded-[2.5rem] border border-white/50 shadow-2xl">
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 ml-2">Operation Log</h3>
-                        <div className="space-y-6 border-l-2 border-slate-100 ml-4 pl-6">
+                    <motion.div variants={cardVariant} className="glass p-6 rounded-[3rem] border border-white/5 shadow-2xl bg-black/40">
+                        <h3 className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-8 ml-4">HQ Logistics Log</h3>
+                        <div className="space-y-8 border-l border-white/5 ml-6 pl-8">
                             {walk.timeline.map((event, idx) => (
                                 <div key={idx} className="relative">
-                                    <div className="absolute -left-[33px] top-0 w-4 h-4 rounded-full bg-white border-4 border-primary shadow-sm" />
-                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                                        {event.timestamp ? (typeof event.timestamp === 'string' ? event.timestamp : new Date(event.timestamp.seconds * 1000).toLocaleTimeString()) : 'Now'}
+                                    <div className="absolute -left-[37px] top-1 w-3 h-3 rounded-full bg-black border-2 border-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.4)]" />
+                                    <p className="text-[8px] font-black text-[#D4AF37]/60 uppercase tracking-widest mb-1.5 font-mono">
+                                        {event.timestamp ? (typeof event.timestamp === 'string' ? event.timestamp : new Date(event.timestamp.seconds * 1000).toLocaleTimeString()) : 'Tactical Now'}
                                     </p>
-                                    <p className="text-sm font-bold text-slate-700 leading-tight">
+                                    <p className="text-sm font-black text-white leading-tight font-heading drop-shadow-sm">
                                         {event.details}
                                     </p>
                                 </div>

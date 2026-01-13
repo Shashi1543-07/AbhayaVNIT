@@ -98,8 +98,9 @@ export default function WardenSOSDetail() {
         return (
             <MobileWrapper>
                 <TopHeader title="SOS Details" showBackButton={true} />
-                <div className="flex items-center justify-center h-screen pb-20">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <div className="flex flex-col items-center justify-center h-screen pb-20 bg-black">
+                    <div className="w-16 h-16 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(212,175,55,0.3)]"></div>
+                    <p className="text-[10px] text-[#D4AF37] font-black uppercase tracking-[0.3em]">Synching Intel...</p>
                 </div>
             </MobileWrapper>
         );
@@ -130,178 +131,182 @@ export default function WardenSOSDetail() {
                 variants={containerStagger}
             >
                 {/* Header Section */}
-                <div className="flex justify-between items-start mb-6">
-                    <div>
-                        <h2 className="text-3xl font-black text-slate-800 font-heading tracking-tighter">{event.userName || event.studentName}</h2>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 font-bold mt-1">
-                            <span className="flex items-center gap-1">
-                                <User className="w-3 h-3" /> {event.role}
+                <div className="flex justify-between items-start mb-10">
+                    <div className="flex-1 min-w-0 pr-4">
+                        <h2 className="text-3xl font-black text-white font-heading tracking-tight drop-shadow-sm truncate">{event.userName || event.studentName}</h2>
+                        <div className="flex flex-wrap items-center gap-3 text-[10px] text-[#D4AF37] font-black uppercase tracking-[0.2em] mt-3">
+                            <span className="flex items-center gap-2 bg-[#D4AF37]/5 px-3 py-1.5 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
+                                <User className="w-3.5 h-3.5" strokeWidth={3} /> {event.role?.toUpperCase()}
                             </span>
-                            <span className="flex items-center gap-1">
-                                <Phone className="w-3 h-3" /> {event.userPhone || 'No Phone'}
+                            <span className="flex items-center gap-2 bg-[#D4AF37]/5 px-3 py-1.5 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
+                                <Phone className="w-3.5 h-3.5" strokeWidth={3} /> {event.userPhone || 'PROTOCOL VOID'}
                             </span>
                         </div>
                     </div>
-                    <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${!event.status.recognised ? 'bg-red-500 text-white shadow-red-500/30' :
-                        !event.status.resolved ? 'bg-amber-500 text-white shadow-amber-500/30' :
-                            'bg-green-500 text-white shadow-green-500/30'
+                    <span className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl backdrop-blur-3xl border whitespace-nowrap ${!event.status.recognised ? 'bg-red-600/20 text-red-500 border-red-500/40 shadow-red-500/10' :
+                        !event.status.resolved ? 'bg-amber-500/20 text-amber-500 border-amber-500/40 shadow-amber-500/10' :
+                            'bg-emerald-500/20 text-emerald-500 border-emerald-500/40 shadow-emerald-500/10'
                         }`}>
-                        {!event.status.recognised ? 'Pending' :
-                            !event.status.resolved ? 'Recognised' :
-                                'Resolved'}
+                        {!event.status.recognised ? 'CRITICAL PENDING' :
+                            !event.status.resolved ? 'IN-ACK' :
+                                'PROTOCOL SECURED'}
                     </span>
                 </div>
 
                 <div className="space-y-4">
                     {/* Location & Map Card */}
-                    <div className="glass-card p-5 rounded-[2rem] border border-white/60 shadow-xl relative overflow-hidden">
-                        <div className="flex items-center gap-4 mb-4 relative z-10">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20">
-                                <MapPin className="w-6 h-6 text-indigo-600" />
+                    <div className="glass-card bg-black/40 p-6 rounded-[3rem] border border-white/5 shadow-2xl relative overflow-hidden">
+                        <div className="flex items-center gap-5 mb-8 relative z-10">
+                            <div className="w-14 h-14 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center shrink-0 border border-[#D4AF37]/20 shadow-inner">
+                                <MapPin className="w-7 h-7 text-[#D4AF37]" strokeWidth={3} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Location</p>
-                                <p className="text-sm font-bold text-slate-800 truncate leading-tight">
-                                    Hostel {event.hostelId || event.hostel} • Room {event.roomNo || event.roomNumber}
+                                <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Target Sector</p>
+                                <p className="text-base font-black text-white truncate leading-none drop-shadow-sm font-heading uppercase">
+                                    Hostel {event.hostelId || event.hostel} • Unit {event.roomNo || event.roomNumber}
                                 </p>
-                                <p className="text-xs text-slate-500">(Approximate)</p>
+                                <p className="text-[10px] text-zinc-600 font-bold mt-1 uppercase tracking-widest">Live Presence Intel</p>
                             </div>
                         </div>
 
                         <button
                             onClick={() => navigate(`/warden/map/${event.id}`)}
-                            className="w-full bg-gradient-to-r from-[#FF99AC] via-[#C084FC] to-[#89CFF0] text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-white/20 relative z-10"
+                            className="w-full bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black py-4.5 rounded-[22px] text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-3 border border-white/20 relative z-10"
                         >
-                            <MapPin className="w-4 h-4" />
-                            View Live Map
+                            <MapPin className="w-5 h-5" strokeWidth={3} />
+                            Access Live Intel
                             {liveLocation && (
-                                <span className="animate-pulse w-2 h-2 rounded-full bg-white ml-1"></span>
+                                <span className="animate-pulse w-2 h-2 rounded-full bg-black ml-1"></span>
                             )}
                         </button>
-
-                        {/* Decorative Background Blur */}
-                        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl z-0"></div>
                     </div>
 
                     {/* Time Card */}
-                    <div className="glass-card p-4 rounded-[1.5rem] border border-white/60 shadow-lg flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0 border border-orange-500/20">
-                            <Clock className="w-5 h-5 text-orange-600" />
+                    <div className="glass-card bg-black/40 p-5 rounded-[2rem] border border-white/5 shadow-2xl flex items-center gap-5">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
+                            <Clock className="w-6 h-6 text-amber-500" strokeWidth={3} />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Time Elapsed</p>
-                            <p className="text-sm font-bold text-slate-800">{timeElapsed} minutes ago</p>
+                            <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Time Elapsed</p>
+                            <p className="text-base font-black text-white font-heading uppercase tracking-wide">{timeElapsed} MINUTES AGO</p>
                         </div>
                     </div>
 
                     {/* Emergency Details */}
                     {event.emergencyType && (
-                        <div className="p-4 bg-red-50/50 border border-red-200 rounded-2xl">
-                            <div className="flex items-center gap-2 mb-2">
-                                <AlertTriangle className="w-5 h-5 text-red-600" />
-                                <h3 className="font-bold text-red-700 uppercase text-sm">Emergency Type</h3>
+                        <div className="p-6 bg-red-600/10 border border-red-500/20 rounded-[2.5rem] shadow-inner">
+                            <div className="flex items-center gap-3 mb-4">
+                                <AlertTriangle className="w-6 h-6 text-red-500" strokeWidth={3} />
+                                <h3 className="font-black text-red-500 uppercase text-[10px] tracking-[0.3em]">Critical Intel</h3>
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className={`px-3 py-1 border rounded-lg font-bold uppercase text-xs
-                                    ${event.emergencyType === 'medical' ? 'bg-red-100 text-red-700 border-red-200' :
-                                        event.emergencyType === 'harassment' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                            'bg-slate-100 text-slate-700 border-slate-200'}
+                                <span className={`px-4 py-2 border rounded-xl font-black uppercase text-[9px] tracking-widest
+                                    ${event.emergencyType === 'medical' ? 'bg-red-500/20 text-red-400 border-red-400/30 shadow-red-500/10' :
+                                        event.emergencyType === 'harassment' ? 'bg-purple-500/20 text-purple-400 border-purple-400/30 shadow-purple-500/10' :
+                                            'bg-zinc-800 text-zinc-400 border-zinc-700 shadow-xl'}
                                 `}>
                                     {event.emergencyType}
                                 </span>
                                 {event.triggerMethod && (
-                                    <span className="text-xs text-slate-500 italic">
-                                        Triggered via: {event.triggerMethod.replace('_', ' ')}
+                                    <span className="text-[8px] text-zinc-600 font-black uppercase tracking-[0.2em]">
+                                        VIA: {event.triggerMethod.replace('_', ' ')}
                                     </span>
                                 )}
                             </div>
                             {event.description && (
-                                <p className="text-sm text-slate-600 mt-2 italic">"{event.description}"</p>
+                                <p className="text-sm text-zinc-400 mt-4 italic font-medium leading-relaxed border-l-2 border-red-500/20 pl-4 bg-black/20 p-3 rounded-r-xl">"{event.description}"</p>
                             )}
                         </div>
                     )}
 
                     {/* Assignment & Actions Card */}
-                    <div className="glass-card p-5 rounded-[2rem] border border-white/60 shadow-xl space-y-4">
+                    <div className="glass-card bg-black/40 p-6 rounded-[3rem] border border-white/5 shadow-2xl space-y-6">
                         {event.status.recognised && event.assignedTo && (
-                            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <Shield className="w-8 h-8 text-blue-600 bg-white p-1.5 rounded-lg shadow-sm" />
+                            <div className="p-5 bg-white/5 border border-white/10 rounded-[2rem] flex justify-between items-center shadow-inner">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-[#D4AF37]/10 flex items-center justify-center rounded-2xl border border-[#D4AF37]/20 shadow-2xl">
+                                        <Shield className="w-6 h-6 text-[#D4AF37]" strokeWidth={3} />
+                                    </div>
                                     <div>
-                                        <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">Security</p>
-                                        <p className="text-sm font-bold text-blue-900">{event.assignedTo.name}</p>
+                                        <p className="text-[9px] text-[#D4AF37] font-black uppercase tracking-[0.2em]">Security Lead</p>
+                                        <p className="text-sm font-black text-white font-heading uppercase tracking-wide truncate max-w-[120px]">{event.assignedTo.name}</p>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-3">
                                     <button
                                         onClick={() => handleCall('security', false)}
-                                        className="p-2.5 bg-white border border-blue-100 text-blue-600 rounded-xl active:scale-90 transition-all hover:bg-blue-50 shadow-sm"
+                                        className="p-3 bg-white/5 border border-white/10 text-[#D4AF37] rounded-xl active:scale-90 transition-all hover:bg-white/10 shadow-2xl"
                                         title="Call Security"
                                     >
-                                        <Phone className="w-4 h-4" />
+                                        <Phone className="w-5 h-5" strokeWidth={3} />
                                     </button>
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex justify-between items-center bg-white/40 p-3 rounded-xl border border-white/50">
+                        <div className="flex justify-between items-center bg-white/5 p-5 rounded-[2rem] border border-white/10 shadow-inner">
                             <div>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Call Student</p>
-                                <p className="text-sm font-bold text-slate-800">{event.userName}</p>
+                                <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Student Link</p>
+                                <p className="text-sm font-black text-white font-heading uppercase tracking-wide truncate max-w-[140px]">{event.userName}</p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                                 <button
                                     onClick={() => handleCall('student', false)}
                                     disabled={!event.status.recognised || event.status.resolved}
-                                    className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${(event.status.recognised && !event.status.resolved)
-                                        ? 'bg-secondary/10 text-secondary border-secondary/20 hover:bg-secondary/20'
-                                        : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
+                                    className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all active:scale-95 shadow-2xl ${(event.status.recognised && !event.status.resolved)
+                                        ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_5px_15px_rgba(16,185,129,0.3)]'
+                                        : 'bg-white/5 text-zinc-600 border-white/5 cursor-not-allowed opacity-50'
                                         }`}
                                 >
-                                    <Phone className="w-4 h-4" />
+                                    <Phone className="w-5 h-5" strokeWidth={3} />
                                 </button>
                                 <button
                                     onClick={() => handleCall('student', true)}
                                     disabled={!event.status.recognised || event.status.resolved}
-                                    className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${(event.status.recognised && !event.status.resolved)
-                                        ? 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100'
-                                        : 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed opacity-50'
+                                    className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all active:scale-95 shadow-2xl ${(event.status.recognised && !event.status.resolved)
+                                        ? 'bg-[#D4AF37] text-black border-[#D4AF37]/20 shadow-[0_5px_15px_rgba(212,175,55,0.3)]'
+                                        : 'bg-white/5 text-zinc-600 border-white/5 cursor-not-allowed opacity-50'
                                         }`}
                                 >
-                                    <Video className="w-4 h-4" />
+                                    <Video className="w-5 h-5" strokeWidth={3} />
                                 </button>
                             </div>
                         </div>
 
                         {!event.status.recognised && (
-                            <p className="text-[10px] text-center text-amber-600 font-bold mt-2 bg-amber-50 py-1 rounded-lg border border-amber-100">
-                                🔒 CALLING ENABLED AFTER SECURITY ACKNOWLEDGEMENT
+                            <p className="text-[8px] text-center text-[#D4AF37] font-black tracking-[0.2em] uppercase py-2.5 rounded-xl border border-[#D4AF37]/10 bg-[#D4AF37]/5">
+                                🔒 HQ LOCK: SECURITY ACK-INTEL REQUIRED
                             </p>
                         )}
                     </div>
                 </div>
 
                 {/* Timeline */}
-                <div className="glass-card rounded-[2rem] p-6 border border-white/60 shadow-lg mt-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Clock className="w-5 h-5 text-indigo-600" />
-                        <h3 className="text-lg font-black text-slate-800 tracking-tight">Timeline</h3>
+                <div className="glass-card rounded-[3rem] p-8 border border-white/5 shadow-2xl mt-8 bg-black/40">
+                    <div className="flex items-center gap-4 mb-10">
+                        <div className="w-12 h-12 bg-[#D4AF37]/10 flex items-center justify-center rounded-2xl border border-[#D4AF37]/20 shadow-2xl">
+                            <Clock className="w-6 h-6 text-[#D4AF37]" strokeWidth={3} />
+                        </div>
+                        <h3 className="text-xl font-black text-white tracking-tight font-heading drop-shadow-sm uppercase">Operation Log</h3>
                     </div>
-                    <div className="relative border-l-2 border-indigo-100 ml-2 space-y-6 pl-6 py-2">
-                        {(event.timeline || []).map((entry, idx) => (
-                            <div key={idx} className="relative">
-                                <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 shadow-sm
-                                    ${entry.action.includes('Triggered') ? 'bg-red-500 border-white ring-2 ring-red-100' :
-                                        entry.action.includes('Recognised') ? 'bg-blue-500 border-white ring-2 ring-blue-100' :
-                                            entry.action.includes('Resolved') ? 'bg-green-500 border-white ring-2 ring-green-100' :
-                                                'bg-slate-200 border-white'}
-                                `}></div>
-                                <div className="flex flex-col gap-1">
-                                    <p className="font-bold text-slate-800 text-sm">{entry.action}</p>
-                                    {entry.note && <p className="text-xs text-slate-500">{entry.note}</p>}
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        {new Date(entry.time).toLocaleString()}
-                                    </span>
+
+                    <div className="space-y-10 relative">
+                        <div className="absolute left-[23px] top-2 bottom-2 w-px bg-white/5" />
+
+                        {[...(event.timeline || [])].reverse().map((log, index) => (
+                            <div key={index} className="flex gap-8 relative">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 z-10 border shadow-2xl 
+                                    ${index === 0 ? 'bg-[#D4AF37] border-[#D4AF37]/20 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-black/60 border-white/10'}`}>
+                                    <div className={`w-2.5 h-2.5 rounded-full ${index === 0 ? 'bg-black animate-pulse' : 'bg-[#D4AF37]/40'}`} />
+                                </div>
+                                <div className="flex-1 pb-2">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <p className="font-black text-white text-sm leading-tight font-heading drop-shadow-sm uppercase tracking-wider">{log.action}</p>
+                                        <span className="text-[9px] font-black text-[#D4AF37]/60 uppercase tracking-[0.2em] font-mono bg-[#D4AF37]/5 px-3 py-1 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
+                                            {new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-zinc-500 font-medium italic opacity-80 leading-relaxed pl-1">{log.note || 'PROTOCOL SYSTEM LOG'}</p>
                                 </div>
                             </div>
                         ))}
@@ -309,9 +314,9 @@ export default function WardenSOSDetail() {
                 </div>
 
                 {/* View Only Notice */}
-                <div className="glass-card rounded-xl p-4 bg-blue-50/30 border border-blue-100/50 mt-4">
-                    <p className="text-xs text-blue-700 text-center font-medium">
-                        <strong>Read Only:</strong> Only Security personnel can resolve this event.
+                <div className="glass-card rounded-2xl p-5 border border-[#D4AF37]/10 bg-[#D4AF37]/5 mt-8 mb-4">
+                    <p className="text-[10px] text-[#D4AF37] text-center font-black uppercase tracking-[0.2em] opacity-80">
+                        READ-ONLY PROTOCOL ACTIVE • AUTHORIZED PERSONNEL ONLY
                     </p>
                 </div>
             </motion.main>
