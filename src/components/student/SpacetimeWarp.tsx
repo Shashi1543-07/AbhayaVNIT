@@ -6,7 +6,7 @@ interface SpacetimeGridProps {
     progress: number;
 }
 
-const SpacetimeGrid = ({ progress }: SpacetimeGridProps) => {
+const SpacetimeGrid = ({ progress: _progress }: SpacetimeGridProps) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const materialRef = useRef<THREE.ShaderMaterial>(null);
 
@@ -100,7 +100,7 @@ const SpacetimeGrid = ({ progress }: SpacetimeGridProps) => {
     );
 };
 
-export default function SpacetimeWarp({ progress = 0 }: { progress?: number }) {
+export default function SpacetimeWarp({ progress: _progress = 0 }: { progress?: number }) {
     return (
         <div className="w-full h-full pointer-events-none">
             <Canvas
@@ -112,7 +112,7 @@ export default function SpacetimeWarp({ progress = 0 }: { progress?: number }) {
                 }}
                 gl={{ antialias: true, alpha: true }}
             >
-                <SpacetimeGrid progress={progress} />
+                <SpacetimeGrid progress={_progress} />
             </Canvas>
         </div>
     );
