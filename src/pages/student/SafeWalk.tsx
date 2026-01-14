@@ -3,28 +3,68 @@ import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkService';
+import { mapService, type LocationData } from '../../services/mapService';
+import EventDetailMap from '../../components/map/EventDetailMap';
 import { useAuthStore } from '../../context/authStore';
 import { MapPin, Clock, Shield, Navigation, AlertCircle, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { containerStagger, cardVariant, buttonGlow } from '../../lib/animations';
 
 const CAMPUS_LOCATIONS = [
+    // --- GATES ---
     { name: 'Main Gate (South Ambazari Rd)', lat: 21.1262, lng: 79.0511, category: 'Gates' },
     { name: 'Bajaj Nagar Gate', lat: 21.1285, lng: 79.0560, category: 'Gates' },
     { name: 'Yashwant Nagar Gate', lat: 21.1240, lng: 79.0470, category: 'Gates' },
-    { name: 'Kalpana Chawla Hall (GIRLS)', lat: 21.1255, lng: 79.0495, category: 'Hostels' },
-    { name: 'New GIRLS Hostel', lat: 21.1258, lng: 79.0498, category: 'Hostels' },
-    { name: 'Hostel Block 1-10 (BOYS)', lat: 21.1230, lng: 79.0530, category: 'Hostels' },
-    { name: 'Mega Mess', lat: 21.1240, lng: 79.0535, category: 'Dining' },
+
+    // --- DEPARTMENTS ---
     { name: 'Computer Science Dept', lat: 21.1270, lng: 79.0505, category: 'Departments' },
     { name: 'Mechanical Dept', lat: 21.1275, lng: 79.0510, category: 'Departments' },
-    { name: 'Electronics Dept', lat: 21.1268, lng: 79.0515, category: 'Departments' },
-    { name: 'Architecture Dept', lat: 21.1272, lng: 79.0490, category: 'Departments' },
+    { name: 'Electronics & Comm. Dept', lat: 21.1268, lng: 79.0515, category: 'Departments' },
+    { name: 'Electrical Engineering Dept', lat: 21.1265, lng: 79.0525, category: 'Departments' },
+    { name: 'Civil Engineering Dept', lat: 21.1280, lng: 79.0530, category: 'Departments' },
+    { name: 'Chemical Engineering Dept', lat: 21.1285, lng: 79.0520, category: 'Departments' },
+    { name: 'Architecture & Planning Dept', lat: 21.1272, lng: 79.0490, category: 'Departments' },
+    { name: 'Metallurgy & Materials Dept', lat: 21.1290, lng: 79.0510, category: 'Departments' },
+    { name: 'Mining Engineering Dept', lat: 21.1295, lng: 79.0500, category: 'Departments' },
+    { name: 'Applied Mechanics Dept', lat: 21.1260, lng: 79.0535, category: 'Departments' },
+    { name: 'Physics Department', lat: 21.1255, lng: 79.0520, category: 'Departments' },
+    { name: 'Chemistry Department', lat: 21.1258, lng: 79.0522, category: 'Departments' },
+    { name: 'Mathematics Department', lat: 21.1252, lng: 79.0518, category: 'Departments' },
+    { name: 'Humanities & Social Sciences', lat: 21.1250, lng: 79.0515, category: 'Departments' },
+
+    // --- HOSTELS (GIRLS) ---
+    { name: 'GH-1 (Kalpana Chawla Hall)', lat: 21.1255, lng: 79.0495, category: 'G-Hostels' },
+    { name: 'GH-2 (Dr. Anandi Joshi Hall)', lat: 21.1258, lng: 79.0498, category: 'G-Hostels' },
+    { name: 'New GIRLS Hostel (A Block)', lat: 21.1259, lng: 79.0500, category: 'G-Hostels' },
+
+    // --- HOSTELS (BOYS) ---
+    { name: 'HB-1 (Aryabhatta)', lat: 21.1230, lng: 79.0530, category: 'B-Hostels' },
+    { name: 'HB-2 (Ramanujan)', lat: 21.1225, lng: 79.0535, category: 'B-Hostels' },
+    { name: 'HB-3 (Swaminathan)', lat: 21.1220, lng: 79.0540, category: 'B-Hostels' },
+    { name: 'HB-4 (Bhide Hall)', lat: 21.1215, lng: 79.0545, category: 'B-Hostels' },
+    { name: 'HB-5 (Kalam Hall)', lat: 21.1210, lng: 79.0550, category: 'B-Hostels' },
+    { name: 'HB-6 (C.V. Raman)', lat: 21.1205, lng: 79.0555, category: 'B-Hostels' },
+    { name: 'HB-7 (Homi Bhabha)', lat: 21.1200, lng: 79.0560, category: 'B-Hostels' },
+    { name: 'HB-8 (J.C. Bose)', lat: 21.1195, lng: 79.0565, category: 'B-Hostels' },
+    { name: 'HB-9 (Meghnad Saha)', lat: 21.1190, lng: 79.0570, category: 'B-Hostels' },
+    { name: 'HB-10 (Sarabhai)', lat: 21.1185, lng: 79.0575, category: 'B-Hostels' },
+
+    // --- ADMINISTRATIVE & SERVICES ---
     { name: 'Administrative Building', lat: 21.1260, lng: 79.0520, category: 'Admin' },
-    { name: 'Library', lat: 21.1265, lng: 79.0518, category: 'Admin' },
+    { name: 'New Academic Building', lat: 21.1265, lng: 79.0510, category: 'Admin' },
+    { name: 'Classroom Complex (CRC)', lat: 21.1270, lng: 79.0520, category: 'Academic' },
+    { name: 'Library (Central)', lat: 21.1265, lng: 79.0518, category: 'Admin' },
+    { name: 'Computer Center', lat: 21.1268, lng: 79.0512, category: 'Academic' },
+    { name: 'Health Center', lat: 21.1250, lng: 79.0540, category: 'Other' },
+    { name: 'Post Office', lat: 21.1255, lng: 79.0545, category: 'Other' },
+    { name: 'Auditorium', lat: 21.1262, lng: 79.0530, category: 'Other' },
+
+    // --- DINING & SPORTS ---
+    { name: 'Mega Mess', lat: 21.1240, lng: 79.0535, category: 'Dining' },
+    { name: 'Canteen (Academic)', lat: 21.1272, lng: 79.0525, category: 'Dining' },
     { name: 'Sports Complex (Gymkhana)', lat: 21.1245, lng: 79.0500, category: 'Sports' },
     { name: 'Cricket Ground', lat: 21.1235, lng: 79.0490, category: 'Sports' },
-    { name: 'VNIT Health Center', lat: 21.1250, lng: 79.0540, category: 'Other' },
+    { name: 'Swimming Pool', lat: 21.1242, lng: 79.0505, category: 'Sports' },
 ];
 
 export default function SafeWalk() {
@@ -41,6 +81,7 @@ export default function SafeWalk() {
     const [showNoMovementPopup, setShowNoMovementPopup] = useState(false);
     const [showDelayPopup, setShowDelayPopup] = useState(false);
     const [remainingTime, setRemainingTime] = useState(0);
+    const [liveLocation, setLiveLocation] = useState<LocationData | null>(null);
 
     const watchIdRef = useRef<number | null>(null);
     const lastLocationRef = useRef<{ lat: number; lng: number; timestamp: number } | null>(null);
@@ -67,6 +108,22 @@ export default function SafeWalk() {
         };
     }, [user]);
 
+    // 2. Subscribe to live location when walk is active
+    useEffect(() => {
+        if (!user || !activeSession) {
+            setLiveLocation(null);
+            return;
+        }
+
+        const unsubscribe = mapService.subscribeToSingleLocation(user.uid, (location) => {
+            if (location) {
+                setLiveLocation(location);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [user, activeSession]);
+
     // Local Location Watch for "No Movement" and "SOS Calibration"
     // Note: RTDB updates are handled by the global LiveTrackingManager
     const startLocalMonitoring = () => {
@@ -87,7 +144,7 @@ export default function SafeWalk() {
                     }
                 },
                 (error) => console.error('Local GPS error:', error),
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
     };
@@ -225,7 +282,7 @@ export default function SafeWalk() {
             <TopHeader title="Safe Walk" showBackButton={true} />
 
             <motion.main
-                className="px-6 pt-nav-safe pb-nav-safe space-y-6 max-w-[480px] mx-auto"
+                className="px-4 pt-nav-safe pb-nav-safe space-y-6 max-w-[500px] mx-auto"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
@@ -267,242 +324,255 @@ export default function SafeWalk() {
                     )}
                 </AnimatePresence>
 
-                {/* Main Card */}
-                <motion.div variants={cardVariant} className="glass p-8 rounded-[3rem] relative overflow-hidden border border-white/5 shadow-2xl">
-                    <div className={`absolute top-0 left-0 w-full h-2 ${activeSession ? (activeSession.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500') : 'bg-[#D4AF37]'
-                        }`} />
+                {/* Header Information Pod */}
+                <motion.div variants={cardVariant} className="glass p-6 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[#D4AF37]/10 transition-all duration-700" />
 
-                    <div className="flex justify-between items-start mb-8">
-                        <div className="w-16 h-16 bg-white/5 backdrop-blur-3xl rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl text-[#D4AF37]">
-                            <Navigation className="w-8 h-8" strokeWidth={3} />
+                    <div className="flex items-center gap-5 mb-4">
+                        <div className="w-14 h-14 bg-gradient-to-br from-black/40 to-black/20 backdrop-blur-3xl rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl text-[#D4AF37] group-hover:scale-110 transition-transform duration-500">
+                            <Navigation className="w-7 h-7" strokeWidth={2.5} />
                         </div>
-                        {activeSession && (
-                            <div className="bg-black/40 backdrop-blur-3xl px-6 py-3 rounded-2xl border border-white/5 shadow-inner">
-                                <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] text-center mb-0.5">Remaining</p>
-                                <p className="text-2xl font-black text-[#D4AF37] font-mono tracking-tighter drop-shadow-sm">{formatTime(remainingTime)}</p>
-                            </div>
-                        )}
+                        <div>
+                            <h2 className="text-2xl font-black text-white tracking-tight font-heading leading-tight">
+                                {activeSession ? 'Tracking Live' : 'Deployment'}
+                            </h2>
+                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em]">Safe Walk Protocol v2.5</p>
+                        </div>
                     </div>
 
-                    <h2 className="text-3xl font-black text-white mb-3 tracking-tight font-heading drop-shadow-sm">
-                        {activeSession ? 'Tracking Live' : 'Safe Walk'}
-                    </h2>
-                    <p className="text-sm text-zinc-500 font-bold mb-10 leading-relaxed opacity-80">
+                    <p className="text-sm text-zinc-400 font-medium leading-relaxed">
                         {activeSession
-                            ? 'Your location is shared with security and hostel wardens for official oversight.'
-                            : 'Deploy real-time safety tracking for your walk back across campus.'}
+                            ? 'Your movements are being monitored by VNIT Security HQ and your Hostel Warden.'
+                            : 'Initialize a secure tracking session for your cross-campus movement.'}
                     </p>
+                </motion.div>
 
-                    <AnimatePresence mode="wait">
-                        {activeSession ? (
-                            <motion.div key="active" className="space-y-8">
-                                <div className="bg-black/40 backdrop-blur-3xl p-6 rounded-[2.5rem] text-left border border-white/5 shadow-inner">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="p-3 bg-[#D4AF37]/10 rounded-2xl border border-[#D4AF37]/20">
-                                            <MapPin className="w-6 h-6 text-[#D4AF37]" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Destination Intel</p>
-                                            <p className="text-lg font-black text-white tracking-tight leading-tight">{activeSession.destination.name}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
-                                            <Clock className="w-6 h-6 text-[#D4AF37]" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Signal Status</p>
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-3 h-3 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)] ${activeSession.status === 'active' ? 'bg-emerald-500' :
-                                                    activeSession.status === 'paused' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
-                                                    }`} />
-                                                <p className="text-lg font-black capitalize text-white tracking-tighter">{activeSession.status}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Security Communications */}
-                                    {activeSession.timeline && activeSession.timeline.some(e => e.type === 'message') && (
-                                        <div className="pt-6 mt-6 border-t border-white/5">
-                                            <div className="flex items-center gap-2 mb-4 ml-1">
-                                                <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
-                                                <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Security Guidance</p>
-                                            </div>
-                                            <div className="space-y-4">
-                                                {activeSession.timeline
-                                                    .filter(e => e.type === 'message')
-                                                    .slice(-3)
-                                                    .map((msg, idx) => (
-                                                        <motion.div
-                                                            key={idx}
-                                                            initial={{ x: -10, opacity: 0 }}
-                                                            animate={{ x: 0, opacity: 1 }}
-                                                            transition={{ delay: idx * 0.1 }}
-                                                            className="p-5 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black rounded-[24px] shadow-2xl border border-white/20"
-                                                        >
-                                                            <p className="text-sm font-black leading-tight italic drop-shadow-sm">
-                                                                "{msg.details.split(': ')[1] || msg.details}"
-                                                            </p>
-                                                            <div className="flex justify-between items-center mt-3 opacity-60">
-                                                                <p className="text-[8px] font-black uppercase tracking-widest">Protocol Intel</p>
-                                                                <p className="text-[8px] font-black uppercase font-mono">
-                                                                    {msg.timestamp ? (typeof msg.timestamp === 'string' ? msg.timestamp.split('T')[1].split('.')[0] : new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : 'Now'}
-                                                                </p>
-                                                            </div>
-                                                        </motion.div>
-                                                    ))
-                                                }
-                                            </div>
-                                        </div>
-                                    )}
+                <AnimatePresence mode="wait">
+                    {activeSession ? (
+                        <motion.div
+                            key="active"
+                            className="space-y-6"
+                            initial="hidden"
+                            animate="visible"
+                            variants={containerStagger}
+                        >
+                            {/* Mission Clock Pod */}
+                            <motion.div variants={cardVariant} className="glass p-6 rounded-[2.5rem] border border-white/5 flex items-center justify-between shadow-xl">
+                                <div>
+                                    <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Mission Clock</p>
+                                    <p className="text-4xl font-black text-white font-mono tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+                                        {formatTime(remainingTime)}
+                                    </p>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-4 pt-6">
-                                    <button
-                                        onClick={handleEndWalk}
-                                        className="py-5 bg-emerald-500 text-black font-black uppercase tracking-widest text-[11px] rounded-[24px] shadow-2xl active:scale-95 transition-all border border-emerald-400/20"
-                                    >
-                                        ARRIVED
-                                    </button>
-                                    <button
-                                        onClick={handleSOS}
-                                        className="py-5 bg-red-600 text-white font-black uppercase tracking-widest text-[11px] rounded-[24px] shadow-2xl active:scale-95 transition-all border border-red-500/30"
-                                    >
-                                        SOS
-                                    </button>
+                                <div className="text-right">
+                                    <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1">Status</p>
+                                    <div className="flex items-center gap-2 justify-end">
+                                        <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)] ${activeSession.status === 'active' ? 'bg-emerald-500' :
+                                            activeSession.status === 'paused' ? 'bg-amber-500' : 'bg-red-500'
+                                            }`} />
+                                        <p className="text-sm font-black text-white uppercase tracking-wider">{activeSession.status}</p>
+                                    </div>
                                 </div>
                             </motion.div>
-                        ) : (
-                            <motion.div key="setup" className="space-y-6">
-                                <div className="space-y-4">
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Destination Search</label>
-                                    <div className="relative group">
-                                        <input
-                                            type="text"
-                                            placeholder="Search Hall, Dept, Mess..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full px-5 py-4 pl-12 rounded-[22px] bg-black/40 backdrop-blur-3xl border border-white/10 focus:ring-2 focus:ring-[#D4AF37]/30 outline-none font-bold text-white transition-all shadow-inner placeholder:text-zinc-700"
-                                        />
-                                        <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#D4AF37]" strokeWidth={3} />
-                                    </div>
 
-                                    <div className="max-h-[220px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-                                        {CAMPUS_LOCATIONS
-                                            .filter(loc =>
-                                                loc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                                loc.category.toLowerCase().includes(searchQuery.toLowerCase())
-                                            )
-                                            .map((loc) => (
-                                                <button
-                                                    key={loc.name}
-                                                    onClick={() => {
-                                                        setDestination(loc.name);
-                                                        setSearchQuery(loc.name);
-                                                        setCustomDestination('');
-                                                    }}
-                                                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${destination === loc.name
-                                                        ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.1)]'
-                                                        : 'bg-white/5 border-white/10 hover:bg-white/10'
-                                                        }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-1.5 rounded-lg ${loc.category === 'Hostels' ? 'bg-[#D4AF37]/10 text-[#D4AF37]' :
-                                                            loc.category === 'Departments' ? 'bg-blue-600/10 text-blue-400' :
-                                                                'bg-white/5 text-zinc-400'
-                                                            }`}>
-                                                            <MapPin className="w-4 h-4" />
-                                                        </div>
-                                                        <div className="text-left">
-                                                            <p className="text-sm font-black text-white font-heading">{loc.name}</p>
-                                                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">{loc.category}</p>
-                                                        </div>
-                                                    </div>
-                                                    {destination === loc.name && <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.6)]" />}
-                                                </button>
+                            {/* Destination Detail Pod */}
+                            <motion.div variants={cardVariant} className="glass p-6 rounded-[2.5rem] border border-white/5 space-y-5">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                                        <MapPin className="w-5 h-5 text-[#D4AF37]" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Target Location</p>
+                                        <p className="text-lg font-black text-white tracking-tight">{activeSession.destination.name}</p>
+                                    </div>
+                                </div>
+
+                                {activeSession.timeline && activeSession.timeline.some(e => e.type === 'message') && (
+                                    <div className="pt-5 border-t border-white/5 space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
+                                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">HQ Communications</p>
+                                        </div>
+                                        {activeSession.timeline
+                                            .filter(e => e.type === 'message')
+                                            .slice(-2)
+                                            .map((msg, idx) => (
+                                                <div key={idx} className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                    <p className="text-sm text-zinc-300 font-medium italic">"{msg.details.split(': ')[1] || msg.details}"</p>
+                                                </div>
                                             ))
                                         }
                                     </div>
+                                )}
+                            </motion.div>
 
-                                    <div className="relative pt-2">
-                                        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                                            <div className="w-full border-t border-slate-200/50"></div>
-                                        </div>
-                                        <div className="relative flex justify-center">
-                                            <span className="bg-black px-3 text-[10px] font-black text-zinc-600 uppercase tracking-widest">Or Custom</span>
-                                        </div>
+                            {/* Tactical Intel Map Pod */}
+                            <motion.div variants={cardVariant} className="glass rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl h-[300px] relative">
+                                <EventDetailMap
+                                    userName={profile?.name || user?.displayName || 'Student'}
+                                    eventType="SAFEWALK"
+                                    location={liveLocation}
+                                    destination={{
+                                        lat: activeSession.destination.lat,
+                                        lng: activeSession.destination.lng
+                                    }}
+                                />
+                                <div className="absolute top-4 left-4 z-[30]">
+                                    <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse" />
+                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Tactical Intel</span>
                                     </div>
+                                </div>
+                            </motion.div>
 
+                            {/* Action Matrix */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={handleEndWalk}
+                                    className="py-5 bg-emerald-500 text-black font-black uppercase tracking-widest text-[11px] rounded-[24px] shadow-2xl active:scale-95 transition-all border border-emerald-400/20"
+                                >
+                                    MISSION COMPLETE
+                                </button>
+                                <button
+                                    onClick={handleSOS}
+                                    className="py-5 bg-red-600 text-white font-black uppercase tracking-widest text-[11px] rounded-[24px] shadow-2xl active:scale-95 transition-all border border-red-500/30"
+                                >
+                                    ABORT/SOS
+                                </button>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="setup"
+                            className="space-y-6"
+                            initial="hidden"
+                            animate="visible"
+                            variants={containerStagger}
+                        >
+                            {/* Destination Pod */}
+                            <motion.div variants={cardVariant} className="glass p-6 rounded-[2.5rem] border border-white/5 space-y-4">
+                                <div className="flex items-center justify-between px-2">
+                                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Select Target</p>
+                                    <Navigation className="w-4 h-4 text-[#D4AF37]/40" />
+                                </div>
+
+                                <div className="relative group">
                                     <input
                                         type="text"
-                                        placeholder="Manual Target Sector Entry..."
-                                        value={customDestination}
-                                        onChange={(e) => { setCustomDestination(e.target.value); if (e.target.value) setDestination(''); }}
-                                        className="w-full px-5 py-4 rounded-[22px] bg-black/40 backdrop-blur-3xl border border-white/10 focus:ring-2 focus:ring-[#D4AF37]/30 outline-none font-bold text-white transition-all shadow-inner placeholder:text-zinc-700"
+                                        placeholder="Search locations..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full px-5 py-4 pl-12 rounded-[22px] bg-black/40 border border-white/10 focus:border-[#D4AF37]/50 focus:ring-4 focus:ring-[#D4AF37]/5 outline-none font-bold text-white transition-all shadow-inner placeholder:text-zinc-700"
                                     />
+                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#D4AF37]" strokeWidth={2.5} />
                                 </div>
 
-                                <div className="space-y-5 pt-2">
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Walk Duration</span>
-                                        <span className="text-sm font-black text-[#D4AF37] bg-[#D4AF37]/10 px-3 py-1 rounded-xl border border-[#D4AF37]/20">{duration} mins</span>
+                                <div className="max-h-[180px] overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+                                    {CAMPUS_LOCATIONS
+                                        .filter(loc => loc.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                        .map((loc) => (
+                                            <button
+                                                key={loc.name}
+                                                onClick={() => { setDestination(loc.name); setSearchQuery(loc.name); setCustomDestination(''); }}
+                                                className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${destination === loc.name
+                                                    ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40 text-white'
+                                                    : 'bg-white/5 border-transparent text-zinc-500 hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                <span className="text-sm font-black tracking-tight">{loc.name}</span>
+                                                {destination === loc.name && <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_10px_#D4AF37]" />}
+                                            </button>
+                                        ))
+                                    }
+                                </div>
+                            </motion.div>
+
+                            {/* Advanced Timing Matrix Pod */}
+                            <motion.div variants={cardVariant} className="glass p-6 rounded-[2.5rem] border border-white/5 space-y-6 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-[#D4AF37]/5 rounded-full blur-2xl -mr-12 -mt-12 transition-all duration-1000 group-hover:bg-[#D4AF37]/10" />
+
+                                <div className="flex items-center justify-between px-2 relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-[#D4AF37]" />
+                                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Mission Duration</p>
                                     </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-2xl font-black text-[#D4AF37] font-mono tracking-tighter drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">{duration}</span>
+                                        <span className="text-[10px] font-black text-zinc-500 uppercase">min</span>
+                                    </div>
+                                </div>
+
+                                {/* Precision Scrubber */}
+                                <div className="px-2 space-y-3 relative z-10">
                                     <input
-                                        type="range" min="5" max="30" step="5"
+                                        type="range"
+                                        min="1"
+                                        max="60"
+                                        step="1"
                                         value={duration}
                                         onChange={(e) => setDuration(Number(e.target.value))}
-                                        className="w-full h-2.5 bg-white/5 rounded-full appearance-none accent-[#D4AF37] cursor-pointer border border-white/5 shadow-inner"
+                                        className="w-full h-1.5 bg-white/5 rounded-full appearance-none accent-[#D4AF37] cursor-pointer border border-white/5 shadow-inner"
                                     />
                                     <div className="flex justify-between px-1">
-                                        <span className="text-[9px] text-zinc-600 font-black">5M</span>
-                                        <span className="text-[9px] text-zinc-600 font-black">15M</span>
-                                        <span className="text-[9px] text-zinc-600 font-black">30M</span>
+                                        <span className="text-[8px] text-zinc-600 font-black uppercase tracking-tighter">01m</span>
+                                        <span className="text-[8px] text-zinc-600 font-black uppercase tracking-tighter">predefined presets below</span>
+                                        <span className="text-[8px] text-zinc-600 font-black uppercase tracking-tighter">60m</span>
                                     </div>
                                 </div>
 
+                                {/* Quick Presets Horziontal Scroll */}
+                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar-hide px-2 relative z-10">
+                                    {[5, 10, 15, 20, 30, 45, 60].map((time) => (
+                                        <button
+                                            key={time}
+                                            onClick={() => setDuration(time)}
+                                            className={`flex-shrink-0 px-6 py-3 rounded-xl border transition-all duration-300 ${duration === time
+                                                ? 'bg-[#D4AF37] border-[#D4AF37] text-black shadow-[0_5px_15px_rgba(212,175,55,0.3)] scale-105'
+                                                : 'bg-white/5 border-white/5 text-zinc-500 hover:border-white/10'
+                                                }`}
+                                        >
+                                            <span className="text-xs font-black">{time}m</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+
+                            {/* Note Matrix */}
+                            <motion.div variants={cardVariant} className="glass p-6 rounded-[2.5rem] border border-white/5">
                                 <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Add an optional note..."
-                                    className="w-full p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 focus:ring-2 focus:ring-[#D4AF37]/30 outline-none text-sm font-black text-white transition-all resize-none h-28 shadow-inner placeholder:text-zinc-700"
+                                    placeholder="Add tactical note (optional)..."
+                                    className="w-full p-4 rounded-2xl bg-black/20 border border-white/5 focus:border-[#D4AF37]/30 outline-none text-sm font-bold text-white transition-all resize-none h-24 placeholder:text-zinc-700"
                                 />
-
-                                <motion.button
-                                    variants={buttonGlow}
-                                    animate="animate"
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={handleStartWalk}
-                                    disabled={loading || (!destination && !customDestination)}
-                                    className="w-full py-4.5 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black font-black uppercase tracking-[0.2em] text-[11px] rounded-[24px] shadow-[0_10px_40px_rgba(212,175,55,0.2)] hover:opacity-90 transition-all border border-white/20 mt-8 disabled:opacity-50"
-                                >
-                                    {loading ? 'CALIBRATING...' : 'ESTABLISH SAFE WALK'}
-                                </motion.button>
                             </motion.div>
-                        )}
-                    </AnimatePresence>
-                </motion.div>
 
-                {/* Features Info - Glassy Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="glass p-6 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center shadow-2xl">
-                        <div className="p-4 bg-[#D4AF37]/10 rounded-2xl mb-4 border border-[#D4AF37]/10">
-                            <Shield className="w-8 h-8 text-[#D4AF37]" strokeWidth={3} />
-                        </div>
-                        <h4 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Monitored</h4>
-                        <p className="text-[10px] text-zinc-500 font-black opacity-60">HQ Synced</p>
-                    </div>
-                    <div className="glass p-6 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center shadow-2xl">
-                        <div className="p-4 bg-[#D4AF37]/10 rounded-2xl mb-4 border border-[#D4AF37]/10">
-                            <Navigation className="w-8 h-8 text-[#D4AF37]" strokeWidth={3} />
-                        </div>
-                        <h4 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Live G-POS</h4>
-                        <p className="text-[10px] text-zinc-500 font-black opacity-60">Active Tracking</p>
-                    </div>
-                </div>
-            </motion.main>
+                            <motion.button
+                                variants={buttonGlow}
+                                animate="animate"
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleStartWalk}
+                                disabled={loading || (!destination && !customDestination)}
+                                className="w-full py-5 bg-gradient-to-br from-[#D4AF37] via-[#B8962D] to-[#8B6E13] text-black font-black uppercase tracking-[0.3em] text-[11px] rounded-[24px] shadow-[0_15px_40px_rgba(212,175,55,0.25)] hover:shadow-[0_20px_50px_rgba(212,175,55,0.35)] transition-all border border-white/20 disabled:opacity-30 flex items-center justify-center gap-3"
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                        <span>Calibrating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Shield className="w-4 h-4" strokeWidth={3} />
+                                        <span>Deploy Protocol</span>
+                                    </>
+                                )}
+                            </motion.button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.main >
 
             <BottomNav />
-        </MobileWrapper>
+        </MobileWrapper >
     );
 }

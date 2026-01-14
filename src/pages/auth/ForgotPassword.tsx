@@ -41,33 +41,34 @@ const ForgotPassword = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
-            {/* Tactical Operational Background */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none">
-                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,#D4AF37_0%,transparent_70%)] opacity-20" />
-            </div>
+            {/* Decorative Background Mesh - Royal Gold Style */}
+            <div className="absolute top-[-20%] left-[-20%] w-[150%] h-[150%] bg-[radial-gradient(circle_at_50%_50%,#1a1a1a_0%,#000000_100%)] opacity-100"></div>
+            <div className="absolute top-[10%] left-[10%] w-[400px] h-[400px] bg-[#CF9E1B]/10 rounded-full blur-[120px] animate-pulse"></div>
+            <div className="absolute bottom-[10%] right-[10%] w-[300px] h-[300px] bg-[#D4AF37]/5 rounded-full blur-[100px] animate-pulse-slow"></div>
 
-
-            <div className="p-8 glass rounded-[3rem] border border-white/5 shadow-2xl w-full max-w-md relative z-10 pt-16 bg-black/40">
+            <div className="p-8 glass w-full max-w-md relative z-10 pt-20 rounded-[40px] border border-white/5 shadow-2xl">
                 <Link
                     to="/"
-                    className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-500 transition-all text-xs font-black border border-white/10 active:scale-95 shadow-sm uppercase tracking-widest"
+                    className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 hover:bg-white/10 text-[#D4AF37] transition-all text-[10px] font-black uppercase tracking-widest border border-white/10 active:scale-95 shadow-xl backdrop-blur-md"
                 >
                     <Home className="w-3.5 h-3.5" strokeWidth={3} />
                     Back to Home
                 </Link>
-                <h2 className="text-2xl font-black mb-2 text-center text-white font-heading uppercase tracking-tight">
-                    Reset your password
+
+                <h2 className="text-3xl font-black mb-2 text-center text-[#D4AF37] font-heading tracking-tight drop-shadow-md uppercase">
+                    RESET <span className="text-white">PASSWORD</span>
                 </h2>
-                <p className="text-center text-sm text-zinc-500 font-bold mb-6 opacity-60">
+                <p className="text-center text-sm text-zinc-500 font-bold mb-8 opacity-60">
                     Enter your institute email address and we'll send you a link to reset your password.
                 </p>
+
                 <form className="space-y-6" onSubmit={handleSubmit}>
                     <div>
-                        <label htmlFor="email" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">
-                            Email address
+                        <label htmlFor="email" className="block text-[10px] font-black text-[#D4AF37] mb-2 uppercase tracking-[0.2em] ml-1">
+                            Email Terminal
                         </label>
                         <div className="mt-1 relative rounded-md shadow-sm">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                 <Mail className="h-5 w-5 text-zinc-600" strokeWidth={3} />
                             </div>
                             <input
@@ -78,14 +79,14 @@ const ForgotPassword = () => {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/10 rounded-2xl text-white placeholder:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 transition-all font-bold text-sm"
+                                className="w-full pl-12 pr-5 py-4 bg-black/40 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 placeholder:text-zinc-700 font-bold transition-all shadow-inner text-sm"
                                 placeholder="student@students.vnit.ac.in"
                             />
                         </div>
                     </div>
 
                     {message && (
-                        <div className={`rounded-lg p-4 ${message.type === 'success' ? 'bg-success/10 border border-success/30' : 'bg-emergency-pulse border border-emergency/30'}`}>
+                        <div className={`rounded-xl p-4 ${message.type === 'success' ? 'bg-success/10 border border-success/30' : 'bg-emergency-pulse border border-emergency/30'}`}>
                             <div className="flex">
                                 <div className="flex-shrink-0">
                                     {message.type === 'success' ? (
@@ -107,7 +108,7 @@ const ForgotPassword = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black py-4 rounded-2xl hover:opacity-95 shadow-xl transition-all font-black uppercase tracking-[0.2em] text-[11px] disabled:opacity-50 border border-white/10"
+                            className="w-full bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black py-4.5 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-[0_10px_30px_rgba(212,175,55,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 border border-white/20"
                         >
                             {loading ? 'Transmitting...' : 'Send Reset Link'}
                         </button>
@@ -117,11 +118,16 @@ const ForgotPassword = () => {
                 <div className="mt-4">
                     <Link
                         to="/login"
-                        className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-white/5 hover:bg-white/10 text-[#D4AF37] transition-all text-sm font-black rounded-2xl border border-white/10 uppercase tracking-widest text-[10px]"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-white/5 hover:bg-white/10 text-[#D4AF37] transition-all text-[10px] font-black rounded-2xl border border-white/10 uppercase tracking-widest active:scale-95 shadow-xl backdrop-blur-md"
                     >
                         <ArrowLeft className="w-4 h-4" strokeWidth={3} />
                         Back to Login
                     </Link>
+                </div>
+
+                <div className="mt-8 p-5 bg-white/5 border border-white/5 text-zinc-500 text-xs rounded-2xl backdrop-blur-md">
+                    <p className="font-black mb-1 text-[#D4AF37] uppercase tracking-tighter">Security Protocol:</p>
+                    <p className="leading-relaxed opacity-70">Password reset links are valid for 1 hour. Ensure you check your spam folder.</p>
                 </div>
             </div>
         </div>

@@ -37,9 +37,9 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
     };
 
     return (
-        <div className="bg-surface rounded-2xl shadow-sm border border-surface overflow-hidden flex flex-col h-full">
+        <div className="bg-[#0a0a0a] rounded-2xl shadow-2xl border border-[#D4AF37]/10 overflow-hidden flex flex-col h-full">
             {/* Map Section */}
-            <div className="h-64 relative border-b-4 border-surface shadow-sm z-0">
+            <div className="h-64 relative border-b border-[#D4AF37]/10 shadow-sm z-0">
                 <div className="h-full w-full">
                     <EventDetailMap
                         userName={event.userName}
@@ -56,10 +56,10 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
                 <div className="absolute top-4 right-4 z-[400]">
                     <button
                         onClick={() => onTrack(event.id)}
-                        className="bg-surface px-3 py-1.5 rounded-xl shadow-md text-sm font-bold text-primary hover:bg-primary-50 flex items-center gap-2"
+                        className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#D4AF37]/20 shadow-md text-xs font-black text-[#D4AF37] uppercase tracking-widest hover:bg-black/80 flex items-center gap-2"
                     >
-                        <MapPin className="w-4 h-4 text-primary" />
-                        Refresh Location
+                        <MapPin className="w-4 h-4" />
+                        Live Track
                     </button>
                 </div>
             </div>
@@ -69,33 +69,33 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
                 {/* Header Info */}
                 <div className="flex justify-between items-start mb-6">
                     <div>
-                        <h2 className="text-2xl font-bold text-primary mb-1">{event.userName}</h2>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted">
-                            <span className="flex items-center gap-1 bg-background px-2 py-1 rounded">
-                                <Phone className="w-3 h-3" /> {event.userPhone || 'No Phone'}
+                        <h2 className="text-3xl font-black text-white font-heading tracking-tight mb-1">{event.userName}</h2>
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-bold uppercase tracking-widest">
+                            <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                                <Phone className="w-3.5 h-3.5 text-[#D4AF37]" /> {event.userPhone || 'No Phone'}
                             </span>
-                            <span className="flex items-center gap-1 bg-background px-2 py-1 rounded uppercase">
-                                <User className="w-3 h-3" /> {event.role}
+                            <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                                <User className="w-3.5 h-3.5 text-[#D4AF37]" /> {event.role}
                             </span>
                             {event.hostelId && (
-                                <span className="flex items-center gap-1 bg-primary-50 text-primary px-2 py-1 rounded font-medium">
-                                    Hostel {event.hostelId} • Room {event.roomNo}
+                                <span className="flex items-center gap-1.5 bg-[#D4AF37]/10 text-[#D4AF37] px-2.5 py-1 rounded-lg border border-[#D4AF37]/20 font-black">
+                                    {event.hostelId} • RM {event.roomNo}
                                 </span>
                             )}
                         </div>
                         {event.status.recognised && event.assignedTo && (
-                            <div className="mt-2 flex items-center gap-2 text-sm bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg inline-flex">
+                            <div className="mt-4 flex items-center gap-3 text-xs bg-[#D4AF37]/10 text-[#D4AF37] px-4 py-2 rounded-xl border border-[#D4AF37]/20 font-black uppercase tracking-widest">
                                 <Shield className="w-4 h-4" />
-                                <span className="font-medium">Assigned to: {event.assignedTo.name}</span>
+                                <span>Assigned: {event.assignedTo.name}</span>
                             </div>
                         )}
                     </div>
 
                     <div className="text-right">
-                        <p className="text-sm text-muted flex items-center justify-end gap-1">
-                            <Clock className="w-3 h-3" /> Time Elapsed
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest flex items-center justify-end gap-1.5 mb-1">
+                            <Clock className="w-3 h-3" /> Elapsed
                         </p>
-                        <p className="text-2xl font-mono font-bold text-emergency animate-pulse">
+                        <p className="text-3xl font-black text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]">
                             {timeElapsed}m
                         </p>
                     </div>
@@ -103,28 +103,28 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
 
                 {/* Emergency Details Section */}
                 {(event.emergencyType || event.description || event.voiceTranscript) && (
-                    <div className="mb-6 p-4 bg-emergency/10 border border-emergency/20 rounded-xl space-y-3">
-                        <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="w-5 h-5 text-emergency" />
-                            <h3 className="font-bold text-emergency uppercase">Emergency Details</h3>
+                    <div className="mb-6 p-5 bg-red-500/5 border border-red-500/20 rounded-[24px] space-y-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                            <h3 className="font-black text-red-500 uppercase text-xs tracking-[0.2em]">Emergency Context</h3>
                         </div>
 
                         {event.emergencyType && (
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-4">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-muted">Type:</span>
-                                    <span className={`px-2 py-1 border rounded text-sm font-bold uppercase
-                                        ${event.emergencyType === 'medical' ? 'bg-red-50 text-red-700 border-red-200' :
-                                            event.emergencyType === 'harassment' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                'bg-slate-50 text-slate-700 border-slate-200'}
+                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Type:</span>
+                                    <span className={`px-3 py-1 border rounded-lg text-xs font-black uppercase tracking-[0.1em]
+                                        ${event.emergencyType === 'medical' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                            event.emergencyType === 'harassment' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                                                'bg-white/5 text-zinc-300 border-white/10'}
                                     `}>
                                         {event.emergencyType}
                                     </span>
                                 </div>
                                 {event.triggerMethod && (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-muted">Method:</span>
-                                        <span className="px-2 py-1 bg-blue-50 border border-blue-100 rounded text-sm font-medium text-blue-700 uppercase italic">
+                                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Trigger:</span>
+                                        <span className="px-3 py-1 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-lg text-xs font-black text-[#D4AF37] uppercase italic">
                                             {event.triggerMethod.replace('_', ' ')}
                                         </span>
                                     </div>
@@ -134,8 +134,8 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
 
                         {event.description && (
                             <div>
-                                <span className="text-sm font-bold text-muted block mb-1">Description:</span>
-                                <p className="text-sm text-primary bg-surface p-2 rounded border border-surface italic">
+                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Description:</span>
+                                <p className="text-sm text-white bg-white/5 p-4 rounded-2xl border border-white/5 italic leading-relaxed">
                                     "{event.description}"
                                 </p>
                             </div>
@@ -143,48 +143,52 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
 
                         {event.voiceTranscript && (
                             <div>
-                                <span className="text-sm font-bold text-muted block mb-1">Voice Transcript:</span>
-                                <p className="text-sm text-muted bg-background p-2 rounded border border-surface font-mono text-xs">
-                                    🎤 {event.voiceTranscript}
+                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Voice Transcript:</span>
+                                <p className="text-xs text-zinc-400 bg-white/5 p-4 rounded-2xl border border-white/5 font-mono leading-relaxed">
+                                    <span className="text-red-500 mr-2">🎤</span> {event.voiceTranscript}
                                 </p>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Emergency Contact (Mock) */}
-                <div className="mb-6 p-4 bg-emergency/10 border border-emergency/20 rounded-xl">
-                    <h3 className="text-xs font-bold text-emergency uppercase mb-2 flex items-center gap-2">
-                        <AlertTriangle className="w-3 h-3" /> Emergency Contact
+                {/* Emergency Contact */}
+                <div className="mb-6 p-5 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-[24px]">
+                    <h3 className="text-[10px] font-black text-[#D4AF37] uppercase mb-4 flex items-center gap-2 tracking-[0.2em]">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Next of Kin
                     </h3>
-                    <div className="flex justify-between items-center">
-                        <span className="font-medium text-primary">Mother</span>
-                        <a href={`tel:${event.userPhone}`} className="bg-surface border border-emergency/30 text-emergency px-3 py-1 rounded text-sm font-bold hover:bg-emergency/5">
-                            GSM Call
-                        </a>
-                        <button
-                            onClick={initiateCall}
-                            className="bg-primary text-white px-3 py-1 rounded text-sm font-bold hover:bg-primary/90 flex items-center gap-1"
-                        >
-                            <Phone className="w-3 h-3" /> Web Call
-                        </button>
+                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <span className="font-black text-white text-sm">Emergency Contact Pool</span>
+                        <div className="flex gap-2">
+                            <a href={`tel:${event.userPhone}`} className="bg-white/5 border border-white/10 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-colors">
+                                Call GSM
+                            </a>
+                            <button
+                                onClick={initiateCall}
+                                className="bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                            >
+                                Web Portal Call
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Timeline */}
                 <div className="mb-6">
-                    <h3 className="text-sm font-bold text-primary mb-3">Incident Timeline</h3>
-                    <div className="relative border-l-2 border-surface ml-2 space-y-6 pl-6 py-2">
+                    <h3 className="text-xs font-black text-[#D4AF37] mb-4 uppercase tracking-[0.2em]">Tactical Timeline</h3>
+                    <div className="relative border-l-2 border-[#D4AF37]/10 ml-2 space-y-6 pl-6 py-2">
                         {(event.timeline || []).map((entry, idx) => (
                             <div key={idx} className="relative">
-                                <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-surface border-2 border-primary"></div>
+                                <div className="absolute -left-[31px] top-0 w-3.5 h-3.5 rounded-full bg-black border-2 border-[#D4AF37]"></div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
-                                    <div>
-                                        <p className="font-bold text-primary text-sm">{entry.action}</p>
-                                        {entry.note && <p className="text-xs text-muted mt-0.5">{entry.note}</p>}
-                                        <p className="text-xs text-muted mt-1">By: {entry.by}</p>
+                                    <div className="bg-white/5 p-3 rounded-xl border border-white/5 flex-1 w-full">
+                                        <p className="font-black text-white text-sm">{entry.action}</p>
+                                        {entry.note && <p className="text-xs text-zinc-400 mt-1 italic font-medium">"{entry.note}"</p>}
+                                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-2 flex items-center gap-1.5">
+                                            <Shield className="w-3 h-3" /> {entry.by}
+                                        </p>
                                     </div>
-                                    <span className="text-xs font-mono text-muted bg-background px-2 py-1 rounded self-start">
+                                    <span className="text-[10px] font-black text-zinc-500 bg-white/5 px-2 py-1 rounded-lg border border-white/5 self-start mt-1">
                                         {new Date(entry.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
@@ -194,30 +198,30 @@ export default function SOSDetailPanel({ event, onRecognise, onResolve, onTrack 
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto pt-4 border-t border-surface">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto pt-6 border-t border-[#D4AF37]/10">
                     {!event.status.recognised && (
                         <button
                             onClick={() => onRecognise(event.id)}
-                            className="col-span-2 bg-indigo-600 text-white py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                            className="col-span-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white py-4 rounded-[20px] font-black uppercase tracking-widest hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-2xl active:scale-95"
                         >
                             <Shield className="w-5 h-5" />
-                            Recognise SOS
+                            Acknowledge Call
                         </button>
                     )}
 
                     {event.status.recognised && !event.status.resolved && (
                         <button
                             onClick={() => onResolve(event.id)}
-                            className="col-span-2 bg-indigo-600 text-white py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                            className="col-span-2 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white py-4 rounded-[20px] font-black uppercase tracking-widest hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-2xl active:scale-95"
                         >
                             <CheckCircle className="w-5 h-5" />
-                            Mark Resolved
+                            Resolve Situation
                         </button>
                     )}
 
                     {event.status.resolved && (
-                        <div className="col-span-2 text-center py-3 text-success font-bold">
-                            ✓ This SOS has been resolved
+                        <div className="col-span-2 text-center py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-[20px] text-emerald-500 font-black uppercase tracking-[0.2em] text-xs">
+                            ✓ Situation Secured & Resolved
                         </div>
                     )}
                 </div>

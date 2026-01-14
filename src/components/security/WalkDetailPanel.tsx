@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { X, Shield, MapPin, MessageSquare, Send, CheckCircle, AlertTriangle } from 'lucide-react';
 import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkService';
+import { mapService, type LocationData } from '../../services/mapService';
+import EventDetailMap from '../map/EventDetailMap';
 import { useAuthStore } from '../../context/authStore';
+import { useEffect } from 'react';
 import StatusBadge from '../ui/StatusBadge';
 
 interface WalkDetailPanelProps {
@@ -23,6 +26,16 @@ export default function WalkDetailPanel({ walk, onClose }: WalkDetailPanelProps)
     const [sending, setSending] = useState(false);
     const [selectedEscort, setSelectedEscort] = useState('');
     const [assigning, setAssigning] = useState(false);
+    const [liveLocation, setLiveLocation] = useState<LocationData | null>(null);
+
+    // Subscribe to live location
+    useEffect(() => {
+        if (!walk.userId) return;
+        const unsub = mapService.subscribeToSingleLocation(walk.userId, (loc) => {
+            setLiveLocation(loc);
+        });
+        return () => unsub();
+    }, [walk.userId]);
 
     const handleAssignEscort = async () => {
         if (!selectedEscort || !user) return;
@@ -147,6 +160,22 @@ export default function WalkDetailPanel({ walk, onClose }: WalkDetailPanelProps)
                                     <p className="font-semibold text-sm text-primary">{walk.destination.name}</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Tactical Map Pod */}
+                    <div className="glass-card rounded-2xl border border-surface overflow-hidden h-48 relative shadow-inner">
+                        <EventDetailMap
+                            userName={walk.userName}
+                            eventType="SAFEWALK"
+                            location={liveLocation}
+                            destination={{
+                                lat: walk.destination.lat,
+                                lng: walk.destination.lng
+                            }}
+                        />
+                        <div className="absolute top-2 left-2 z-[400] bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg border shadow-sm">
+                            <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tighter">Live Intel Map</span>
                         </div>
                     </div>
 

@@ -38,8 +38,9 @@ export default function SecurityMap() {
                 {/* Stats Overlay */}
                 <div className="absolute top-4 right-4 flex flex-col gap-2 z-[400]">
                     {activeEvents.length > 0 && (
-                        <div className="glass-card px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 bg-red-50 border border-red-200 shadow-md">
-                            {activeEvents.length} Active SOS
+                        <div className="glass px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-2xl border border-red-500/20 flex items-center">
+                            <span className="text-white text-xs font-black mr-2">{activeEvents.length} Active</span>
+                            <span className="text-red-500 text-sm font-black">SOS</span>
                         </div>
                     )}
                     {activeWalks.length > 0 && (

@@ -4,7 +4,7 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import SOSButton from '../../components/student/SOSButton';
 import ActionCard from '../../components/ui/ActionCard';
-import { X, Shield, MapPin, Footprints, AlertTriangle, Home, Video, Newspaper, Megaphone } from 'lucide-react';
+import { X, Shield, Footprints, AlertTriangle, Home, Video, Newspaper, Megaphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { callService } from '../../services/callService';
@@ -20,59 +20,8 @@ export default function StudentDashboard() {
     const { activeSOS, resolveSOS } = useSOS();
     const [staff, setStaff] = useState<UserProfile[]>([]);
     const [showBroadcasts, setShowBroadcasts] = useState(false);
-    const [locationName, setLocationName] = useState('Locating...');
-    const [gpsOn, setGpsOn] = useState(true);
-    const [lastGeocodeTime, setLastGeocodeTime] = useState(0);
 
-    useEffect(() => {
-        if (!navigator.geolocation) {
-            setGpsOn(false);
-            setLocationName('GPS Not Supported');
-            return;
-        }
 
-        const watchId = navigator.geolocation.watchPosition(
-            async (pos) => {
-                setGpsOn(true);
-                const { latitude, longitude } = pos.coords;
-
-                // Throttle geocoding to once every 30 seconds
-                const now = Date.now();
-                if (now - lastGeocodeTime < 30000) return;
-                setLastGeocodeTime(now);
-
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18`, {
-                        headers: { 'Accept-Language': 'en' }
-                    });
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        const area = data.address?.road || data.address?.suburb || data.address?.neighbourhood || data.address?.city || 'VNIT Campus';
-                        setLocationName(area);
-                    } else {
-                        setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-                    }
-                } catch (err) {
-                    setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-                }
-            },
-            (err) => {
-                if (err.code !== 3) {
-                    console.error("Dashboard: Geolocation failed:", err);
-                }
-                setGpsOn(false);
-                setLocationName(err.code === 3 ? 'GPS Timeout' : 'GPS Disabled');
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 10000
-            }
-        );
-
-        return () => navigator.geolocation.clearWatch(watchId);
-    }, [lastGeocodeTime]);
 
     useEffect(() => {
         userService.getStaff().then(data => {
@@ -174,26 +123,6 @@ export default function StudentDashboard() {
                     </div>
                 )}
 
-                {/* Location Info */}
-                <motion.div variants={cardVariant} className="glass rounded-[32px] p-4 flex items-center justify-between mb-8 shadow-2xl">
-                    <div className="flex items-center space-x-3">
-                        <div className="bg-[#D4AF37]/10 p-2.5 rounded-2xl border border-[#D4AF37]/20">
-                            <MapPin className="text-[#D4AF37] w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest font-heading mb-0.5">Nearby Area</p>
-                            <h4 className="text-sm font-black text-white font-heading tracking-tight leading-tight">
-                                {locationName}
-                            </h4>
-                        </div>
-                    </div>
-                    {gpsOn && (
-                        <div className="flex items-center gap-1 bg-emerald-500/5 px-3 py-1.5 rounded-xl border border-emerald-500/10 backdrop-blur-md">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest font-heading">GPS: ON</span>
-                        </div>
-                    )}
-                </motion.div>
 
                 {/* Quick Actions */}
                 <motion.div variants={cardVariant}>

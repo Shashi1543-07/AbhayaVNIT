@@ -24,15 +24,18 @@ export default function SOSCard({ event, role }: SOSCardProps) {
         <div className="mb-4">
             <div className="glass-card rounded-2xl border-l-4 border-emergency overflow-hidden shadow-md hover:shadow-lg transition-shadow">
                 {/* Header Section */}
-                <div className="p-4 bg-emergency-pulse border-b border-emergency/30 flex justify-between items-center">
+                <div className="p-4 bg-red-500/10 border-b border-[#D4AF37]/10 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <span className="relative flex h-3 w-3">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                         </span>
-                        <h3 className="font-bold text-emergency">Active SOS</h3>
+                        <h3 className="font-black uppercase tracking-widest flex items-center">
+                            <span className="text-white text-xs mr-2">Active</span>
+                            <span className="text-red-500 text-sm">SOS</span>
+                        </h3>
                     </div>
-                    <span className="text-xs font-mono font-bold text-emergency bg-emergency-pulse/30 px-2 py-1 rounded-full">
+                    <span className="text-[10px] font-mono font-black text-white px-2 py-1 rounded-full bg-white/5 border border-white/10">
                         {new Date(event.triggeredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                 </div>
