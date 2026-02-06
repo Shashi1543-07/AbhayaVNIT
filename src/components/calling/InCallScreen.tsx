@@ -40,16 +40,28 @@ export default function InCallScreen({
     }, []);
 
     useEffect(() => {
-        if (isVideoCall) {
-            if (remoteVideoRef.current && remoteStream) {
-                remoteVideoRef.current.srcObject = remoteStream;
+        const attachStream = async (el: HTMLVideoElement | null, stream: MediaStream | null) => {
+            if (el && stream) {
+                // Only set if different or not set
+                if (el.srcObject !== stream) {
+                    el.srcObject = stream;
+                }
+                try {
+                    await el.play();
+                } catch (err) {
+                    console.warn("InCallScreen: Play interrupted or blocked", err);
+                }
             }
-            // Fix: Re-attach local stream when video element is re-mounted (after isVideoOff toggles)
-            if (localVideoRef.current && localStream && !isVideoOff) {
-                localVideoRef.current.srcObject = localStream;
+        };
+
+        if (isVideoCall) {
+            attachStream(remoteVideoRef.current, remoteStream);
+            if (!isVideoOff) {
+                attachStream(localVideoRef.current, localStream);
             }
         } else if (audioRef.current && remoteStream) {
             audioRef.current.srcObject = remoteStream;
+            audioRef.current.play().catch(() => { });
         }
     }, [remoteStream, localStream, isVideoCall, isVideoOff]);
 

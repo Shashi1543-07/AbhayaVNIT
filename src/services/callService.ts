@@ -152,9 +152,21 @@ export class CallService {
         });
 
         this.pc.ontrack = (event) => {
-            console.log("callService: Remote track received. Stream ID:", event.streams[0].id);
-            this.remoteStream = event.streams[0];
+            console.log(`callService: Remote track received (${event.track.kind}). Stream ID: ${event.streams[0]?.id}`);
+
+            if (!this.remoteStream) {
+                this.remoteStream = new MediaStream();
+            }
+
+            // Add track if not already in our remote stream
+            const existingTracks = this.remoteStream.getTracks();
+            if (!existingTracks.find(t => t.id === event.track.id)) {
+                this.remoteStream.addTrack(event.track);
+                console.log("callService: Track added to remoteStream. Total tracks:", this.remoteStream.getTracks().length);
+            }
+
             if (this.remoteStreamListener) {
+                // We pass the same stream object, but CallOverlay does new MediaStream() to trigger React updates
                 this.remoteStreamListener(this.remoteStream);
             }
         };
@@ -271,8 +283,17 @@ export class CallService {
         });
 
         this.pc.ontrack = (event) => {
-            console.log("callService: Remote track received. Stream ID:", event.streams[0].id);
-            this.remoteStream = event.streams[0];
+            console.log(`callService: Remote track received (${event.track.kind}). Stream ID: ${event.streams[0]?.id}`);
+
+            if (!this.remoteStream) {
+                this.remoteStream = new MediaStream();
+            }
+
+            if (!this.remoteStream.getTracks().find(t => t.id === event.track.id)) {
+                this.remoteStream.addTrack(event.track);
+                console.log("callService: Track added to remoteStream (join). Total tracks:", this.remoteStream.getTracks().length);
+            }
+
             if (this.remoteStreamListener) {
                 this.remoteStreamListener(this.remoteStream);
             }
