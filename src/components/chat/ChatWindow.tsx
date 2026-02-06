@@ -440,8 +440,8 @@ export default function ChatWindow({ chatId, onClose, isMinimized = false, onTog
                     animation: 'breathingGradient 15s ease infinite'
                 }} />
 
-                {/* Header - Increased size to match TopHeader */}
-                <div className="relative bg-black/40 backdrop-blur-3xl border-b border-white/5 px-5 py-4 pt-safe-top flex flex-col gap-3 shadow-2xl z-20">
+                {/* Header - Increased size to match TopHeader and clear status bar */}
+                <div className="relative bg-black/40 backdrop-blur-3xl border-b border-white/5 px-5 py-6 pt-14 flex flex-col gap-3 shadow-2xl z-20">
                     <div className="flex justify-between items-center w-full">
                         <div className="flex items-center gap-3.5">
                             <button onClick={onClose} className="p-2.5 -ml-2 rounded-xl bg-white/5 backdrop-blur-md hover:bg-white/10 text-[#D4AF37] transition-all shadow-lg border border-white/10 active:scale-90" title="Close">
