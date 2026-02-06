@@ -166,8 +166,9 @@ export class CallService {
             }
 
             if (this.remoteStreamListener) {
-                // We pass the same stream object, but CallOverlay does new MediaStream() to trigger React updates
-                this.remoteStreamListener(this.remoteStream);
+                // Create a new MediaStream instance to ensure React re-renders when tracks change
+                const newStream = new MediaStream(this.remoteStream.getTracks());
+                this.remoteStreamListener(newStream);
             }
         };
 
@@ -295,7 +296,9 @@ export class CallService {
             }
 
             if (this.remoteStreamListener) {
-                this.remoteStreamListener(this.remoteStream);
+                // Create a new MediaStream instance to ensure React re-renders when tracks change
+                const newStream = new MediaStream(this.remoteStream.getTracks());
+                this.remoteStreamListener(newStream);
             }
         };
 
@@ -350,6 +353,13 @@ export class CallService {
             this.localStream.getVideoTracks().forEach(track => {
                 track.enabled = enabled;
             });
+
+            // Notify listeners about the change in video state
+            if (this.localStreamListener) {
+                // Create a new MediaStream instance to ensure React re-renders when tracks change
+                const newStream = new MediaStream(this.localStream.getTracks());
+                this.localStreamListener(newStream);
+            }
         }
     }
 
@@ -380,7 +390,9 @@ export class CallService {
             this.localStream.addTrack(newTrack);
 
             if (this.localStreamListener) {
-                this.localStreamListener(this.localStream);
+                // Create a new MediaStream instance to ensure React re-renders when tracks change
+                const newStream = new MediaStream(this.localStream.getTracks());
+                this.localStreamListener(newStream);
             }
         } catch (error) {
             console.error("callService: Error switching camera:", error);

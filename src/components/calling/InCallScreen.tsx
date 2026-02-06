@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { callService } from '../../services/callService';
 import { Mic, MicOff, PhoneOff, User, Volume2, Video, VideoOff, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,6 +27,7 @@ export default function InCallScreen({
     const [isVideoOff, setIsVideoOff] = useState(false);
     const [isSpeakerOn, setIsSpeakerOn] = useState(false);
     const [duration, setDuration] = useState(0);
+    const [remoteVideoLoaded, setRemoteVideoLoaded] = useState(false);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -39,31 +40,70 @@ export default function InCallScreen({
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        const attachStream = async (el: HTMLVideoElement | null, stream: MediaStream | null) => {
-            if (el && stream) {
-                // Only set if different or not set
-                if (el.srcObject !== stream) {
-                    el.srcObject = stream;
-                }
-                try {
-                    await el.play();
-                } catch (err) {
-                    console.warn("InCallScreen: Play interrupted or blocked", err);
-                }
-            }
-        };
+    // Improved video stream attachment function with flickering prevention
+    const attachStreamToVideo = useCallback((videoElement: HTMLVideoElement | null, stream: MediaStream | null) => {
+        if (!videoElement) return;
 
-        if (isVideoCall) {
-            attachStream(remoteVideoRef.current, remoteStream);
-            if (!isVideoOff) {
-                attachStream(localVideoRef.current, localStream);
+        // Prevention: ONLY update if stream is different or currently empty
+        if (stream && videoElement.srcObject) {
+            const currentStream = videoElement.srcObject as MediaStream;
+            if (currentStream.id === stream.id &&
+                currentStream.getTracks().length === stream.getTracks().length) {
+                // If ID and track count are same, assume it's the same logical stream
+                return;
             }
+        }
+
+        if (stream) {
+            console.log("InCallScreen: Attaching stream", stream.id, "Tracks:", stream.getTracks().length);
+            videoElement.srcObject = stream;
+
+            const handleLoadMetadata = () => {
+                videoElement.play().catch(error => {
+                    console.warn("InCallScreen: Play failed:", error);
+                });
+            };
+
+            videoElement.addEventListener('loadedmetadata', handleLoadMetadata);
+            return () => videoElement.removeEventListener('loadedmetadata', handleLoadMetadata);
+        } else {
+            videoElement.srcObject = null;
+        }
+    }, []);
+
+    // Handle remote stream changes
+    useEffect(() => {
+        if (isVideoCall && remoteVideoRef.current) {
+            const cleanup = attachStreamToVideo(remoteVideoRef.current, remoteStream);
+            return cleanup;
         } else if (audioRef.current && remoteStream) {
             audioRef.current.srcObject = remoteStream;
-            audioRef.current.play().catch(() => { });
+            audioRef.current.play().catch(error => {
+                console.warn("InCallScreen: Could not play audio automatically:", error);
+            });
         }
-    }, [remoteStream, localStream, isVideoCall, isVideoOff]);
+    }, [remoteStream, isVideoCall, attachStreamToVideo]);
+
+    // Handle local stream changes
+    useEffect(() => {
+        if (isVideoCall && localVideoRef.current && !isVideoOff) {
+            const cleanup = attachStreamToVideo(localVideoRef.current, localStream);
+            return cleanup;
+        }
+    }, [localStream, isVideoCall, isVideoOff, attachStreamToVideo]);
+
+    // Handle video loaded events
+    const handleRemoteVideoLoaded = () => {
+        setRemoteVideoLoaded(true);
+    };
+
+    // Handle video errors
+    const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>, type: 'remote' | 'local') => {
+        console.error(`Video error for ${type} stream:`, e);
+        if (type === 'remote') {
+            setRemoteVideoLoaded(false);
+        }
+    };
 
     // Handle audio output for speaker mode
     useEffect(() => {
@@ -72,7 +112,7 @@ export default function InCallScreen({
             // This is a experimental API, but try fetching devices if needed
             // For now we just log, as actual switching often needs device enumeration
         }
-    }, [isSpeakerOn]);
+    }, [isSpeakerOn, isVideoCall]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -128,26 +168,30 @@ export default function InCallScreen({
                             ref={remoteVideoRef}
                             autoPlay
                             playsInline
+                            onCanPlay={handleRemoteVideoLoaded}
+                            onError={(e) => handleVideoError(e, 'remote')}
                             className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
                     </div>
 
-                    {/* Remote Video Placeholder */}
+                    {/* Remote Video Placeholder (Fades out when loaded) */}
                     <AnimatePresence>
-                        {(!remoteStream || remoteStream.getVideoTracks().length === 0 || !remoteStream.getVideoTracks()[0].enabled) && (
+                        {(!remoteStream || remoteStream.getVideoTracks().length === 0 || !remoteStream.getVideoTracks()[0].enabled || !remoteVideoLoaded) && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-2xl"
+                                className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-3xl"
                             >
-                                <div className="w-32 h-32 bg-white/5 rounded-[40px] flex items-center justify-center mb-6 border border-white/10 shadow-2xl">
-                                    <User className="w-16 h-16 text-[#D4AF37]/50" />
+                                <div className="w-32 h-32 bg-white/5 rounded-[48px] flex items-center justify-center mb-6 border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.5)]">
+                                    <User className="w-16 h-16 text-white/20" />
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-white/90 text-lg font-black uppercase tracking-widest">{partnerName}</p>
-                                    <p className="text-[#D4AF37]/60 text-[10px] font-black uppercase tracking-widest mt-1">Video Paused</p>
+                                    <p className="text-white/60 text-lg font-black uppercase tracking-[0.2em]">{partnerName}</p>
+                                    <p className="text-white/30 text-[10px] font-black uppercase tracking-widest mt-2">
+                                        {remoteStream ? 'Establishing Connection...' : 'Waiting for Video...'}
+                                    </p>
                                 </div>
                             </motion.div>
                         )}
@@ -172,6 +216,7 @@ export default function InCallScreen({
                                     autoPlay
                                     playsInline
                                     muted
+                                    onError={(e) => handleVideoError(e, 'local')}
                                     className="w-full h-full object-cover mirror"
                                 />
                                 <div className="absolute inset-0 border-[0.5px] border-white/10 rounded-[32px] pointer-events-none" />

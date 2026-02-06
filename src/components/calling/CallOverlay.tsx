@@ -286,11 +286,11 @@ export default function CallOverlay() {
             )}
 
             {!window.isSecureContext && (
-                <div className="fixed top-4 left-4 right-4 z-[9999] bg-amber-500 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-bounce">
-                    <ShieldAlert className="w-8 h-8 flex-shrink-0" />
-                    <div className="text-sm">
-                        <p className="font-bold">Insecure Connection Detected</p>
-                        <p className="opacity-90">Microphone and Location features are blocked by the browser. Please use HTTPS or localhost.</p>
+                <div className="fixed bottom-32 left-6 right-6 z-[9999] bg-zinc-900/90 backdrop-blur-xl text-white p-3 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-3">
+                    <ShieldAlert className="w-5 h-5 text-red-500 shrink-0" />
+                    <div className="text-[10px] font-black uppercase tracking-widest leading-none">
+                        <p className="text-red-500">Insecure Connection</p>
+                        <p className="opacity-50 mt-0.5">Media may be blocked. Use HTTPS.</p>
                     </div>
                 </div>
             )}
