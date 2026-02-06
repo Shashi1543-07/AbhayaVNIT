@@ -5,7 +5,7 @@ import { containerStagger, cardVariant } from '../../lib/animations';
 import BottomNav from '../../components/layout/BottomNav';
 import { useAuthStore } from '../../context/authStore';
 import { securityNavItems } from '../../lib/navItems';
-import { Shield, User } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 export default function SecurityProfile() {
     const { user, profile } = useAuthStore();
