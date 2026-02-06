@@ -152,11 +152,9 @@ export class CallService {
         });
 
         this.pc.ontrack = (event) => {
-            console.log("callService: Remote track received");
-            event.streams[0].getTracks().forEach((track) => {
-                this.remoteStream?.addTrack(track);
-            });
-            if (this.remoteStreamListener && this.remoteStream) {
+            console.log("callService: Remote track received. Stream ID:", event.streams[0].id);
+            this.remoteStream = event.streams[0];
+            if (this.remoteStreamListener) {
                 this.remoteStreamListener(this.remoteStream);
             }
         };
@@ -273,11 +271,9 @@ export class CallService {
         });
 
         this.pc.ontrack = (event) => {
-            console.log("callService: Remote track received");
-            event.streams[0].getTracks().forEach((track) => {
-                this.remoteStream?.addTrack(track);
-            });
-            if (this.remoteStreamListener && this.remoteStream) {
+            console.log("callService: Remote track received. Stream ID:", event.streams[0].id);
+            this.remoteStream = event.streams[0];
+            if (this.remoteStreamListener) {
                 this.remoteStreamListener(this.remoteStream);
             }
         };

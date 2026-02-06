@@ -44,12 +44,13 @@ export default function CallOverlay() {
 
     useEffect(() => {
         callService.setRemoteStreamListener((stream) => {
-            console.log("CallOverlay: Remote stream set");
-            setRemoteStream(stream);
+            console.log("CallOverlay: Remote stream updated. Tracks:", stream.getTracks().length);
+            // We create a new reference to ensure React re-renders even if it's the same stream object
+            setRemoteStream(new MediaStream(stream));
         });
         callService.setLocalStreamListener((stream) => {
-            console.log("CallOverlay: Local stream set");
-            setLocalStream(stream);
+            console.log("CallOverlay: Local stream updated");
+            setLocalStream(new MediaStream(stream));
         });
     }, []);
 

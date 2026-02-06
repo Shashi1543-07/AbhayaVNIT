@@ -44,15 +44,14 @@ export default function InCallScreen({
             if (remoteVideoRef.current && remoteStream) {
                 remoteVideoRef.current.srcObject = remoteStream;
             }
-            if (localVideoRef.current && localStream) {
+            // Fix: Re-attach local stream when video element is re-mounted (after isVideoOff toggles)
+            if (localVideoRef.current && localStream && !isVideoOff) {
                 localVideoRef.current.srcObject = localStream;
             }
-        } else {
-            if (audioRef.current && remoteStream) {
-                audioRef.current.srcObject = remoteStream;
-            }
+        } else if (audioRef.current && remoteStream) {
+            audioRef.current.srcObject = remoteStream;
         }
-    }, [remoteStream, localStream, isVideoCall]);
+    }, [remoteStream, localStream, isVideoCall, isVideoOff]);
 
     // Handle audio output for speaker mode
     useEffect(() => {
