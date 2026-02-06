@@ -2,13 +2,13 @@ import type { Variants } from 'framer-motion';
 
 export const sosPulse: Variants = {
     animate: {
-        scale: [1, 1.05, 1],
-        boxShadow: [
-            "0 0 0px rgba(255, 79, 90, 0.3)",
-            "0 0 20px rgba(255, 79, 90, 0.5)",
-            "0 0 0px rgba(255, 79, 90, 0.3)"
-        ],
-        transition: { duration: 2, repeat: Infinity }
+        scale: [1, 1.08, 1],
+        opacity: [1, 0.8, 1],
+        transition: {
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+        }
     }
 };
 
@@ -22,10 +22,13 @@ export const sosRipple: Variants = {
 };
 
 export const cardVariant: Variants = {
-    hidden: { y: 20, opacity: 0 },
+    hidden: { y: 25, opacity: 0 },
     visible: {
         y: 0, opacity: 1,
-        transition: { duration: 0.35, ease: "easeOut" }
+        transition: {
+            duration: 0.4,
+            ease: [0.22, 1, 0.36, 1] // Custom quintic ease-out
+        }
     }
 };
 
@@ -42,9 +45,19 @@ export const navIconVariant: Variants = {
 };
 
 export const pageTransition: Variants = {
-    initial: { x: 20, opacity: 0 },
-    animate: { x: 0, opacity: 1 },
-    exit: { x: -20, opacity: 0 },
+    initial: { x: 15, opacity: 0, filter: "blur(4px)" },
+    animate: {
+        x: 0,
+        opacity: 1,
+        filter: "blur(0px)",
+        transition: { duration: 0.4, ease: "easeOut" }
+    },
+    exit: {
+        x: -15,
+        opacity: 0,
+        filter: "blur(4px)",
+        transition: { duration: 0.3 }
+    },
 };
 
 export const modalPop: Variants = {

@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import Landing3D from './pages/Landing3D';
 import Login from './pages/auth/Login';
@@ -42,8 +43,44 @@ import LiveTrackingManager from './components/common/LiveTrackingManager';
 import WardenReportDetail from './pages/warden/WardenReportDetail';
 
 
+import { App as CapacitorApp } from '@capacitor/app';
+
 function AnimatedRoutes() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const setupBackButton = async () => {
+      const listener = await CapacitorApp.addListener('backButton', () => {
+        const rootPaths = [
+          '/',
+          '/login',
+          '/student/dashboard',
+          '/security/dashboard',
+          '/warden/dashboard',
+          '/admin/dashboard'
+        ];
+
+        // Check if we are on a root path
+        const isRoot = rootPaths.some(path => location.pathname === path || location.pathname.endsWith('/dashboard'));
+
+        if (isRoot) {
+          CapacitorApp.exitApp();
+        } else {
+          navigate(-1);
+        }
+      });
+
+      return () => {
+        listener.remove();
+      };
+    };
+
+    const cleanup = setupBackButton();
+    return () => {
+      cleanup.then(clean => clean && clean());
+    };
+  }, [location, navigate]);
 
   return (
     <AnimatePresence mode="wait">

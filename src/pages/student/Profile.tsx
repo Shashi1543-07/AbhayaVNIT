@@ -20,83 +20,88 @@ export default function Profile() {
                 animate="visible"
             >
                 {/* Profile Header */}
-                <motion.div variants={cardVariant} className="flex flex-col items-center justify-center py-10">
-                    <div className="w-32 h-32 bg-white/5 backdrop-blur-3xl rounded-[40px] flex items-center justify-center mb-6 border border-white/10 shadow-2xl relative group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#CF9E1B]/20 via-transparent to-transparent rounded-[40px] opacity-50" />
-                        <User className="w-14 h-14 text-[#D4AF37] relative z-10" strokeWidth={3} />
-                        <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center border-4 border-black shadow-lg">
-                            <Shield className="w-5 h-5 text-black" strokeWidth={3} />
+                <motion.div variants={cardVariant} className="flex flex-col items-center justify-center py-8">
+                    <div className="w-32 h-32 bg-white/5 backdrop-blur-3xl rounded-full flex items-center justify-center mb-5 border border-white/10 shadow-2xl relative group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#CF9E1B]/20 via-transparent to-transparent rounded-full opacity-50" />
+                        <User className="w-14 h-14 text-[#D4AF37] relative z-10" strokeWidth={2.5} />
+                        <div className="absolute bottom-1 right-1 w-9 h-9 bg-[#D4AF37] rounded-full flex items-center justify-center border-4 border-[#121212] shadow-lg">
+                            <Shield className="w-4 h-4 text-black" strokeWidth={3} />
                         </div>
                     </div>
-                    <h2 className="text-3xl font-black text-white font-heading tracking-tight drop-shadow-sm">{profile?.name || user?.displayName || 'TACTICAL ASSET'}</h2>
-                    <p className="text-[10px] text-[#D4AF37] font-black uppercase tracking-[0.3em] font-heading opacity-80 mt-2 bg-[#D4AF37]/5 px-4 py-1.5 rounded-full border border-[#D4AF37]/20">
-                        {profile?.enrollmentNo || 'ID-REDACTED'}
-                    </p>
+                    <h2 className="text-2xl font-bold text-white font-heading tracking-tight text-center">{profile?.name || user?.displayName || 'Student'}</h2>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="px-3 py-1 bg-[#D4AF37]/10 text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#D4AF37]/20">
+                            {profile?.rollNo || 'N/A'}
+                        </span>
+                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-full border border-emerald-500/20">
+                            Active
+                        </span>
+                    </div>
                 </motion.div>
 
                 {/* Info Cards */}
-                <motion.div variants={cardVariant} className="glass rounded-[2.5rem] shadow-2xl overflow-hidden mb-10 border border-white/5 bg-black/40">
-                    <div className="p-6 border-b border-white/5 flex items-center gap-5 transition-all hover:bg-white/5">
-                        <div className="bg-[#D4AF37]/10 p-3.5 rounded-2xl border border-[#D4AF37]/20">
-                            <Mail className="w-5 h-5 text-[#D4AF37]" strokeWidth={3} />
+                <motion.div variants={cardVariant} className="glass rounded-[2rem] shadow-2xl overflow-hidden mb-8 border border-white/5 bg-[#1a1a1a]/40">
+                    {/* Email */}
+                    <div className="p-5 border-b border-white/5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/20 shrink-0">
+                            <Mail className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
                         </div>
-                        <div className="flex-1">
-                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-0.5">Tactical Comms</p>
-                            <p className="text-sm font-black text-white font-heading">{user?.email}</p>
-                        </div>
-                    </div>
-                    <div className="p-6 border-b border-white/5 flex items-center gap-5 transition-all hover:bg-white/5">
-                        <div className="bg-emerald-500/10 p-3.5 rounded-2xl border border-emerald-500/20">
-                            <Phone className="w-5 h-5 text-emerald-500" strokeWidth={3} />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-0.5">Direct Line</p>
-                            <p className="text-sm font-black text-white font-heading">{profile?.contactNumber || 'NOT ESTABLISHED'}</p>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Email Address</p>
+                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{user?.email || 'N/A'}</p>
                         </div>
                     </div>
-                    <div className="p-6 flex items-center gap-5 transition-all hover:bg-white/5">
-                        <div className="bg-[#D4AF37]/10 p-3.5 rounded-2xl border border-[#D4AF37]/20">
-                            <Home className="w-5 h-5 text-[#D4AF37]" strokeWidth={3} />
+
+                    {/* Phone */}
+                    <div className="p-5 border-b border-white/5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0">
+                            <Phone className="w-5 h-5 text-blue-400" strokeWidth={2} />
                         </div>
-                        <div className="flex-1">
-                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-0.5">Deployed Sector</p>
-                            <p className="text-sm font-black text-white font-heading">
-                                {profile?.hostel || 'CAMPUS HUB'} • UNIT {profile?.roomNo || 'N/A'}
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Contact Number</p>
+                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.phone || 'N/A'}</p>
+                        </div>
+                    </div>
+
+                    {/* Hostel Info */}
+                    <div className="p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 shrink-0">
+                            <Home className="w-5 h-5 text-purple-400" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Resident Details</p>
+                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">
+                                Hostel {profile?.hostelId || '-'} • Room {profile?.roomNo || '-'}
                             </p>
                         </div>
                     </div>
                 </motion.div>
 
-                {/* Settings & Actions */}
-                <motion.div variants={cardVariant} className="space-y-5">
-                    <h3 className="text-[10px] font-black text-[#D4AF37] ml-4 uppercase tracking-[0.3em] font-heading opacity-60">System Configuration</h3>
+                {/* Additional Settings (Visual only) */}
+                <motion.div variants={cardVariant} className="space-y-4 mb-24">
+                    <h3 className="text-xs font-bold text-zinc-500 ml-4 uppercase tracking-widest">Account Settings</h3>
 
-                    <motion.button
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full glass p-6 rounded-[2.5rem] shadow-2xl flex items-center justify-between group border border-white/5 active:scale-95 transition-all bg-black/40"
-                    >
-                        <div className="flex items-center gap-5">
-                            <div className="bg-[#D4AF37]/10 p-3.5 rounded-[20px] group-hover:bg-[#D4AF37]/20 transition-all border border-[#D4AF37]/10">
-                                <Shield className="w-5 h-5 text-[#D4AF37]" strokeWidth={3} />
+                    <div className="glass rounded-[2rem] p-4 flex items-center justify-between border border-white/5 bg-[#1a1a1a]/40 hover:bg-[#1a1a1a]/60 transition-all cursor-pointer group">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
+                                <Shield className="w-5 h-5 text-zinc-400 group-hover:text-[#D4AF37] transition-colors" />
                             </div>
-                            <span className="text-sm font-black text-white uppercase tracking-widest font-heading">Security Protocol</span>
+                            <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">Security Settings</span>
                         </div>
-                        <ChevronRight className="w-6 h-6 text-zinc-600 group-hover:translate-x-1 transition-transform" strokeWidth={3} />
-                    </motion.button>
+                        <ChevronRight className="w-5 h-5 text-zinc-600" />
+                    </div>
 
-                    <motion.button
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full glass p-6 rounded-[2.5rem] shadow-2xl flex items-center justify-between group border border-white/5 active:scale-95 transition-all bg-black/40"
-                    >
-                        <div className="flex items-center gap-5">
-                            <div className="bg-[#CF9E1B]/10 p-3.5 rounded-[20px] group-hover:bg-[#CF9E1B]/20 transition-all border border-[#CF9E1B]/10">
-                                <Bell className="w-5 h-5 text-[#CF9E1B]" strokeWidth={3} />
+                    <div className="glass rounded-[2rem] p-4 flex items-center justify-between border border-white/5 bg-[#1a1a1a]/40 hover:bg-[#1a1a1a]/60 transition-all cursor-pointer group">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
+                                <Bell className="w-5 h-5 text-zinc-400 group-hover:text-[#D4AF37] transition-colors" />
                             </div>
-                            <span className="text-sm font-black text-white uppercase tracking-widest font-heading">Alert Frequency</span>
+                            <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">Notifications</span>
                         </div>
-                        <ChevronRight className="w-6 h-6 text-zinc-600 group-hover:translate-x-1 transition-transform" strokeWidth={3} />
-                    </motion.button>
+                        <ChevronRight className="w-5 h-5 text-zinc-600" />
+                    </div>
                 </motion.div>
+
             </motion.main>
 
             <BottomNav />

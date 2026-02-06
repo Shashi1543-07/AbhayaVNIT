@@ -40,26 +40,47 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
 
     // Get Location on Mount
     useEffect(() => {
-        if ('geolocation' in navigator) {
-            const watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    setLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    });
-                    setLocationStatus('Location Active');
-                },
-                (error) => {
-                    console.error('Location error:', error);
-                    setLocationStatus('Location Error');
-                },
-                { enableHighAccuracy: true }
-            );
-            return () => navigator.geolocation.clearWatch(watchId);
-        } else {
+        if (!('geolocation' in navigator)) {
             setLocationStatus('GPS Not Supported');
+            return;
         }
-    }, []);
+
+        const handleGeoError = (error: GeolocationPositionError) => {
+            console.warn('Geolocation Watch Error:', error);
+
+            // If it's a timeout (code 3) and we already have a location, don't show error
+            if (error.code === 3 && location) {
+                setLocationStatus('Location Active'); // Keep active status if we have data
+                return;
+            }
+
+            // If it's a timeout, show "Retrying" instead of "Error"
+            if (error.code === 3) {
+                setLocationStatus('Retrying Location...');
+                return;
+            }
+
+            setLocationStatus('Location Error');
+        };
+
+        const watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                setLocation({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                });
+                setLocationStatus('Location Active');
+            },
+            handleGeoError,
+            {
+                enableHighAccuracy: false,
+                timeout: 30000, // Very generous timeout for background watching
+                maximumAge: 60000
+            }
+        );
+
+        return () => navigator.geolocation.clearWatch(watchId);
+    }, [location]);
 
     const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
         if (isActive || disabled || globalActive) return;
@@ -146,13 +167,23 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
     };
 
     useEffect(() => {
+        const button = buttonRef.current;
+        if (!button) return;
+
+        // Add main start listeners manually to ensure passive: false
+        button.addEventListener('mousedown', handleStart as any, { passive: false });
+        button.addEventListener('touchstart', handleStart as any, { passive: false });
+
         if (isLongPressing) {
-            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mousemove', handleMove, { passive: false });
             window.addEventListener('mouseup', handleEnd);
-            window.addEventListener('touchmove', handleMove);
+            window.addEventListener('touchmove', handleMove, { passive: false });
             window.addEventListener('touchend', handleEnd);
         }
+
         return () => {
+            button.removeEventListener('mousedown', handleStart as any);
+            button.removeEventListener('touchstart', handleStart as any);
             window.removeEventListener('mousemove', handleMove);
             window.removeEventListener('mouseup', handleEnd);
             window.removeEventListener('touchmove', handleMove);
@@ -185,23 +216,38 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
         let finalLocation = location;
 
         if (!finalLocation) {
-            setLocationStatus('Fetching location...');
             try {
+                // Try to get any location (priority on speed)
                 const position = await new Promise<GeolocationPosition>((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
+                        enableHighAccuracy: false,
+                        timeout: 5000,
+                        maximumAge: 300000 // 5 minutes old is better than nothing in an emergency
                     });
                 });
                 finalLocation = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
-                setLocation(finalLocation);
             } catch (err) {
-                console.error("Failed to get one-time location:", err);
+                console.warn("Fast location fetch failed, trying one last time with 10s timeout...", err);
+                try {
+                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: false,
+                            timeout: 10000,
+                            maximumAge: 0
+                        });
+                    });
+                    finalLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                } catch (lastErr) {
+                    console.error("Emergency location fetch failed completely:", lastErr);
+                }
             }
+            if (finalLocation) setLocation(finalLocation);
         }
 
         if (!finalLocation) {
@@ -233,59 +279,45 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
 
     return (
         <div className="flex flex-col items-center justify-center w-full py-32 relative bg-transparent overflow-visible touch-none">
-            {/* Ambient Glow */}
-            <div className="absolute w-[400px] h-[400px] bg-[radial-gradient(circle,#D4AF37_0%,transparent_70%)] blur-[90px] pointer-events-none opacity-[0.15] z-0" />
-
-
             {isActive && (
                 <>
-                    {/* Centered Breathing Red Glow */}
+                    {/* Centered Breathing Red Glow - Using Optimized CSS class */}
                     <div
-                        className="absolute rounded-full bg-red-600/50 blur-3xl z-5"
+                        className="absolute rounded-full bg-red-600/40 blur-[80px] z-5 pointer-events-none"
                         style={{
-                            width: '500px',
-                            height: '500px',
-                            animation: 'breathe 2.5s ease-in-out infinite'
+                            width: '400px',
+                            height: '400px',
+                            animation: 'breathe-gpu 3s ease-in-out infinite'
                         }}
                     />
                     <div
-                        className="absolute rounded-full bg-red-600/30 blur-2xl z-10"
+                        className="absolute rounded-full bg-red-600/20 blur-[100px] z-10 pointer-events-none"
                         style={{
-                            width: '700px',
-                            height: '700px',
-                            animation: 'breathe 2.5s ease-in-out infinite 0.5s'
+                            width: '600px',
+                            height: '600px',
+                            animation: 'breathe-gpu 3s ease-in-out infinite 0.5s'
                         }}
                     />
-                    <style>{`
-                        @keyframes breathe {
-                            0%, 100% { transform: scale(0.8); opacity: 0; }
-                            50% { transform: scale(1.2); opacity: 0.5; }
-                        }
-                    `}</style>
                 </>
             )}
 
             <button
                 ref={buttonRef}
-                onMouseDown={handleStart}
-                onTouchStart={handleStart}
-                className={`relative w-56 h-56 rounded-full flex items-center justify-center transition-all overflow-hidden
+                className={`relative w-56 h-56 rounded-full flex items-center justify-center will-change-transform transition-colors
                     ${isActive
-                        ? 'bg-[#991b1b] scale-110 border-4 border-[#D4AF37]/50 ripple-red shadow-[0_0_180px_rgba(220,38,38,0.9)]'
-                        : 'bg-gradient-to-br from-[#dc2626] via-[#991b1b] to-[#1a1a1a] border-2 border-[#D4AF37]/40 shadow-[0_0_150px_rgba(212,175,55,0.3),inset_0_-12px_40px_rgba(0,0,0,0.95),inset_0_12px_40px_rgba(255,255,255,0.25)]'
+                        ? 'bg-[#b91c1c] scale-110 border-4 border-[#D4AF37]/50 shadow-[0_0_100px_rgba(220,38,38,0.7)]'
+                        : 'bg-[#dc2626] border-2 border-[#D4AF37]/40 shadow-[0_0_80px_rgba(212,175,55,0.2),inset_0_-12px_40px_rgba(0,0,0,0.6)]'
                     }
                     ${disabled && !isActive ? 'opacity-50 grayscale cursor-not-allowed' : ''}
-                    z-20 active:scale-95 hover:scale-[1.02]
+                    z-20 active:scale-95 transition-transform duration-300
                 `}
                 disabled={disabled && !isActive}
             >
-                {/* Internal Lensing / Reflection */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.3)_0%,transparent_65%)] pointer-events-none" />
 
                 {!isActive && isLongPressing && (
-                    <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-300 ${dragType === 'medical' ? 'bg-red-500/50' :
-                        dragType === 'harassment' ? 'bg-amber-500/50' :
-                            'bg-red-400/30'
+                    <div className={`absolute inset-0 rounded-full blur-2xl transition-opacity duration-300 ${dragType === 'medical' ? 'bg-red-500/40' :
+                        dragType === 'harassment' ? 'bg-amber-500/40' :
+                            'bg-red-400/20'
                         }`} />
                 )}
 
@@ -298,17 +330,19 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
                             strokeWidth="5"
                             strokeDasharray="615"
                             strokeDashoffset={615 - (615 * progress) / 100}
-                            style={{ filter: "drop-shadow(0 0 12px rgba(212, 175, 55, 0.9))" }}
-                            className="transition-all duration-300"
+                            style={{
+                                filter: "drop-shadow(0 0 8px rgba(212, 175, 55, 0.6))",
+                                transition: "stroke-dashoffset 0.1s linear"
+                            }}
                         />
                     </svg>
                 )}
 
                 <div className="text-center text-white z-10 select-none">
-                    <span className="text-6xl font-black tracking-tighter block mb-1 drop-shadow-2xl">
+                    <span className="text-6xl font-black tracking-tighter block mb-1 drop-shadow-xl">
                         {isActive ? 'WAIT' : 'SOS'}
                     </span>
-                    <span className="text-[11px] font-black uppercase tracking-[0.3em] opacity-90 drop-shadow-md">
+                    <span className="text-[11px] font-black uppercase tracking-[0.3em] opacity-90 drop-shadow-sm">
                         {isActive ? 'ACTIVE' : dragType === 'medical' ? 'MEDICAL' : dragType === 'harassment' ? 'THREAT' : 'PRESS'}
                     </span>
                 </div>

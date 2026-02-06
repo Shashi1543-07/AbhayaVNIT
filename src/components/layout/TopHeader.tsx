@@ -7,9 +7,10 @@ interface TopHeaderProps {
     title: string;
     showBackButton?: boolean;
     transparent?: boolean;
+    leftElement?: React.ReactNode;
 }
 
-export default function TopHeader({ title, showBackButton = false, transparent = false }: TopHeaderProps) {
+export default function TopHeader({ title, showBackButton = false, transparent = false, leftElement }: TopHeaderProps) {
     const navigate = useNavigate();
     const { role } = useAuthStore();
 
@@ -36,6 +37,7 @@ export default function TopHeader({ title, showBackButton = false, transparent =
                         <ArrowLeft size={20} strokeWidth={3} />
                     </button>
                 )}
+                {leftElement}
                 <h1 className="text-xl font-heading font-extrabold text-[#CF9E1B] tracking-tight truncate max-w-[220px] drop-shadow-sm">{title}</h1>
             </div>
 

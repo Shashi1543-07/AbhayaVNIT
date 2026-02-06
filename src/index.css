@@ -22,11 +22,9 @@ body {
   position: relative;
   overflow-x: hidden;
 
-  /* Royal Golden & Black Breathing Mesh Gradient */
+  /* Royal Golden & Black Mesh Gradient - Simplified and non-animated for performance */
   background: radial-gradient(circle at 10% 20%, #1a1a1a 0%, #000000 40%, #1a1a1a 100%),
     radial-gradient(circle at 90% 80%, #2a2200 0%, transparent 60%);
-  background-size: 150% 150%;
-  animation: breathingGradient 20s ease-in-out infinite;
 }
 
 @keyframes breathingGradient {
@@ -60,11 +58,13 @@ body {
 /* Unified Glassmorphism Card - Royal Black Style */
 .glass-card {
   background: rgba(15, 15, 15, 0.5);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  backdrop-filter: blur(12px);
+  /* Reduced blur for performance */
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(212, 175, 55, 0.15);
   border-radius: 32px;
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  will-change: transform, opacity;
 }
 
 /* Auth Pages - More Solid Deep Glass */
@@ -209,6 +209,25 @@ button {
 
 .safe-bottom {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+}
+
+/* GPU Accelerated Breathe Animation */
+@keyframes breathe-gpu {
+
+  0%,
+  100% {
+    transform: scale(0.95);
+    opacity: 0.1;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.4;
+  }
+}
+
+.will-change-transform {
+  will-change: transform;
 }
 
 .animation-delay-2000 {

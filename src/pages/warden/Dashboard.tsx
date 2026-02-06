@@ -66,7 +66,10 @@ export default function WardenDashboard() {
 
     return (
         <MobileWrapper>
-            <TopHeader title={`Hostel ${wardenHostelId} Warden`} showBackButton={true} />
+            <TopHeader
+                title={`Hostel ${wardenHostelId} Warden`}
+                showBackButton={true}
+            />
 
             <BroadcastViewer
                 isOpen={showBroadcasts}

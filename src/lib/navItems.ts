@@ -1,4 +1,4 @@
-import { Home, AlertTriangle, FileText, Megaphone, Map as MapIcon, User, Bell, MessageCircle, Newspaper } from 'lucide-react';
+import { Home, FileText, Megaphone, Map as MapIcon, User, Bell, MessageCircle, Newspaper } from 'lucide-react';
 
 export const studentNavItems = [
     { icon: Home, label: 'Home', path: '/student/dashboard' },
@@ -10,10 +10,10 @@ export const studentNavItems = [
 
 export const wardenNavItems = [
     { icon: Home, label: 'Dashboard', path: '/warden/dashboard' },
-    { icon: AlertTriangle, label: 'SOS', path: '/warden/sos' },
     { icon: MessageCircle, label: 'Messages', path: '/warden/messages' },
     { icon: FileText, label: 'Reports', path: '/warden/reports' },
     { icon: Megaphone, label: 'Broadcast', path: '/warden/broadcasts' },
+    { icon: User, label: 'Profile', path: '/warden/profile' },
 ];
 
 export const securityNavItems = [
