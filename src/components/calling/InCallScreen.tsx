@@ -92,46 +92,52 @@ export default function InCallScreen({
     };
 
     return (
-        <div className="fixed inset-x-0 mx-auto w-full max-w-[480px] inset-y-0 z-[1000] bg-slate-950 flex flex-col items-center justify-between font-outfit text-white overflow-hidden shadow-2xl">
-            {/* Background Aesthetic for Audio Calls */}
+        <div className="fixed inset-0 z-[1000] bg-[#050505] flex flex-col items-center justify-between font-outfit text-white overflow-hidden shadow-2xl">
+            {/* Immersive Background for Audio Calls */}
             {!isVideoCall && (
-                <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary-500/30 to-transparent" />
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#D4AF37]/5 to-transparent" />
                     <motion.div
                         animate={{
                             scale: [1, 1.2, 1],
-                            opacity: [0.3, 0.5, 0.3]
+                            opacity: [0.1, 0.25, 0.1]
                         }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary-500/20 rounded-full blur-[100px]"
+                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#D4AF37]/10 rounded-full blur-[120px]"
                     />
                 </div>
             )}
 
-            {/* Video Streams */}
+            {/* Video Streams Layer */}
             {isVideoCall ? (
                 <div className="absolute inset-0 z-0 bg-black">
-                    {/* Remote Video (Full Screen) */}
-                    <video
-                        ref={remoteVideoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                    />
+                    {/* Remote Video (Full Screen with subtle rounding) */}
+                    <div className="w-full h-full relative overflow-hidden">
+                        <video
+                            ref={remoteVideoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
+                    </div>
 
-                    {/* Remote Video Overlay (for when partner hides video) */}
+                    {/* Remote Video Placeholder */}
                     <AnimatePresence>
                         {(!remoteStream || remoteStream.getVideoTracks().length === 0 || !remoteStream.getVideoTracks()[0].enabled) && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-xl"
+                                className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-2xl"
                             >
-                                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-4 border border-white/20">
-                                    <User className="w-12 h-12 text-white/50" />
+                                <div className="w-32 h-32 bg-white/5 rounded-[40px] flex items-center justify-center mb-6 border border-white/10 shadow-2xl">
+                                    <User className="w-16 h-16 text-[#D4AF37]/50" />
                                 </div>
-                                <p className="text-white/60 font-medium">{partnerName} has paused video</p>
+                                <div className="text-center">
+                                    <p className="text-white/90 text-lg font-black uppercase tracking-widest">{partnerName}</p>
+                                    <p className="text-[#D4AF37]/60 text-[10px] font-black uppercase tracking-widest mt-1">Video Paused</p>
+                                </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -139,134 +145,157 @@ export default function InCallScreen({
                     {/* Local Video (Floating / Draggable Style) */}
                     <motion.div
                         drag
-                        dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
-                        className="absolute bottom-32 right-5 w-32 h-44 bg-slate-800 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl z-50 cursor-move"
+                        dragMomentum={false}
+                        initial={{ x: 0, y: 0 }}
+                        className="absolute bottom-40 right-6 w-36 h-48 bg-black/40 backdrop-blur-3xl rounded-[32px] overflow-hidden border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 cursor-grab active:cursor-grabbing group"
                     >
                         {isVideoOff ? (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-800">
-                                <VideoOff className="w-6 h-6 text-white/30" />
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900/50">
+                                <VideoOff className="w-6 h-6 text-[#D4AF37]/40" />
+                                <span className="text-[8px] font-black text-[#D4AF37]/30 uppercase tracking-widest mt-2">Off</span>
                             </div>
                         ) : (
-                            <video
-                                ref={localVideoRef}
-                                autoPlay
-                                playsInline
-                                muted
-                                className="w-full h-full object-cover mirror"
-                            />
+                            <div className="w-full h-full relative">
+                                <video
+                                    ref={localVideoRef}
+                                    autoPlay
+                                    playsInline
+                                    muted
+                                    className="w-full h-full object-cover mirror"
+                                />
+                                <div className="absolute inset-0 border-[0.5px] border-white/10 rounded-[32px] pointer-events-none" />
+                            </div>
                         )}
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                     </motion.div>
                 </div>
             ) : (
                 <audio ref={audioRef} autoPlay playsInline className="hidden" />
             )}
 
-            {/* Top Bar (Call Info) */}
-            <div className="relative z-10 w-full px-6 pt-12 flex flex-col items-center">
-                {isEmergency && (
-                    <motion.div
-                        initial={{ y: -20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        className={`mb-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-2 border ${contextType === 'sos'
-                            ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                            : 'bg-primary-500/20 text-primary-400 border-primary-500/30'
-                            }`}
-                    >
-                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${contextType === 'sos' ? 'bg-red-400' : 'bg-primary-400'
-                            }`} />
-                        {contextType === 'sos' ? 'Emergency SOS' : 'Safe Walk'} Call
-                    </motion.div>
-                )}
+            {/* Top Bar (Call Info & SOS Ribbon) */}
+            <div className="relative z-10 w-full px-6 pt-16 flex flex-col items-center">
+                <AnimatePresence>
+                    {isEmergency && (
+                        <motion.div
+                            initial={{ y: -30, opacity: 0, scale: 0.9 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            className={`mb-8 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 backdrop-blur-3xl border shadow-2xl ${contextType === 'sos'
+                                ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                : 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20'
+                                }`}
+                        >
+                            <div className={`w-2 h-2 rounded-full animate-pulse ${contextType === 'sos' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]' : 'bg-[#D4AF37] shadow-[0_0_100px_rgba(212,175,55,0.6)]'
+                                }`} />
+                            {contextType === 'sos' ? 'Emergency SOS' : 'Safe Walk'} ACTIVE
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {!isVideoCall && (
-                    <div className="w-28 h-28 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-6 border border-white/20 shadow-2xl">
-                        <User className="w-14 h-14 text-primary-200" />
+                    <div className="w-32 h-32 bg-white/5 backdrop-blur-3xl rounded-[48px] flex items-center justify-center mb-8 border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.5)]">
+                        <User className="w-16 h-16 text-[#D4AF37]" />
                     </div>
                 )}
-                <h2 className={`font-black text-center ${isVideoCall ? 'text-xl drop-shadow-lg' : 'text-3xl mb-1'}`}>
-                    {partnerName}
-                </h2>
-                <p className={`font-medium opacity-80 ${isVideoCall ? 'text-xs drop-shadow-md' : 'text-primary-300 mb-4'}`}>
-                    {partnerRole}
-                </p>
-                <div className={`px-4 py-1 rounded-full border text-xs font-mono tracking-widest mt-2 
-                    ${isVideoCall ? 'bg-black/30 backdrop-blur-md border-white/10' : 'bg-white/5 backdrop-blur-md border-white/10'}`}>
+
+                <div className="text-center">
+                    <h2 className={`font-black uppercase tracking-tighter ${isVideoCall ? 'text-2xl drop-shadow-xl' : 'text-4xl mb-2'}`}>
+                        {partnerName}
+                    </h2>
+                    <p className={`font-black uppercase tracking-[0.3em] opacity-60 ${isVideoCall ? 'text-[10px]' : 'text-[#D4AF37] text-xs'}`}>
+                        {partnerRole}
+                    </p>
+                </div>
+
+                <div className={`mt-6 px-5 py-1.5 rounded-2xl border text-[11px] font-black tracking-[0.3em] 
+                    ${isVideoCall ? 'bg-black/40 backdrop-blur-2xl border-white/10' : 'bg-white/5 backdrop-blur-3xl border-white/10'}`}>
                     {formatTime(duration)}
                 </div>
             </div>
 
             {/* Visualizer for Audio Calls */}
             {!isVideoCall && (
-                <div className="relative z-10 flex items-end gap-1 h-12">
-                    {[...Array(12)].map((_, i) => (
+                <div className="relative z-10 flex items-end gap-1.5 h-16">
+                    {[...Array(16)].map((_, i) => (
                         <motion.div
                             key={i}
-                            animate={{ height: [10, Math.random() * 40 + 10, 10] }}
-                            transition={{ duration: 0.5 + Math.random(), repeat: Infinity }}
-                            className="w-1 bg-primary-400/60 rounded-full"
+                            animate={{ height: [12, Math.random() * 48 + 12, 12] }}
+                            transition={{ duration: 0.6 + Math.random(), repeat: Infinity, ease: "easeInOut" }}
+                            className="w-1.5 bg-gradient-to-t from-[#D4AF37]/40 to-[#D4AF37] rounded-full"
                         />
                     ))}
                 </div>
             )}
 
-            {/* Controls */}
-            <div className="relative z-10 w-full px-8 pb-16 flex flex-col items-center gap-8">
-                <div className="flex gap-4 items-center flex-wrap justify-center">
+            {/* THE GLASS DOCK - Classic & Functional Control System */}
+            <div className="relative z-20 w-full px-6 pb-12 flex flex-col items-center">
+                <div className="w-full max-w-[400px] bg-black/40 backdrop-blur-3xl rounded-[40px] p-4 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center justify-between gap-2">
+                    {/* Audio Toggle */}
                     <button
                         onClick={toggleMute}
-                        className={`w-14 h-14 rounded-full flex items-center justify-center border transition-all active:scale-90 ${isMuted
-                            ? 'bg-white text-slate-900 border-white shadow-lg'
-                            : 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                        className={`w-14 h-14 rounded-[24px] flex items-center justify-center border transition-all active:scale-90 ${isMuted
+                            ? 'bg-white text-black border-white shadow-xl'
+                            : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
                             }`}
                     >
                         {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
                     </button>
 
-                    {isVideoCall && (
-                        <button
-                            onClick={toggleVideo}
-                            className={`w-14 h-14 rounded-full flex items-center justify-center border transition-all active:scale-90 ${isVideoOff
-                                ? 'bg-white text-slate-900 border-white shadow-lg'
-                                : 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
-                                }`}
-                        >
-                            {isVideoOff ? <VideoOff className="w-6 h-6" /> : <Video className="w-6 h-6" />}
-                        </button>
-                    )}
-
-                    <button
-                        onClick={onEnd}
-                        className="w-16 h-16 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-2xl shadow-red-500/40 transition-all active:scale-95"
-                    >
-                        <PhoneOff className="w-8 h-8" />
-                    </button>
-
+                    {/* Speaker Toggle */}
                     <button
                         onClick={toggleSpeaker}
-                        className={`w-14 h-14 rounded-full flex items-center justify-center border transition-all active:scale-90 ${isSpeakerOn
-                            ? 'bg-white text-slate-900 border-white shadow-lg'
-                            : 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                        className={`w-14 h-14 rounded-[24px] flex items-center justify-center border transition-all active:scale-90 ${isSpeakerOn
+                            ? 'bg-white text-black border-white shadow-xl'
+                            : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
                             }`}
                     >
                         <Volume2 className="w-6 h-6" />
                     </button>
 
-                    {isVideoCall && (
+                    {/* END CALL - The Central Action */}
+                    <button
+                        onClick={onEnd}
+                        className="w-20 h-20 bg-red-600 hover:bg-red-700 text-white rounded-[28px] flex items-center justify-center shadow-[0_15px_40px_rgba(220,38,38,0.5)] transition-all active:scale-95 group relative"
+                    >
+                        <PhoneOff className="w-8 h-8 group-hover:rotate-12 transition-transform" />
+                        <div className="absolute inset-0 rounded-[28px] bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+
+                    {/* Video Toggle */}
+                    {isVideoCall ? (
+                        <button
+                            onClick={toggleVideo}
+                            className={`w-14 h-14 rounded-[24px] flex items-center justify-center border transition-all active:scale-90 ${isVideoOff
+                                ? 'bg-white text-black border-white shadow-xl'
+                                : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                                }`}
+                        >
+                            {isVideoOff ? <VideoOff className="w-6 h-6" /> : <Video className="w-6 h-6" />}
+                        </button>
+                    ) : (
+                        <div className="w-14 h-14" /> // Spacer for alignment
+                    )}
+
+                    {/* Camera Switch Toggle */}
+                    {isVideoCall ? (
                         <button
                             onClick={switchCamera}
-                            className="w-14 h-14 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 backdrop-blur-md transition-all active:scale-90"
+                            className="w-14 h-14 bg-white/5 border border-white/10 rounded-[24px] flex items-center justify-center text-white hover:bg-white/10 hover:border-white/20 transition-all active:scale-90"
                         >
                             <Camera className="w-6 h-6" />
                         </button>
+                    ) : (
+                        <div className="w-14 h-14" /> // Spacer for alignment
                     )}
                 </div>
             </div>
 
             <style>{`
-                .mirror {
-                    transform: scaleX(-1);
-                }
-                .font-outfit {
-                    font-family: 'Outfit', sans-serif;
+                .mirror { transform: scaleX(-1); }
+                .font-outfit { font-family: 'Outfit', sans-serif; }
+                @keyframes breathingGradient {
+                    0%, 100% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
                 }
             `}</style>
         </div>
