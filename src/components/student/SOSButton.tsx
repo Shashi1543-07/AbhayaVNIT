@@ -29,13 +29,16 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
 
     const globalActive = !!(activeSOS && !activeSOS.status?.resolved);
 
+    const locationRef = useRef<{ lat: number; lng: number } | null>(null);
+
+    // Sync ref with state for use in logic that shouldn't trigger re-renders
+    useEffect(() => {
+        locationRef.current = location;
+    }, [location]);
+
     // Sync local isActive with globalActive
     useEffect(() => {
-        if (globalActive) {
-            setIsActive(true);
-        } else {
-            setIsActive(false);
-        }
+        setIsActive(!!(activeSOS && !activeSOS.status?.resolved));
     }, [globalActive, activeSOS?.id]);
 
     // Get Location on Mount
@@ -48,13 +51,12 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
         const handleGeoError = (error: GeolocationPositionError) => {
             console.warn('Geolocation Watch Error:', error);
 
-            // If it's a timeout (code 3) and we already have a location, don't show error
-            if (error.code === 3 && location) {
-                setLocationStatus('Location Active'); // Keep active status if we have data
+            // Use ref to check location without triggering re-runs
+            if (error.code === 3 && locationRef.current) {
+                setLocationStatus('Location Active');
                 return;
             }
 
-            // If it's a timeout, show "Retrying" instead of "Error"
             if (error.code === 3) {
                 setLocationStatus('Retrying Location...');
                 return;
@@ -65,22 +67,23 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
 
         const watchId = navigator.geolocation.watchPosition(
             (position) => {
-                setLocation({
+                const newLoc = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
-                });
+                };
+                setLocation(newLoc);
                 setLocationStatus('Location Active');
             },
             handleGeoError,
             {
                 enableHighAccuracy: false,
-                timeout: 30000, // Very generous timeout for background watching
+                timeout: 30000,
                 maximumAge: 60000
             }
         );
 
         return () => navigator.geolocation.clearWatch(watchId);
-    }, [location]);
+    }, []); // Empty dependency array to mount once
 
     const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
         if (isActive || disabled || globalActive) return;
@@ -90,29 +93,28 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
 
         setIsLongPressing(true);
         startTimeRef.current = Date.now();
-        startYRef.current = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        startYRef.current = 'touches' in e ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
         setDragType('general');
 
-        // GSAP Pulse Initialization
         gsap.to(buttonRef.current, {
             scale: 0.9,
             duration: 0.2,
             ease: "power2.out"
         });
 
-        // Haptic Feedback
         Haptics.impact({ style: ImpactStyle.Light });
 
         timerRef.current = setInterval(() => {
             const elapsed = Date.now() - startTimeRef.current;
             const newProgress = Math.min((elapsed / 2500) * 100, 100);
 
-            // Haptic ticks every 20% progress
-            if (Math.floor(newProgress / 20) > Math.floor(progress / 20)) {
-                Haptics.impact({ style: ImpactStyle.Light });
-            }
-
-            setProgress(newProgress);
+            // Access current progress via functional update to avoid dependency issues
+            setProgress((prevProgress) => {
+                if (Math.floor(newProgress / 20) > Math.floor(prevProgress / 20)) {
+                    Haptics.impact({ style: ImpactStyle.Light });
+                }
+                return newProgress;
+            });
 
             if (newProgress >= 100) {
                 Haptics.notification({ type: 'SUCCESS' as any });
@@ -122,15 +124,11 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
     };
 
     const handleMove = (e: MouseEvent | TouchEvent) => {
-        if (!isLongPressing || isActive) return;
-
-        // Prevent scrolling during gesture
-        if (e.cancelable) e.preventDefault();
+        if (isActive) return;
 
         const currentY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
-        const deltaY = startYRef.current - currentY; // Up is positive
+        const deltaY = startYRef.current - currentY;
 
-        // Swap labels to align with user preference: UP for Threat, DOWN for Medical
         if (deltaY > 40) {
             setDragType('harassment');
         } else if (deltaY < -40) {
@@ -139,10 +137,9 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
             setDragType('general');
         }
 
-        // Instantaneous tracking for "immediate" feel
         gsap.to(buttonRef.current, {
-            y: -deltaY * 0.5, // Even higher sensitivity
-            duration: 0,     // Instant move
+            y: -deltaY * 0.5,
+            duration: 0,
             ease: "none"
         });
     };
@@ -150,30 +147,34 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
     const handleEnd = () => {
         if (isActive) return;
 
-        if (progress >= 100) {
-            activateSOS();
-        } else {
-            setIsLongPressing(false);
-            setProgress(0);
-            if (timerRef.current) clearInterval(timerRef.current);
+        // We check current progress state via a ref if needed, but here we can just check if long pressing was true
+        setIsLongPressing(false);
+        setProgress(0);
+        if (timerRef.current) clearInterval(timerRef.current);
 
-            gsap.to(buttonRef.current, {
-                y: 0,
-                scale: 1,
-                duration: 0.3,
-                ease: "power3.out"
-            });
-        }
+        gsap.to(buttonRef.current, {
+            y: 0,
+            scale: 1,
+            duration: 0.3,
+            ease: "power3.out"
+        });
     };
 
     useEffect(() => {
         const button = buttonRef.current;
         if (!button) return;
 
-        // Add main start listeners manually to ensure passive: false
-        button.addEventListener('mousedown', handleStart as any, { passive: false });
-        button.addEventListener('touchstart', handleStart as any, { passive: false });
+        const startListener = (e: any) => handleStart(e);
+        button.addEventListener('mousedown', startListener, { passive: false });
+        button.addEventListener('touchstart', startListener, { passive: false });
 
+        return () => {
+            button.removeEventListener('mousedown', startListener);
+            button.removeEventListener('touchstart', startListener);
+        };
+    }, [isActive, disabled, globalActive]); // Only rebind if core blocking states change
+
+    useEffect(() => {
         if (isLongPressing) {
             window.addEventListener('mousemove', handleMove, { passive: false });
             window.addEventListener('mouseup', handleEnd);
@@ -182,14 +183,12 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
         }
 
         return () => {
-            button.removeEventListener('mousedown', handleStart as any);
-            button.removeEventListener('touchstart', handleStart as any);
             window.removeEventListener('mousemove', handleMove);
             window.removeEventListener('mouseup', handleEnd);
             window.removeEventListener('touchmove', handleMove);
             window.removeEventListener('touchend', handleEnd);
         };
-    }, [isLongPressing, progress, dragType]);
+    }, [isLongPressing]); // Only rebind when long pressing starts/stops
 
     const activateSOS = async () => {
         if (timerRef.current) clearInterval(timerRef.current);
