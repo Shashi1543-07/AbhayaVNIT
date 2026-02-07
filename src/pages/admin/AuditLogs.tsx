@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import BottomNav from '../../components/layout/BottomNav';
 import { adminNavItems } from '../../lib/navItems';
-import { Search, Filter, Download } from 'lucide-react';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { Search, Filter, Download, Trash2 } from 'lucide-react';
+import { collection, query, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { motion } from 'framer-motion';
-import { containerStagger, cardVariant } from '../../lib/animations';
+import { motion, AnimatePresence } from 'framer-motion';
+import { containerStagger, cardVariant, modalVariants, overlayVariants } from '../../lib/animations';
+import { AlertTriangle, X } from 'lucide-react';
 
 import TopHeader from '../../components/layout/TopHeader';
+import { adminService } from '../../services/adminService';
 
 export default function AuditLogs() {
     const [logs, setLogs] = useState<any[]>([]);
@@ -16,26 +18,36 @@ export default function AuditLogs() {
     const [searchTerm, setSearchTerm] = useState('');
     const [actionFilter, setActionFilter] = useState('all');
 
+    // UI State
+    const [confirmModal, setConfirmModal] = useState<{
+        show: boolean;
+        type: 'single' | 'bulk';
+        id?: string;
+        count?: number;
+    }>({ show: false, type: 'single' });
+    const [deleting, setDeleting] = useState(false);
+
     useEffect(() => {
         const fetchLogs = async () => {
             setLoading(true);
             try {
-                let q = query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc'), limit(100));
-
-                if (actionFilter !== 'all') {
-                    // Note: This requires a composite index in Firestore (action + timestamp)
-                    // For now, we'll filter client-side if index is missing to avoid errors
-                    // or just query by action if we remove orderBy, but we want recent ones.
-                    // Let's stick to client-side filtering for simplicity on the Free Plan without managing indexes manually via CLI
-                }
-
+                let q = query(collection(db, 'audit_logs'), limit(100)); // Remove server-side orderBy
                 const snapshot = await getDocs(q);
                 let fetchedLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+                // Sort in memory instead of Firestore to avoid potential index errors
+                fetchedLogs.sort((a: any, b: any) => {
+                    const timeA = a.timestamp?.seconds || 0;
+                    const timeB = b.timestamp?.seconds || 0;
+                    return timeB - timeA;
+                });
+
+                // Apply action filter
                 if (actionFilter !== 'all') {
                     fetchedLogs = fetchedLogs.filter((log: any) => log.action === actionFilter);
                 }
 
+                // Apply search term filter
                 if (searchTerm) {
                     const lowerTerm = searchTerm.toLowerCase();
                     fetchedLogs = fetchedLogs.filter((log: any) =>
@@ -55,6 +67,35 @@ export default function AuditLogs() {
 
         fetchLogs();
     }, [actionFilter, searchTerm]);
+
+    const handleDeleteLog = async (logId: string) => {
+        setConfirmModal({ show: true, type: 'single', id: logId });
+    };
+
+    const handleBulkDelete = async () => {
+        if (logs.length === 0) return;
+        setConfirmModal({ show: true, type: 'bulk', count: logs.length });
+    };
+
+    const executeDeletion = async () => {
+        setDeleting(true);
+        try {
+            if (confirmModal.type === 'single' && confirmModal.id) {
+                await adminService.deleteLog(confirmModal.id);
+                setLogs(logs.filter(log => log.id !== confirmModal.id));
+            } else if (confirmModal.type === 'bulk') {
+                const logIds = logs.map(log => log.id);
+                await adminService.bulkDeleteLogs(logIds);
+                setLogs([]);
+            }
+            setConfirmModal({ show: false, type: 'single' });
+        } catch (error) {
+            console.error('Deletion error:', error);
+            alert('Deletion failed. Check permissions or network.');
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     const downloadLogs = () => {
         const csvContent = "data:text/csv;charset=utf-8,"
@@ -81,15 +122,31 @@ export default function AuditLogs() {
                 initial="hidden"
                 animate="visible"
             >
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-wrap items-center gap-4 mb-6">
                     <motion.button
                         variants={cardVariant}
+                        initial="hidden"
+                        animate="visible"
                         whileTap={{ scale: 0.95 }}
                         onClick={downloadLogs}
-                        className="flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] px-4 py-2 rounded-xl hover:bg-[#D4AF37]/20 font-black uppercase tracking-wider text-xs shadow-sm transition-all"
+                        disabled={loading || logs.length === 0}
+                        className="flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] px-4 py-2 rounded-xl hover:bg-[#D4AF37]/20 font-black uppercase tracking-wider text-xs shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Download className="w-4 h-4" />
                         Export CSV
+                    </motion.button>
+
+                    <motion.button
+                        variants={cardVariant}
+                        initial="hidden"
+                        animate="visible"
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleBulkDelete}
+                        disabled={loading || logs.length === 0}
+                        className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-2 rounded-xl hover:bg-red-500/20 font-black uppercase tracking-wider text-xs shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Filtered {logs.length > 0 && `(${logs.length})`}
                     </motion.button>
                 </div>
 
@@ -137,6 +194,7 @@ export default function AuditLogs() {
                                     <th className="p-4">Target</th>
                                     <th className="p-4">Performed By</th>
                                     <th className="p-4">Details</th>
+                                    <th className="p-4">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -154,6 +212,15 @@ export default function AuditLogs() {
                                             <td className="p-4 text-[#D4AF37] font-medium text-xs">{log.target}</td>
                                             <td className="p-4 text-zinc-300 font-medium text-xs">{log.performedBy}</td>
                                             <td className="p-4 text-zinc-500 text-xs font-medium max-w-xs truncate" title={log.details}>{log.details}</td>
+                                            <td className="p-4">
+                                                <button
+                                                    onClick={() => handleDeleteLog(log.id)}
+                                                    className="p-2 text-zinc-500 hover:text-red-500 transition-colors"
+                                                    title="Delete Log"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 )}
@@ -164,6 +231,78 @@ export default function AuditLogs() {
             </motion.main>
 
             <BottomNav items={adminNavItems} />
+
+            {/* Premium Confirmation Modal */}
+            <AnimatePresence>
+                {confirmModal.show && (
+                    <>
+                        <motion.div
+                            variants={overlayVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="hidden"
+                            onClick={() => !deleting && setConfirmModal({ ...confirmModal, show: false })}
+                            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
+                        />
+                        <div className="fixed inset-0 flex items-center justify-center z-[101] p-4 pointer-events-none">
+                            <motion.div
+                                variants={modalVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="hidden"
+                                className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-[32px] overflow-hidden pointer-events-auto shadow-2xl"
+                            >
+                                <div className="p-8 relative">
+                                    <button
+                                        onClick={() => !deleting && setConfirmModal({ ...confirmModal, show: false })}
+                                        disabled={deleting}
+                                        className="absolute top-6 right-6 p-2 text-zinc-500 hover:text-white transition-colors disabled:opacity-0"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+
+                                    <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 mx-auto border border-red-500/20">
+                                        <AlertTriangle className="w-8 h-8 text-red-500" />
+                                    </div>
+
+                                    <h3 className="text-xl font-black text-white text-center mb-2 uppercase tracking-tight">
+                                        Confirm Deletion
+                                    </h3>
+                                    <p className="text-zinc-500 text-sm text-center font-medium leading-relaxed mb-8">
+                                        {confirmModal.type === 'bulk'
+                                            ? `This will permanently remove ${confirmModal.count} filtered log entries. This action cannot be undone.`
+                                            : "This will permanently remove this audit log entry. This action cannot be undone."}
+                                    </p>
+
+                                    <div className="flex flex-col gap-3">
+                                        <button
+                                            onClick={executeDeletion}
+                                            disabled={deleting}
+                                            className="w-full py-4 bg-red-500 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {deleting ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                'Confirm Delete'
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                                            disabled={deleting}
+                                            className="w-full py-4 bg-white/5 text-zinc-400 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-white/10 transition-colors border border-white/10"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
         </MobileWrapper>
     );
 }

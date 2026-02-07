@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { useAuthStore } from '../context/authStore';
@@ -16,6 +16,18 @@ export const useAuthListener = () => {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
+
+                        // Check for disabled status
+                        if (userData.status === 'disabled') {
+                            console.warn('Authenticated user is disabled in Firestore. Signing out.');
+                            await signOut(auth);
+                            setRole(null);
+                            setProfile(null);
+                            setUser(null);
+                            setLoading(false);
+                            return;
+                        }
+
                         setRole(userData.role);
                         setProfile(userData);
                         setForcePasswordReset(userData.forcePasswordReset || false);

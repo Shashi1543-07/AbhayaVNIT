@@ -1,6 +1,6 @@
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db, firebaseConfig, auth as primaryAuth } from '../lib/firebase';
 
 export interface CreateUserData {
@@ -224,6 +224,50 @@ export const adminService = {
         } catch (error: any) {
             console.error('Failed to send reset email:', error);
             throw new Error(error.message || 'Failed to send email');
+        }
+    },
+
+    /**
+     * Deletes a specific audit log.
+     */
+    deleteLog: async (logId: string) => {
+        try {
+            await deleteDoc(doc(db, 'audit_logs', logId));
+            return { success: true };
+        } catch (error: any) {
+            console.error('Failed to delete log:', error);
+            throw new Error(error.message || 'Failed to delete log');
+        }
+    },
+
+    /**
+     * Deletes multiple audit logs in chunks to handle Firestore limits.
+     */
+    bulkDeleteLogs: async (logIds: string[]) => {
+        try {
+            // Firestore batch limit is 500 writes
+            const CHUNK_SIZE = 500;
+            const chunks = [];
+
+            for (let i = 0; i < logIds.length; i += CHUNK_SIZE) {
+                chunks.push(logIds.slice(i, i + CHUNK_SIZE));
+            }
+
+            let totalDeleted = 0;
+            for (const chunk of chunks) {
+                const batch = writeBatch(db);
+                chunk.forEach((id) => {
+                    const logRef = doc(db, 'audit_logs', id);
+                    batch.delete(logRef);
+                });
+                await batch.commit();
+                totalDeleted += chunk.length;
+            }
+
+            return { success: true, count: totalDeleted };
+        } catch (error: any) {
+            console.error('Failed to bulk delete logs:', error);
+            throw new Error(error.message || 'Failed to bulk delete logs');
         }
     }
 };

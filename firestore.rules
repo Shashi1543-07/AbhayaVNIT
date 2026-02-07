@@ -102,7 +102,7 @@ service cloud.firestore {
 
     // Audit Logs
     match /audit_logs/{logId} {
-      allow read: if hasRole('admin');
+      allow read, delete: if hasRole('admin');
       allow create: if isAuthenticated(); // Allow system to log actions
     }
 

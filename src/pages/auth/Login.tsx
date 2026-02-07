@@ -39,6 +39,14 @@ export default function Login() {
                     return;
                 }
 
+                // Check for disabled status
+                if (userData.status === 'disabled') {
+                    await signOut(auth);
+                    setError('Access Denied: Your account has been disabled. Please contact the administrator.');
+                    setLoading(false);
+                    return;
+                }
+
                 if (userData.forcePasswordReset) {
                     navigate('/change-password');
                     return;
