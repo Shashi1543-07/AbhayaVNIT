@@ -72,15 +72,15 @@ export default function ReportIncident() {
             console.log('ReportIncident: Submitting to hostel:', targetHostelId);
 
             await incidentService.createIncident({
-                userId: user.uid, // ALWAYS store the real owner's ID privately
-                reportedBy: isAnonymous ? 'Anonymous' : user.uid,
+                userId: user.uid,
+                reportedBy: user.uid, // Keep for compatibility if needed
                 reporterName: isAnonymous ? 'Anonymous' : (profile?.name || user.displayName || 'Student'),
                 category,
                 description,
                 photoURL: photoURL || '',
                 location: {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
                 },
                 hostelId: targetHostelId,
                 isAnonymous

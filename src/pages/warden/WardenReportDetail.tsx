@@ -9,7 +9,7 @@ import { User, Phone, Mail, MapPin, MessageSquare } from 'lucide-react';
 
 export default function WardenReportDetail() {
     const { id } = useParams();
-    const { user } = useAuthStore();
+    const { user, profile } = useAuthStore();
     const [incident, setIncident] = useState<Incident | null>(null);
     const [reporterProfile, setReporterProfile] = useState<StudentProfile | null>(null);
     const [comment, setComment] = useState('');
@@ -22,17 +22,17 @@ export default function WardenReportDetail() {
             if (data) {
                 setIncident(data);
                 if (data.userId) {
-                    const profile = await userService.getUserProfile(data.userId);
-                    if (profile) {
+                    const profileData = await userService.getUserProfile(data.userId);
+                    if (profileData) {
                         setReporterProfile({
-                            id: profile.id,
-                            displayName: profile.name || profile.displayName || 'Unnamed',
-                            email: profile.email || '',
+                            id: profileData.id,
+                            displayName: profileData.name || profileData.displayName || 'Unnamed',
+                            email: profileData.email || '',
                             role: 'student',
-                            hostelId: profile.hostelId,
-                            roomNo: profile.roomNo,
-                            phone: profile.phoneNumber || profile.phone,
-                            emergencyContact: profile.emergencyContact || profile.emergencyPhone,
+                            hostelId: profileData.hostelId,
+                            roomNo: profileData.roomNo,
+                            phone: profileData.phoneNumber || profileData.phone,
+                            emergencyContact: profileData.emergencyContact || profileData.emergencyPhone,
                         } as StudentProfile);
                     }
                 }
@@ -57,7 +57,8 @@ export default function WardenReportDetail() {
         e.preventDefault();
         if (!incident || !user || !comment.trim()) return;
         try {
-            await incidentService.addComment(incident.id, user.uid, comment);
+            const userName = profile?.name || profile?.displayName || user.displayName || 'Warden';
+            await incidentService.addComment(incident.id, userName, comment);
             setComment('');
             const updated = await incidentService.getIncidentById(incident.id);
             if (updated) setIncident(updated);

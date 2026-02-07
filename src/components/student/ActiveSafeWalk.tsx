@@ -172,16 +172,7 @@ export default function ActiveSafeWalk({ walkId, initialData, onWalkEnded }: Act
                     lng: position.coords.longitude
                 };
 
-                const userData = {
-                    uid: user.uid,
-                    displayName: profile?.name || user.displayName,
-                    phoneNumber: profile?.contactNumber || user.phoneNumber,
-                    role: 'student',
-                    hostelId: profile?.hostelId || profile?.hostel,
-                    roomNo: profile?.roomNo
-                };
-
-                await sosService.triggerSOS(userData, location, 'general');
+                await sosService.triggerSOS(user, location, 'general');
             }
 
             alert("SOS Alert Sent to Security!");

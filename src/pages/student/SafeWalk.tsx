@@ -226,6 +226,7 @@ export default function SafeWalk() {
             await safeWalkService.startSafeWalk({
                 userId: user.uid,
                 userName: profile?.name || user.displayName || 'Student',
+                phone: profile?.phoneNumber || profile?.phone || '',
                 hostelId: profile?.hostelId || 'Unknown',
                 startLocation: { ...startCoords, name: 'Current Location' },
                 destination: { ...destCoords, name: selectedDestName },
@@ -257,17 +258,32 @@ export default function SafeWalk() {
         if (confirm(confirmMsg)) {
             try {
                 const currentPos = lastLocationRef.current || { lat: 0, lng: 0 };
-                await safeWalkService.convertToSOS(activeSession.id, {
-                    ...profile,
-                    uid: user.uid,
-                    displayName: profile?.name || 'Student'
-                }, { lat: currentPos.lat, lng: currentPos.lng });
+                await safeWalkService.convertToSOS(activeSession.id, user, { lat: currentPos.lat, lng: currentPos.lng });
 
                 stopGPSTracking();
                 alert('Emergency SOS triggered.');
             } catch (error) {
                 console.error('SOS Escalation failed:', error);
             }
+        }
+    };
+
+    // Handler for "I'M IN DANGER" button - immediate action without confirmation
+    const handleDanger = async () => {
+        if (!activeSession || !user) return;
+
+        // Close popup immediately
+        setShowNoMovementPopup(false);
+        setShowDelayPopup(false);
+
+        try {
+            const currentPos = lastLocationRef.current || { lat: 0, lng: 0 };
+
+            // End the SafeWalk and trigger SOS
+            await safeWalkService.convertToSOS(activeSession.id, user, { lat: currentPos.lat, lng: currentPos.lng });
+            stopGPSTracking();
+        } catch (error) {
+            console.error('Error triggering danger alert:', error);
         }
     };
 
@@ -313,7 +329,7 @@ export default function SafeWalk() {
                                         I'M SAFE
                                     </button>
                                     <button
-                                        onClick={handleSOS}
+                                        onClick={handleDanger}
                                         className="w-full py-4.5 bg-red-600 text-white font-black uppercase tracking-widest text-[11px] rounded-[20px] shadow-2xl active:scale-95 transition-all border border-red-500/30"
                                     >
                                         I'M IN DANGER

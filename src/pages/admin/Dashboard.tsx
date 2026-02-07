@@ -7,13 +7,11 @@ import { sosService, type SOSEvent } from '../../services/sosService';
 import { Users, Shield, UserCheck, UserX, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
-import { collection, getCountFromServer, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, getCountFromServer, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import TopHeader from '../../components/layout/TopHeader';
-import type { Incident } from '../../services/incidentService';
-import StatusBadge from '../../components/ui/StatusBadge';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
@@ -24,7 +22,6 @@ export default function AdminDashboard() {
         activeUsers: 0,
         disabledUsers: 0
     });
-    const [incidents, setIncidents] = useState<Incident[]>([]);
     const [activeSOS, setActiveSOS] = useState<SOSEvent[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -32,25 +29,6 @@ export default function AdminDashboard() {
         const unsubscribe = sosService.subscribeToActiveSOS((events) => {
             setActiveSOS(events);
         });
-        return () => unsubscribe();
-    }, []);
-
-    // Incidents Subscription
-    useEffect(() => {
-        const q = query(
-            collection(db, 'incidents'),
-            orderBy('createdAt', 'desc'),
-            limit(5)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Incident[];
-            setIncidents(data);
-        });
-
         return () => unsubscribe();
     }, []);
 
@@ -165,51 +143,6 @@ export default function AdminDashboard() {
                     <ActiveWalksList
                         onSelectWalk={(walk) => navigate(`/admin/safe-walk/${walk.id}`)}
                     />
-                </motion.div>
-
-                {/* Live Recent Incidents */}
-                <motion.div variants={cardVariant} className="glass-card bg-black/40 p-6 rounded-[32px] shadow-2xl border border-white/10">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xs font-black text-[#D4AF37] flex items-center gap-3 uppercase tracking-[0.2em] font-heading">
-                            <Activity className="w-5 h-5 text-[#D4AF37]" strokeWidth={3} />
-                            Recent Intelligence
-                        </h3>
-                        <button className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] hover:brightness-125 transition-all bg-[#D4AF37]/10 px-4 py-2 rounded-xl border border-[#D4AF37]/20">Archive</button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {loading ? (
-                            <p className="text-zinc-500 text-center py-8 text-[10px] font-black uppercase tracking-[0.3em] col-span-full">Processing data...</p>
-                        ) : incidents.length === 0 ? (
-                            <div className="text-center py-12 bg-white/5 rounded-3xl border border-white/5 col-span-full">
-                                <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">No recent incident reports</p>
-                            </div>
-                        ) : (
-                            incidents.map(incident => (
-                                <div key={incident.id} className="glass-card bg-white/5 rounded-2xl p-5 flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all border border-white/10 group active:scale-[0.98]" onClick={() => navigate(`/admin/sos/${incident.id}`)}>
-                                    <div className="min-w-0 pr-4">
-                                        <p className="font-black text-sm text-[#D4AF37] uppercase tracking-wide group-hover:brightness-125 transition-all">{incident.category}</p>
-                                        <div className="flex items-center gap-2 mt-1.5">
-                                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                                                {incident.reporterName || 'Unknown'}
-                                            </p>
-                                            <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
-                                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-                                                {incident.createdAt?.seconds ? new Date(incident.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Tactical Now'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <StatusBadge
-                                        status={
-                                            incident.status === 'resolved' ? 'success' :
-                                                incident.status === 'open' ? 'warning' : 'neutral'
-                                        }
-                                        label={incident.status.toUpperCase()}
-                                    />
-                                </div>
-                            ))
-                        )}
-                    </div>
                 </motion.div>
             </motion.main>
 

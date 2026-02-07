@@ -19,7 +19,7 @@ export const wardenNavItems = [
 export const securityNavItems = [
     { icon: Bell, label: 'Dashboard', path: '/security/dashboard' },
     { icon: MessageCircle, label: 'Messages', path: '/security/messages' },
-    { icon: MapIcon, label: 'Map', path: '/security/map' },
+    { icon: Newspaper, label: 'Feed', path: '/feed' },
     { icon: Megaphone, label: 'Broadcast', path: '/security/broadcasts' },
     { icon: User, label: 'Profile', path: '/security/profile' },
 ];

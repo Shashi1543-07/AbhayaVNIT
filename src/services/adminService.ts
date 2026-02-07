@@ -1,7 +1,7 @@
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
-import { db, firebaseConfig } from '../lib/firebase';
+import { db, firebaseConfig, auth as primaryAuth } from '../lib/firebase';
 
 export interface CreateUserData {
     email: string;
@@ -16,15 +16,15 @@ export interface AuditLog {
     action: string;
     target: string;
     details: string;
-    performedBy: string; // Email of admin
+    performedBy: string;
     timestamp: any;
 }
 
-// Helper to generate secure random password
-const generateSecurePassword = () => {
+// Helper to generate a temporary password (will be reset via email)
+const generateTempPassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
     let password = '';
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 16; i++) {
         password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return password;
@@ -32,23 +32,19 @@ const generateSecurePassword = () => {
 
 // Validation Helper
 export const validateUser = (user: CreateUserData): string | null => {
-    // 1. Required Fields
     if (!user.name || !user.email || !user.role || !user.phone) {
         return 'Missing required fields (Name, Email, Role, Phone)';
     }
 
-    // 2. Email Validation
-    // Allow both @vnit.ac.in (staff/admin) and @students.vnit.ac.in (students)
     const emailRegex = /^[a-zA-Z0-9._-]+@(students\.)?vnit\.ac\.in$/;
     if (!emailRegex.test(user.email)) {
         return `Invalid email: ${user.email}. Must be an official VNIT address (@vnit.ac.in or @students.vnit.ac.in).`;
     }
 
-    // Student specific email check (Enrollment No format)
     if (user.role === 'student') {
         const enrollmentPattern = /^[a-z]{2}\d{2}[a-z]{3}\d{3}@students\.vnit\.ac\.in$/i;
         if (!enrollmentPattern.test(user.email)) {
-            return `Invalid student email: ${user.email}. Must follow format: enrollmentno@students.vnit.ac.in (e.g., bt21cse001@students.vnit.ac.in)`;
+            return `Invalid student email: ${user.email}. Must follow format: enrollmentno@students.vnit.ac.in`;
         }
 
         if (!user.hostel || !user.roomNo) {
@@ -56,13 +52,11 @@ export const validateUser = (user: CreateUserData): string | null => {
         }
     }
 
-    // 3. Phone Validation (10 digits)
     const phoneRegex = /^\d{10}$/;
     if (!phoneRegex.test(user.phone)) {
         return `Invalid phone number: ${user.phone}. Must be 10 digits.`;
     }
 
-    // 4. Warden specific checks
     if (user.role === 'warden' && !user.hostel) {
         return 'Warden requires an assigned Hostel';
     }
@@ -92,27 +86,26 @@ export const adminService = {
     },
 
     /**
-     * Creates a new user in Firebase Auth and Firestore.
-     * Uses a secondary Firebase App instance to avoid logging out the current admin.
+     * Creates a new user and sends password reset email.
+     * User receives email to set their own password - more secure than auto-generated.
      */
     createUser: async (userData: CreateUserData) => {
-        // Validate first
         const validationError = validateUser(userData);
         if (validationError) {
             throw new Error(validationError);
         }
 
-        // 1. Initialize a secondary app
+        // Initialize a secondary app to avoid logging out admin
         const secondaryApp = initializeApp(firebaseConfig, 'SecondaryApp');
         const secondaryAuth = getAuth(secondaryApp);
 
         try {
-            // 2. Create user in Auth (this automatically signs them in on the secondary app)
-            const password = generateSecurePassword();
-            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, userData.email, password);
+            // Create user with temporary password (will be reset via email)
+            const tempPassword = generateTempPassword();
+            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, userData.email, tempPassword);
             const { user } = userCredential;
 
-            // 3. Create user document in Firestore (using the PRIMARY app's db connection which has Admin privileges)
+            // Create user document in Firestore
             await setDoc(doc(db, 'users', user.uid), {
                 uid: user.uid,
                 name: userData.name,
@@ -122,47 +115,46 @@ export const adminService = {
                 hostel: userData.hostel || null,
                 roomNo: userData.roomNo || null,
                 status: 'active',
-                forcePasswordReset: true,
+                passwordResetSent: true,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             });
 
-            // 4. Log the action
-            await adminService.logAction('Create User', userData.email, `Created ${userData.role} account`);
-
-            // 5. Sign out from secondary app to clean up
+            // Sign out from secondary app
             await signOut(secondaryAuth);
 
-            return { success: true, uid: user.uid, password };
+            // Send password reset email using primary auth
+            await sendPasswordResetEmail(primaryAuth, userData.email);
+
+            // Log the action
+            await adminService.logAction('Create User', userData.email, `Created ${userData.role} account with password reset email`);
+
+            return { success: true, uid: user.uid, emailSent: true };
 
         } catch (error: any) {
             console.error('Error creating user:', error);
             throw new Error(error.message || 'Failed to create user');
         } finally {
-            // 6. Delete the secondary app instance
             await deleteApp(secondaryApp);
         }
     },
 
     /**
-     * Bulk creates users from a list of user data.
-     * Processes sequentially to avoid rate limits and manage secondary app lifecycle efficiently.
+     * Bulk creates users and sends password reset emails.
      */
     bulkCreateUsers: async (usersData: CreateUserData[]) => {
         const results = {
             success: 0,
             failed: 0,
             errors: [] as string[],
-            credentials: [] as { email: string, password: string, role: string }[]
+            emailsSent: [] as string[]
         };
 
-        // Initialize app once for the batch (optimization)
         const secondaryApp = initializeApp(firebaseConfig, 'SecondaryAppBulk');
         const secondaryAuth = getAuth(secondaryApp);
 
         try {
             for (const userData of usersData) {
-                // Validate first
                 const validationError = validateUser(userData);
                 if (validationError) {
                     results.failed++;
@@ -171,8 +163,8 @@ export const adminService = {
                 }
 
                 try {
-                    const password = generateSecurePassword();
-                    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, userData.email, password);
+                    const tempPassword = generateTempPassword();
+                    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, userData.email, tempPassword);
                     const { user } = userCredential;
 
                     await setDoc(doc(db, 'users', user.uid), {
@@ -184,18 +176,21 @@ export const adminService = {
                         hostel: userData.hostel || null,
                         roomNo: userData.roomNo || null,
                         status: 'active',
-                        forcePasswordReset: true,
+                        passwordResetSent: true,
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()
                     });
 
-                    results.credentials.push({
-                        email: userData.email,
-                        password,
-                        role: userData.role
-                    });
-
                     await signOut(secondaryAuth);
+
+                    // Send password reset email
+                    try {
+                        await sendPasswordResetEmail(primaryAuth, userData.email);
+                        results.emailsSent.push(userData.email);
+                    } catch (emailError) {
+                        console.warn(`Failed to send reset email to ${userData.email}:`, emailError);
+                        // Still count as success - account created, can resend email later
+                    }
 
                     results.success++;
                 } catch (error: any) {
@@ -207,9 +202,8 @@ export const adminService = {
                 }
             }
 
-            // Log the bulk action
             if (results.success > 0) {
-                await adminService.logAction('Bulk Create', 'Multiple Users', `Created ${results.success} users via CSV`);
+                await adminService.logAction('Bulk Create', 'Multiple Users', `Created ${results.success} users, sent ${results.emailsSent.length} reset emails`);
             }
 
         } finally {
@@ -217,5 +211,19 @@ export const adminService = {
         }
 
         return results;
+    },
+
+    /**
+     * Resend password reset email to a user.
+     */
+    resendPasswordResetEmail: async (email: string) => {
+        try {
+            await sendPasswordResetEmail(primaryAuth, email);
+            await adminService.logAction('Resend Reset Email', email, 'Password reset email resent');
+            return { success: true };
+        } catch (error: any) {
+            console.error('Failed to send reset email:', error);
+            throw new Error(error.message || 'Failed to send email');
+        }
     }
 };

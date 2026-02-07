@@ -18,7 +18,7 @@ export default function PostCard({ post }: PostCardProps) {
 
         setDeleting(true);
         try {
-            await postService.deletePost(post.id, post.imageUrl);
+            await postService.deletePost(post.id);
         } catch (error) {
             console.error('Failed to delete post:', error);
             alert('Failed to delete post');
@@ -45,24 +45,27 @@ export default function PostCard({ post }: PostCardProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="glass p-6 rounded-[2.5rem] border border-[#D4AF37]/10 shadow-2xl relative bg-black/40"
+            className="glass p-5 rounded-3xl border border-white/10 shadow-xl relative overflow-hidden group"
         >
+            {/* Decorative gradient */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#D4AF37]/5 to-transparent rounded-full blur-2xl -mr-16 -mt-16" />
+
             {/* Header */}
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-3">
                     {/* Avatar */}
-                    <div className="w-12 h-12 bg-white/5 backdrop-blur-3xl rounded-[18px] flex items-center justify-center font-black text-[#D4AF37] border border-white/10 shadow-2xl">
+                    <div className="w-11 h-11 bg-gradient-to-br from-[#D4AF37]/20 to-[#D4AF37]/5 rounded-2xl flex items-center justify-center font-black text-[#D4AF37] text-lg border border-[#D4AF37]/20 shadow-lg">
                         {post.authorName.charAt(0).toUpperCase()}
                     </div>
                     {/* Author Info */}
                     <div>
-                        <h3 className="font-black text-white text-sm leading-tight drop-shadow-sm font-heading">{post.authorName}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[9px] font-black text-[#D4AF37]/60 uppercase tracking-[0.1em]">
+                        <h3 className="font-bold text-white text-sm leading-tight">{post.authorName}</h3>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-semibold text-[#D4AF37]/70 uppercase tracking-wide">
                                 {post.hostelId}
                             </span>
-                            <span className="text-[9px] text-[#D4AF37]/40">•</span>
-                            <span className="text-[9px] text-zinc-500 font-black uppercase font-mono">
+                            <span className="text-[10px] text-zinc-600">•</span>
+                            <span className="text-[10px] text-zinc-500 font-medium">
                                 {getRelativeTime(post.createdAt)}
                             </span>
                         </div>
@@ -74,7 +77,7 @@ export default function PostCard({ post }: PostCardProps) {
                     <button
                         onClick={handleDelete}
                         disabled={deleting}
-                        className="p-2.5 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/20 transition-all disabled:opacity-50 active:scale-90"
+                        className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all disabled:opacity-50 active:scale-90"
                         title="Delete post"
                     >
                         <Trash2 className="w-4 h-4" />
@@ -83,17 +86,17 @@ export default function PostCard({ post }: PostCardProps) {
             </div>
 
             {/* Content */}
-            <p className="text-sm text-zinc-300 font-bold leading-relaxed mb-5 whitespace-pre-wrap pl-1">
+            <p className="text-sm text-zinc-300 leading-relaxed mb-4 whitespace-pre-wrap">
                 {post.text}
             </p>
 
-            {/* Image */}
-            {post.imageUrl && (
-                <div className="rounded-[24px] overflow-hidden border border-white/10 shadow-2xl bg-black/50">
+            {/* Image - supports both imageData (base64) and legacy imageUrl */}
+            {(post.imageData || (post as any).imageUrl) && (
+                <div className="rounded-2xl overflow-hidden border border-white/10 shadow-lg">
                     <img
-                        src={post.imageUrl}
+                        src={post.imageData || (post as any).imageUrl}
                         alt="Post image"
-                        className="w-full max-h-[400px] object-cover hover:scale-105 transition-transform duration-700"
+                        className="w-full max-h-80 object-cover"
                         loading="lazy"
                     />
                 </div>
@@ -101,3 +104,4 @@ export default function PostCard({ post }: PostCardProps) {
         </motion.div>
     );
 }
+

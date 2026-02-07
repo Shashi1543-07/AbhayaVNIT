@@ -2,56 +2,56 @@ import { useState, useEffect } from 'react';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import BottomNav from '../../components/layout/BottomNav';
 import { adminNavItems } from '../../lib/navItems';
-import { Megaphone, Send, Clock, Users } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { Megaphone, Send, Clock, Users, Trash2, Timer } from 'lucide-react';
+import { broadcastService, type Broadcast } from '../../services/broadcastService';
 import { adminService } from '../../services/adminService';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
-
 import TopHeader from '../../components/layout/TopHeader';
+import { useAuthStore } from '../../context/authStore';
 
 export default function Broadcasts() {
+    const { user, profile } = useAuthStore();
     const [message, setMessage] = useState('');
     const [title, setTitle] = useState('');
     const [targetGroup, setTargetGroup] = useState('all');
     const [priority, setPriority] = useState('info');
+    const [durationHours, setDurationHours] = useState(24);
     const [sending, setSending] = useState(false);
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<Broadcast[]>([]);
+    const [deleting, setDeleting] = useState<string | null>(null);
 
     useEffect(() => {
-        const q = query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(10));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        }, (error) => {
-            console.error("Error fetching broadcasts:", error);
+        const unsubscribe = broadcastService.subscribeToAllBroadcastsWithExpired((broadcasts) => {
+            setHistory(broadcasts);
         });
         return () => unsubscribe();
     }, []);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!message || !title) return;
+        if (!message || !title || !user) return;
 
         setSending(true);
         try {
-            await addDoc(collection(db, 'broadcasts'), {
+            await broadcastService.sendBroadcast({
                 title,
                 message,
-                targetGroup,
-                priority,
+                targetGroup: targetGroup as any,
+                priority: priority as any,
                 senderRole: 'admin',
-                createdAt: serverTimestamp(),
-                createdBy: 'Admin' // In real app, use auth.currentUser.email
+                createdBy: profile?.name || user.email?.split('@')[0] || 'Admin',
+                createdById: user.uid,
+                durationHours
             });
 
-            await adminService.logAction('Send Broadcast', targetGroup, `Sent ${priority} alert: ${title}`);
+            await adminService.logAction('Send Broadcast', targetGroup, `Sent ${priority} alert: ${title} (${durationHours}h expiry)`);
 
             setTitle('');
             setMessage('');
             setPriority('info');
+            setDurationHours(24);
             alert('Broadcast sent successfully!');
-            // fetchHistory(); // Handled by onSnapshot
         } catch (error) {
             console.error("Error sending broadcast:", error);
             alert('Failed to send broadcast.');
@@ -60,137 +60,185 @@ export default function Broadcasts() {
         }
     };
 
+    const handleDelete = async (broadcast: Broadcast) => {
+        if (!confirm(`Delete "${broadcast.title}"? This cannot be undone.`)) return;
+
+        setDeleting(broadcast.id);
+        try {
+            await broadcastService.deleteBroadcast(broadcast.id);
+        } catch (error) {
+            console.error("Error deleting broadcast:", error);
+            alert('Failed to delete broadcast.');
+        } finally {
+            setDeleting(null);
+        }
+    };
+
+    const isExpired = (broadcast: Broadcast) => broadcastService.isExpired(broadcast);
+    const getTimeRemaining = (broadcast: Broadcast) => broadcastService.getTimeRemaining(broadcast);
+
     return (
         <MobileWrapper>
             <TopHeader title="Broadcasts & Alerts" showBackButton={true} />
 
             <motion.main
-                className="px-4 pt-nav-safe pb-nav-safe"
+                className="px-4 pt-nav-safe pb-nav-safe space-y-6"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
+                {/* Send Form */}
+                <motion.div variants={cardVariant} className="glass rounded-3xl p-6 border border-white/10">
+                    <h2 className="text-lg font-bold text-white mb-5 flex items-center gap-3">
+                        <div className="p-2 bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
+                            <Megaphone className="w-5 h-5 text-[#D4AF37]" />
+                        </div>
+                        New Announcement
+                    </h2>
 
-                <motion.div
-                    className="flex flex-col items-center space-y-8"
-                    variants={containerStagger}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    {/* Send Form */}
-                    <motion.div variants={cardVariant} className="w-full max-w-2xl glass-card bg-black/40 p-6 rounded-[24px] shadow-sm border border-white/10">
-                        <h2 className="text-lg font-heading font-black text-white mb-6 flex items-center gap-3 border-b border-white/10 pb-4 uppercase tracking-tight">
-                            <div className="p-2 bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
-                                <Megaphone className="w-5 h-5 text-[#D4AF37]" />
-                            </div>
-                            New Announcement
-                        </h2>
-
-                        <form onSubmit={handleSend} className="space-y-6">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Target Audience</label>
-                                    <select
-                                        className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold appearance-none"
-                                        value={targetGroup}
-                                        onChange={(e) => setTargetGroup(e.target.value)}
-                                    >
-                                        <option value="all" className="bg-zinc-900">All Users</option>
-                                        <option value="student" className="bg-zinc-900">Students Only</option>
-                                        <option value="warden" className="bg-zinc-900">Wardens Only</option>
-                                        <option value="security" className="bg-zinc-900">Security Staff Only</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Priority Level</label>
-                                    <select
-                                        className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold appearance-none"
-                                        value={priority}
-                                        onChange={(e) => setPriority(e.target.value)}
-                                    >
-                                        <option value="info" className="bg-zinc-900">Information (Blue)</option>
-                                        <option value="warning" className="bg-zinc-900">Warning (Orange)</option>
-                                        <option value="emergency" className="bg-zinc-900">Emergency (Red)</option>
-                                    </select>
-                                </div>
+                    <form onSubmit={handleSend} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs text-zinc-500 font-medium mb-1.5">Target</label>
+                                <select
+                                    className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-medium"
+                                    value={targetGroup}
+                                    onChange={(e) => setTargetGroup(e.target.value)}
+                                >
+                                    <option value="all" className="bg-zinc-900">All Users</option>
+                                    <option value="student" className="bg-zinc-900">Students</option>
+                                    <option value="warden" className="bg-zinc-900">Wardens</option>
+                                    <option value="security" className="bg-zinc-900">Security</option>
+                                </select>
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Title</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Hostel Curfew Update"
-                                    required
-                                    className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Message</label>
-                                <textarea
-                                    placeholder="Type your message here..."
-                                    required
-                                    rows={5}
-                                    className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold resize-none placeholder:text-zinc-700"
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={sending}
-                                className="w-full bg-gradient-to-r from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black py-4 rounded-xl font-black uppercase tracking-wider text-xs hover:shadow-lg hover:shadow-[#D4AF37]/20 hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
-                            >
-                                <Send className="w-4 h-4" />
-                                {sending ? 'Sending...' : 'Send Broadcast'}
-                            </button>
-                        </form>
-                    </motion.div>
-
-                    {/* History Sidebar */}
-                    <div className="w-full max-w-2xl px-4 md:px-0">
-                        <div className="glass-card bg-black/40 p-6 rounded-[24px] shadow-sm border border-white/10 flex flex-col">
-                            <h2 className="text-lg font-heading font-black text-white mb-6 flex items-center gap-3 border-b border-white/10 pb-4 uppercase tracking-tight">
-                                <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-                                    <Clock className="w-5 h-5 text-emerald-500" />
-                                </div>
-                                Recent History
-                            </h2>
-
-                            <div className="space-y-4 pr-1">
-                                {history.length === 0 ? (
-                                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest py-8 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">No broadcasts sent yet.</p>
-                                ) : (
-                                    history.map(item => (
-                                        <div key={item.id} className="p-5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all backdrop-blur-sm shadow-sm group break-words">
-                                            <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border
-                                                ${item.priority === 'emergency' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                                        item.priority === 'warning' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                                            'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}`}>
-                                                    {item.priority}
-                                                </span>
-                                                <span className="text-[10px] text-zinc-500 font-bold bg-white/5 border border-white/10 px-2 py-1 rounded-lg whitespace-nowrap">
-                                                    {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
-                                                </span>
-                                            </div>
-                                            <h3 className="font-bold text-white text-base mb-2 group-hover:text-[#D4AF37] transition-colors leading-tight">{item.title}</h3>
-                                            <p className="text-sm text-zinc-400 leading-relaxed font-medium">{item.message}</p>
-                                            <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[10px] text-zinc-500 font-black uppercase tracking-wider">
-                                                <div className="bg-white/10 p-1.5 rounded-lg text-zinc-400">
-                                                    <Users className="w-3 h-3" />
-                                                </div>
-                                                <span>Sent To: {item.targetGroup}</span>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
+                                <label className="block text-xs text-zinc-500 font-medium mb-1.5">Priority</label>
+                                <select
+                                    className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-medium"
+                                    value={priority}
+                                    onChange={(e) => setPriority(e.target.value)}
+                                >
+                                    <option value="info" className="bg-zinc-900">Info</option>
+                                    <option value="warning" className="bg-zinc-900">Warning</option>
+                                    <option value="emergency" className="bg-zinc-900">Emergency</option>
+                                </select>
                             </div>
                         </div>
+
+                        <div>
+                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">Duration</label>
+                            <select
+                                className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-medium"
+                                value={durationHours}
+                                onChange={(e) => setDurationHours(Number(e.target.value))}
+                            >
+                                <option value={1} className="bg-zinc-900">1 hour</option>
+                                <option value={6} className="bg-zinc-900">6 hours</option>
+                                <option value={12} className="bg-zinc-900">12 hours</option>
+                                <option value={24} className="bg-zinc-900">24 hours (Default)</option>
+                                <option value={48} className="bg-zinc-900">48 hours</option>
+                                <option value={72} className="bg-zinc-900">72 hours</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">Title</label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Hostel Curfew Update"
+                                required
+                                className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-medium placeholder:text-zinc-600"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">Message</label>
+                            <textarea
+                                placeholder="Type your message..."
+                                required
+                                rows={4}
+                                className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-medium resize-none placeholder:text-zinc-600"
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={sending}
+                            className="w-full bg-gradient-to-r from-[#D4AF37] to-[#8B6E13] text-black py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-all"
+                        >
+                            <Send className="w-4 h-4" />
+                            {sending ? 'Sending...' : 'Send Broadcast'}
+                        </button>
+                    </form>
+                </motion.div>
+
+                {/* History */}
+                <motion.div variants={cardVariant} className="glass rounded-3xl p-6 border border-white/10">
+                    <h2 className="text-lg font-bold text-white mb-5 flex items-center gap-3">
+                        <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                            <Clock className="w-5 h-5 text-emerald-500" />
+                        </div>
+                        Recent Broadcasts
+                    </h2>
+
+                    <div className="space-y-3">
+                        {history.length === 0 ? (
+                            <p className="text-zinc-500 text-sm text-center py-8 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                No broadcasts yet
+                            </p>
+                        ) : (
+                            history.map(item => {
+                                const expired = isExpired(item);
+                                // Allow delete if creator matches by ID or createdBy field, or admin can delete all
+                                const canDelete = user?.uid === item.createdById || user?.uid === item.createdBy || profile?.role === 'admin';
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className={`p-4 rounded-2xl border ${expired ? 'opacity-50 border-white/5 bg-white/5' : 'border-white/10 bg-white/5'}`}
+                                    >
+                                        <div className="flex justify-between items-start gap-2 mb-2">
+                                            <div className="flex flex-wrap gap-2">
+                                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg
+                                                    ${item.priority === 'emergency' ? 'bg-red-500/20 text-red-400' :
+                                                        item.priority === 'warning' ? 'bg-orange-500/20 text-orange-400' :
+                                                            'bg-emerald-500/20 text-emerald-400'}`}>
+                                                    {item.priority}
+                                                </span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1
+                                                    ${expired ? 'bg-red-500/20 text-red-400' : 'bg-[#D4AF37]/20 text-[#D4AF37]'}`}>
+                                                    <Timer className="w-3 h-3" />
+                                                    {getTimeRemaining(item)}
+                                                </span>
+                                            </div>
+                                            {canDelete && (
+                                                <button
+                                                    onClick={() => handleDelete(item)}
+                                                    disabled={deleting === item.id}
+                                                    className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                                                    title="Delete broadcast"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <h3 className="font-semibold text-white text-sm mb-1">{item.title}</h3>
+                                        <p className="text-xs text-zinc-400 leading-relaxed mb-3">{item.message}</p>
+                                        <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                                            <Users className="w-3 h-3" />
+                                            <span>{item.targetGroup}</span>
+                                            <span>•</span>
+                                            <span>{item.createdBy}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </motion.div>
             </motion.main>

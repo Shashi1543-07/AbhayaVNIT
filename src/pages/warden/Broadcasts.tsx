@@ -4,41 +4,49 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { useAuthStore } from '../../context/authStore';
 import { broadcastService, type Broadcast } from '../../services/broadcastService';
-import { Megaphone, Send } from 'lucide-react';
+import { Megaphone, Send, Timer, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { containerStagger } from '../../lib/animations';
+import { containerStagger, cardVariant } from '../../lib/animations';
 import { wardenNavItems } from '../../lib/navItems';
 
 export default function WardenBroadcasts() {
-    const { profile } = useAuthStore();
+    const { user, profile } = useAuthStore();
     const wardenHostelId = profile?.hostelId || profile?.hostel || 'H6';
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [newBroadcast, setNewBroadcast] = useState('');
+    const [title, setTitle] = useState('');
     const [priority, setPriority] = useState<'info' | 'warning' | 'emergency'>('info');
+    const [durationHours, setDurationHours] = useState(24);
     const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = broadcastService.subscribeToAllBroadcasts((data: Broadcast[]) => {
-            // Filter hostel-specific or campus-wide broadcasts for the history list
-            setBroadcasts(data.filter(b => b.hostelId === wardenHostelId || b.hostelId === 'all'));
+            // Filter hostel-specific broadcasts for the history list
+            setBroadcasts(data.filter(b => b.hostelId === wardenHostelId || b.senderRole === 'warden'));
         });
         return () => unsubscribe();
     }, [wardenHostelId]);
 
     const handleSend = async () => {
-        if (!newBroadcast.trim()) return;
+        if (!newBroadcast.trim() || !user) return;
         setLoading(true);
         try {
             await broadcastService.sendBroadcast({
-                title: priority === 'emergency' ? `Emergency Alert - ${wardenHostelId}` : priority === 'warning' ? 'Important Notice' : 'Hostel Announcement',
+                title: title || (priority === 'emergency' ? `Emergency - ${wardenHostelId}` : 'Hostel Notice'),
                 message: newBroadcast,
                 priority,
+                targetGroup: 'student',
                 hostelId: wardenHostelId,
                 senderRole: 'warden',
-                createdBy: profile?.uid || 'warden'
+                createdBy: profile?.name || user.email?.split('@')[0] || 'Warden',
+                createdById: user.uid,
+                durationHours
             });
             setNewBroadcast('');
+            setTitle('');
             setPriority('info');
+            setDurationHours(24);
             alert('Broadcast sent successfully!');
         } catch (error) {
             console.error(error);
@@ -48,96 +56,158 @@ export default function WardenBroadcasts() {
         }
     };
 
+    const handleDelete = async (broadcast: Broadcast) => {
+        if (!confirm(`Delete "${broadcast.title}"?`)) return;
+        setDeleting(broadcast.id);
+        try {
+            await broadcastService.deleteBroadcast(broadcast.id);
+        } catch (error) {
+            console.error(error);
+            alert('Failed to delete.');
+        } finally {
+            setDeleting(null);
+        }
+    };
+
+    const getTimeRemaining = (b: Broadcast) => broadcastService.getTimeRemaining(b);
+    const isExpired = (b: Broadcast) => broadcastService.isExpired(b);
+
     return (
         <MobileWrapper>
             <TopHeader title="Broadcasts" showBackButton={true} />
 
             <motion.main
-                className="px-4 pt-nav-safe pb-nav-safe"
+                className="px-4 pt-nav-safe pb-nav-safe space-y-6"
                 variants={containerStagger}
                 initial="hidden"
-                animate="show"
+                animate="visible"
             >
                 {/* Create Broadcast */}
-                <div className="glass-card bg-black/40 rounded-[32px] p-6 space-y-5 border border-[#D4AF37]/20 shadow-[0_0_30px_rgba(212,175,55,0.05)]">
-                    <h2 className="font-heading font-black text-white text-lg tracking-tight uppercase flex items-center gap-3">
-                        <div className="p-2.5 bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
-                            <Megaphone className="w-5 h-5 text-[#D4AF37]" strokeWidth={2.5} />
+                <motion.div variants={cardVariant} className="glass rounded-3xl p-5 border border-white/10">
+                    <h2 className="font-bold text-white text-lg mb-4 flex items-center gap-3">
+                        <div className="p-2 bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
+                            <Megaphone className="w-5 h-5 text-[#D4AF37]" />
                         </div>
                         New Broadcast
                     </h2>
 
-                    <textarea
-                        value={newBroadcast}
-                        onChange={(e) => setNewBroadcast(e.target.value)}
-                        placeholder={`Message for ${wardenHostelId} students...`}
-                        className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 min-h-[140px] shadow-inner text-white placeholder:text-zinc-600 font-bold transition-all text-sm"
-                    />
+                    <div className="space-y-4">
+                        <input
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Title (optional)"
+                            className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-medium placeholder:text-zinc-600"
+                        />
 
-                    <div className="flex flex-col gap-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest shrink-0">Priority:</span>
-                            <div className="flex gap-2 w-full">
-                                {['info', 'warning', 'emergency'].map((p) => (
-                                    <button
-                                        key={p}
-                                        onClick={() => setPriority(p as any)}
-                                        className={`px-1 py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex-1 border shadow-sm ${priority === p
-                                            ? p === 'emergency' ? 'bg-red-600 text-white border-red-500 shadow-red-900/20' :
-                                                p === 'warning' ? 'bg-amber-500 text-black border-amber-400 shadow-amber-900/20' :
-                                                    'bg-[#D4AF37] text-black border-[#FDE047] shadow-[#D4AF37]/20'
-                                            : 'bg-white/5 text-zinc-500 border-white/5 hover:bg-white/10'
-                                            }`}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
+                        <textarea
+                            value={newBroadcast}
+                            onChange={(e) => setNewBroadcast(e.target.value)}
+                            placeholder={`Message for ${wardenHostelId} students...`}
+                            className="w-full p-3 bg-white/5 border border-white/10 rounded-xl min-h-[100px] text-white text-sm font-medium placeholder:text-zinc-600 resize-none"
+                        />
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs text-zinc-500 mb-1.5">Priority</label>
+                                <div className="flex gap-1">
+                                    {['info', 'warning', 'emergency'].map((p) => (
+                                        <button
+                                            key={p}
+                                            onClick={() => setPriority(p as any)}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase transition-all
+                                                ${priority === p
+                                                    ? p === 'emergency' ? 'bg-red-600 text-white' :
+                                                        p === 'warning' ? 'bg-amber-500 text-black' :
+                                                            'bg-[#D4AF37] text-black'
+                                                    : 'bg-white/5 text-zinc-500'
+                                                }`}
+                                        >
+                                            {p.slice(0, 4)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs text-zinc-500 mb-1.5">Duration</label>
+                                <select
+                                    className="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm"
+                                    value={durationHours}
+                                    onChange={(e) => setDurationHours(Number(e.target.value))}
+                                >
+                                    <option value={1} className="bg-zinc-900">1 hour</option>
+                                    <option value={6} className="bg-zinc-900">6 hours</option>
+                                    <option value={12} className="bg-zinc-900">12 hours</option>
+                                    <option value={24} className="bg-zinc-900">24 hours</option>
+                                    <option value={48} className="bg-zinc-900">48 hours</option>
+                                    <option value={72} className="bg-zinc-900">72 hours</option>
+                                </select>
                             </div>
                         </div>
 
                         <button
                             onClick={handleSend}
                             disabled={loading || !newBroadcast.trim()}
-                            className="w-full bg-gradient-to-r from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black p-4 rounded-xl font-black uppercase tracking-wider text-xs shadow-lg hover:shadow-[#D4AF37]/20 hover:brightness-110 disabled:opacity-50 disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-3 border border-white/20"
+                            className="w-full bg-gradient-to-r from-[#D4AF37] to-[#8B6E13] text-black py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-all"
                         >
-                            <Send className="w-4 h-4" strokeWidth={3} />
-                            {loading ? 'Transmitting...' : 'Send Broadcast'}
+                            <Send className="w-4 h-4" />
+                            {loading ? 'Sending...' : 'Send Broadcast'}
                         </button>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* History */}
-                <div className="mt-8">
-                    <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] mb-4 ml-1">Recent Broadcasts</h3>
-                    <div className="space-y-4">
+                <motion.div variants={cardVariant}>
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 ml-1">Recent Broadcasts</h3>
+                    <div className="space-y-3">
                         {broadcasts.length === 0 ? (
-                            <div className="text-center py-12 bg-white/5 rounded-[32px] border border-white/5">
-                                <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest">No active transmissions</p>
+                            <div className="text-center py-10 bg-white/5 rounded-2xl border border-white/5">
+                                <p className="text-zinc-600 text-xs">No broadcasts yet</p>
                             </div>
                         ) : (
-                            broadcasts.map(broadcast => (
-                                <div key={broadcast.id} className="relative bg-zinc-900/50 backdrop-blur-md rounded-[24px] p-6 border border-white/10 overflow-hidden group hover:border-[#D4AF37]/30 transition-all">
-                                    <div className={`absolute top-0 left-0 w-1 h-full ${broadcast.priority === 'emergency' ? 'bg-red-600' :
-                                            broadcast.priority === 'warning' ? 'bg-amber-500' :
-                                                'bg-[#D4AF37]'
-                                        }`} />
-                                    <div className="flex justify-between items-start mb-4 pl-2">
-                                        <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest border ${broadcast.priority === 'emergency' ? 'bg-red-600/10 text-red-500 border-red-500/20' :
-                                                broadcast.priority === 'warning' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                                    'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20'
-                                            }`}>
-                                            {broadcast.priority}
-                                        </span>
-                                        <span className="text-[10px] font-bold text-zinc-500/80 font-mono">
-                                            {broadcast.createdAt?.seconds ? new Date(broadcast.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
-                                        </span>
+                            broadcasts.map(broadcast => {
+                                const expired = isExpired(broadcast);
+                                // Allow delete if creator matches by ID or createdBy field
+                                const canDelete = user?.uid === broadcast.createdById || user?.uid === broadcast.createdBy || (broadcast.senderRole === 'warden' && profile?.role === 'warden');
+
+                                return (
+                                    <div
+                                        key={broadcast.id}
+                                        className={`p-4 rounded-2xl border ${expired ? 'opacity-50 border-white/5' : 'border-white/10'} bg-white/5`}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-lg uppercase
+                                                    ${broadcast.priority === 'emergency' ? 'bg-red-500/20 text-red-400' :
+                                                        broadcast.priority === 'warning' ? 'bg-amber-500/20 text-amber-400' :
+                                                            'bg-[#D4AF37]/20 text-[#D4AF37]'}`}>
+                                                    {broadcast.priority}
+                                                </span>
+                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1
+                                                    ${expired ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-zinc-400'}`}>
+                                                    <Timer className="w-2.5 h-2.5" />
+                                                    {getTimeRemaining(broadcast)}
+                                                </span>
+                                            </div>
+                                            {canDelete && (
+                                                <button
+                                                    onClick={() => handleDelete(broadcast)}
+                                                    disabled={deleting === broadcast.id}
+                                                    className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <h4 className="font-semibold text-white text-sm mb-1">{broadcast.title}</h4>
+                                        <p className="text-xs text-zinc-400 leading-relaxed">{broadcast.message}</p>
                                     </div>
-                                    <p className="text-zinc-300 text-sm font-medium leading-relaxed pl-2">{broadcast.message}</p>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
-                </div>
+                </motion.div>
             </motion.main>
 
             <BottomNav items={wardenNavItems} />

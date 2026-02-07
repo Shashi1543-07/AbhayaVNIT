@@ -21,7 +21,7 @@ export default function StudentReports() {
 
         const q = query(
             collection(db, 'incidents'),
-            where('reportedBy', '==', user.uid)
+            where('userId', '==', user.uid)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -30,9 +30,15 @@ export default function StudentReports() {
                 ...doc.data()
             })) as IncidentSummary[];
 
-            // Sort and limit client-side
-            data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            // Sort client-side for now to avoid needing another index immediately
+            data.sort((a, b) => {
+                const timeA = a.createdAt?.seconds || (typeof a.createdAt === 'number' ? a.createdAt / 1000 : 0);
+                const timeB = b.createdAt?.seconds || (typeof b.createdAt === 'number' ? b.createdAt / 1000 : 0);
+                return timeB - timeA;
+            });
             setReports(data.slice(0, 3));
+        }, (error) => {
+            console.error("StudentReports component: Error fetching reports:", error);
         });
 
         return () => unsubscribe();
@@ -60,7 +66,7 @@ export default function StudentReports() {
                         <tbody className="divide-y divide-surface">
                             {reports.map(report => (
                                 <tr key={report.id} className="hover:bg-primary-50 transition-colors cursor-pointer">
-                                    <td className="p-4 font-medium text-primary">{report.category}</td>
+                                    <td className="p-4 font-medium text-primary">{(report.category || 'Incident').replace('_', ' ')}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded text-xs font-bold uppercase
                                             ${report.status === 'open' ? 'bg-emergency/10 text-emergency' :

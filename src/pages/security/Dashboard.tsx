@@ -7,7 +7,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, limit, deleteDoc, doc } from 'firebase/firestore';
-import { Shield, PhoneMissed, X, Newspaper } from 'lucide-react';
+import { Shield, PhoneMissed, X } from 'lucide-react';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
@@ -133,43 +133,6 @@ export default function SecurityDashboard() {
                     />
                 </motion.div>
 
-                {/* Call Support Section */}
-                <motion.div variants={cardVariant} className="p-4">
-                    <h3 className="text-sm font-bold text-[#D4AF37] mb-3 ml-1 uppercase tracking-tighter">Communication</h3>
-                    <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
-                        <button
-                            onClick={() => {
-                                alert("Routing call to Warden on duty...");
-                            }}
-                            className="glass rounded-2xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/10 active:scale-95 transition-all shadow-xl"
-                        >
-                            <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/10">
-                                <Shield className="w-5 h-5 text-[#D4AF37]" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase text-[#D4AF37] font-heading">Contact Warden</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                alert("Connecting to Control Room...");
-                            }}
-                            className="glass rounded-2xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/10 active:scale-95 transition-all shadow-xl"
-                        >
-                            <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/10">
-                                <Shield className="w-5 h-5 text-[#D4AF37]" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase text-[#D4AF37] font-heading">Dispatch</span>
-                        </button>
-                        <button
-                            onClick={() => navigate('/feed')}
-                            className="glass rounded-2xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/10 active:scale-95 transition-all shadow-xl"
-                        >
-                            <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/10">
-                                <Newspaper className="w-5 h-5 text-[#D4AF37]" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase text-[#D4AF37] font-heading">Campus Feed</span>
-                        </button>
-                    </div>
-                </motion.div>
 
                 {/* Bottom Spacer */}
                 <div className="h-4" />

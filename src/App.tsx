@@ -93,6 +93,7 @@ function AnimatedRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/feed" element={<Feed />} />
+          <Route path="/create-post" element={<CreatePost />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>

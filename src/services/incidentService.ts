@@ -1,165 +1,225 @@
 import { db } from '../lib/firebase';
+import { adminService } from './adminService';
 import {
     collection,
-    addDoc,
-    updateDoc,
     doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    deleteDoc,
     query,
     where,
     onSnapshot,
     serverTimestamp,
     arrayUnion,
-    getDoc
+    orderBy
 } from 'firebase/firestore';
 
 export interface Incident {
     id: string;
-    userId?: string | null; // Added for filtering by user
-    isAnonymous?: boolean;
+    userId: string;
+    reportedBy: string;
+    reporterName?: string;
     category: string;
     description: string;
-    location: { lat: number; lng: number } | string;
-    status: 'open' | 'in_review' | 'in_progress' | 'resolved' | 'escalated';
-    hostelId: string;
-    reportedBy: string; // User ID or 'Anonymous'
-    reporterName?: string;
+    location: {
+        latitude: number;
+        longitude: number;
+        address?: string;
+    };
+    status: 'open' | 'in_review' | 'resolved';
     createdAt: any;
+    updatedAt?: any;
+    photoURL?: string;
+    hostelId?: string;
+    isAnonymous?: boolean;
     timeline: {
         time: number;
         action: string;
         by: string;
-        note?: string;
+        note: string;
     }[];
-    photos?: string[];
-    photoURL?: string; // Added to match usage in ReportIncident.tsx
 }
 
 export const incidentService = {
-    // 1. Create Incident (Student)
+    // 1. Create Incident
     createIncident: async (data: Omit<Incident, 'id' | 'createdAt' | 'timeline' | 'status'>) => {
         try {
-            console.log('IncidentService: Creating incident for user:', data.userId || data.reportedBy);
-            await addDoc(collection(db, 'incidents'), {
+            console.log('IncidentService: Creating incident for user:', data.userId);
+            const newIncidentRef = doc(collection(db, 'incidents'));
+            const incidentId = newIncidentRef.id;
+
+            const incidentData = {
                 ...data,
-                status: 'open',
+                status: 'open' as const,
                 createdAt: serverTimestamp(),
                 timeline: [{
                     time: Date.now(),
-                    action: 'Incident Reported',
-                    by: data.reportedBy || 'Student',
+                    action: 'Report Submitted',
+                    by: data.reporterName || 'Student',
                     note: 'Initial report submitted.'
                 }]
-            });
+            };
+
+            await setDoc(newIncidentRef, incidentData);
+
+            // Add Audit Log
+            await adminService.logAction(
+                'Report Submitted',
+                incidentData.userId || 'unknown',
+                `Category: ${incidentData.category} | Description: ${incidentData.description.substring(0, 50)}...`
+            );
+
+            return incidentId;
         } catch (error) {
             console.error("Error creating incident:", error);
             throw error;
         }
     },
 
-    // 2. Subscribe to Incidents (Warden)
-    subscribeToIncidents: (hostelId: string, callback: (incidents: Incident[]) => void) => {
-        // Fetch all incidents for now to handle potential field naming or case mismatches
-        const q = query(collection(db, 'incidents'));
+    // 2. Subscribe to User's Incidents
+    subscribeToUserIncidents: (userId: string, callback: (incidents: Incident[]) => void) => {
+        if (!userId) {
+            console.warn("IncidentService: subscribeToUserIncidents called without userId");
+            callback([]);
+            return () => { };
+        }
+
+        const q = query(
+            collection(db, 'incidents'),
+            where('userId', '==', userId)
+        );
 
         return onSnapshot(q, (snapshot) => {
-            const incidents = snapshot.docs.map(doc => ({
+            const data = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as Incident))
+                .sort((a, b) => {
+                    const timeA = a.createdAt?.seconds || 0;
+                    const timeB = b.createdAt?.seconds || 0;
+                    return timeB - timeA;
+                });
+            callback(data);
+        }, (error) => {
+            console.error("IncidentService: Error in subscribeToUserIncidents (Checking permission/index):", error);
+        });
+    },
+
+    // 3. Subscribe to All Incidents (for Warden/Admin)
+    subscribeToIncidents: (hostelId: string | null, callback: (incidents: Incident[]) => void) => {
+        let q = query(collection(db, 'incidents'));
+
+        if (hostelId && hostelId !== 'Unknown' && hostelId !== 'all') {
+            q = query(
+                collection(db, 'incidents'),
+                where('hostelId', '==', hostelId),
+                orderBy('createdAt', 'desc')
+            );
+        } else {
+            q = query(
+                collection(db, 'incidents'),
+                orderBy('createdAt', 'desc')
+            );
+        }
+
+        return onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             })) as Incident[];
-
-            // Filter client-side for robust matching
-            const filtered = incidents.filter(i => {
-                const item = i as any;
-                return (item.hostelId?.toLowerCase() === hostelId.toLowerCase()) ||
-                    (item.hostel?.toLowerCase() === hostelId.toLowerCase());
-            });
-
-
-            // Sort client-side
-            filtered.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-
-            callback(filtered);
+            callback(data);
+        }, (error) => {
+            console.error("IncidentService: Error in subscribeToIncidents. Check for index requirements.", error);
         });
     },
 
-
-    // 2.5 Subscribe to User Incidents (Student) - Ultra-Robust (No Index Required)
-    subscribeToUserIncidents: (userId: string, callback: (incidents: Incident[]) => void) => {
-        if (!userId) return () => { };
-
-        console.log('IncidentService: Running parallel queries for userId:', userId);
-
-        let reportsMap = new Map<string, Incident>();
-
-        const handleSnapshot = (snapshot: any) => {
-            snapshot.docs.forEach((doc: any) => {
-                reportsMap.set(doc.id, { id: doc.id, ...doc.data() } as Incident);
-            });
-
-            const merged = Array.from(reportsMap.values());
-            // Sort merged results
-            merged.sort((a, b) => {
-                const timeA = a.createdAt?.seconds || (typeof a.createdAt === 'number' ? a.createdAt / 1000 : 0);
-                const timeB = b.createdAt?.seconds || (typeof b.createdAt === 'number' ? b.createdAt / 1000 : 0);
-                return timeB - timeA;
-            });
-
-            console.log('IncidentService: Cumulative results:', merged.length);
-            callback(merged);
-        };
-
-        // Query 1: Primary Ownership
-        const q1 = query(collection(db, 'incidents'), where('userId', '==', userId));
-        const unsub1 = onSnapshot(q1, handleSnapshot, (err) => console.error('Query 1 Failed:', err));
-
-        // Query 2: Legacy/Anonymous Ownership
-        const q2 = query(collection(db, 'incidents'), where('reportedBy', '==', userId));
-        const unsub2 = onSnapshot(q2, handleSnapshot, (err) => console.error('Query 2 Failed:', err));
-
-        return () => {
-            unsub1();
-            unsub2();
-        };
-    },
-
-    // 3. Update Status (Warden)
+    // 4. Update Status
     updateIncidentStatus: async (id: string, status: Incident['status'], userId: string, note?: string) => {
         const incidentRef = doc(db, 'incidents', id);
-
-        await updateDoc(incidentRef, {
-            status,
-            timeline: arrayUnion({
-                time: Date.now(),
-                action: `Status updated to ${status}`,
-                by: userId,
-                note: note || ''
-            })
-        });
+        try {
+            await updateDoc(incidentRef, {
+                status,
+                updatedAt: serverTimestamp(),
+                timeline: arrayUnion({
+                    time: Date.now(),
+                    action: `Status updated to ${status}`,
+                    by: userId,
+                    note: note || ''
+                })
+            });
+        } catch (error) {
+            console.error("IncidentService: Error updating incident status:", error);
+            throw error;
+        }
     },
 
-    // 4. Add Comment (Warden/Student)
-    addComment: async (id: string, userId: string, comment: string) => {
+    // 5. Delete Incident (Manual)
+    deleteIncident: async (id: string, requesterUserId: string, requesterRole: string = 'student') => {
         const incidentRef = doc(db, 'incidents', id);
+        try {
+            const snap = await getDoc(incidentRef);
+            if (!snap.exists()) throw new Error("Incident not found");
+            const data = snap.data() as Incident;
 
-        await updateDoc(incidentRef, {
-            timeline: arrayUnion({
-                time: Date.now(),
-                action: 'Comment Added',
-                by: userId,
-                note: comment
-            })
-        });
+            // Permission check: Owner or Admin/Warden/Security
+            const isOwner = data.userId === requesterUserId;
+            const isPrivileged = ['admin', 'warden', 'security'].includes(requesterRole.toLowerCase());
+
+            if (!isOwner && !isPrivileged) {
+                throw new Error("Unauthorized: You do not have permission to delete this report.");
+            }
+
+            // Consistency check: Only resolved incidents can be deleted manually from dashboard
+            if (data.status !== 'resolved') {
+                throw new Error("Report must be resolved before it can be removed from history.");
+            }
+
+            await deleteDoc(incidentRef);
+            await adminService.logAction(
+                'Report Deleted',
+                requesterUserId,
+                `${requesterRole} deleted resolved report: ${id}`
+            );
+        } catch (error) {
+            console.error("IncidentService: Error deleting incident:", error);
+            throw error;
+        }
     },
 
-    // 5. Get Incident By ID
-    getIncidentById: async (id: string): Promise<Incident | null> => {
+    // 6. Get Incident by ID
+    getIncidentById: async (id: string) => {
         const docRef = doc(db, 'incidents', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Incident;
-        } else {
+        try {
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                return { id: snap.id, ...snap.data() } as Incident;
+            }
             return null;
+        } catch (error) {
+            console.error("IncidentService: Error getting incident:", error);
+            return null;
+        }
+    },
+
+    // Alias for getIncident
+    getIncident: async (id: string) => {
+        return incidentService.getIncidentById(id);
+    },
+
+    // 8. Add Comment
+    addComment: async (id: string, userName: string, comment: string) => {
+        const incidentRef = doc(db, 'incidents', id);
+        try {
+            await updateDoc(incidentRef, {
+                timeline: arrayUnion({
+                    time: Date.now(),
+                    action: 'Update Logged',
+                    by: userName,
+                    note: comment
+                })
+            });
+        } catch (error) {
+            console.error("IncidentService: Error adding comment:", error);
+            throw error;
         }
     }
 };

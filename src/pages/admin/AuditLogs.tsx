@@ -115,10 +115,14 @@ export default function AuditLogs() {
                                 value={actionFilter}
                                 onChange={(e) => setActionFilter(e.target.value)}
                             >
-                                <option value="all" className="bg-zinc-900">All Actions</option>
+                                <option value="all" className="bg-zinc-900">All Activities</option>
+                                <option value="SOS Triggered" className="bg-zinc-900">SOS Triggered</option>
+                                <option value="SOS Resolved" className="bg-zinc-900">SOS Resolved</option>
+                                <option value="SafeWalk Started" className="bg-zinc-900">SafeWalk Started</option>
+                                <option value="SafeWalk Completed" className="bg-zinc-900">SafeWalk Completed</option>
+                                <option value="Report Submitted" className="bg-zinc-900">Report Submitted</option>
+                                <option value="Report Resolved" className="bg-zinc-900">Report Resolved</option>
                                 <option value="Create User" className="bg-zinc-900">Create User</option>
-                                <option value="Update Settings" className="bg-zinc-900">Update Settings</option>
-                                <option value="Bulk Create" className="bg-zinc-900">Bulk Create</option>
                                 <option value="Delete User" className="bg-zinc-900">Delete User</option>
                             </select>
                         </div>

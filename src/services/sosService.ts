@@ -1,4 +1,5 @@
 import { db, rtdb } from '../lib/firebase'; // Added rtdb here
+import { adminService } from './adminService';
 import SOSPlugin from './nativeSOS';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -130,7 +131,7 @@ export const sosService = {
             const sosToken = uuidv4() + "-" + Date.now();
 
             // 1. Create SOS Event record
-            const sosEvent = {
+            const sosData = {
                 id: sosId,
                 userId: user.uid,
                 userName: studentProfile.name || user.displayName || 'Unknown',
@@ -165,7 +166,10 @@ export const sosService = {
                 sosToken: sosToken // Store token for recovery/unauthenticated cancel
             };
 
-            await setDoc(doc(db, 'sos_events', sosId), sosEvent);
+            await setDoc(doc(db, 'sos_events', sosId), sosData);
+
+            // Audit Log
+            await adminService.logAction('SOS Triggered', user.uid, `Emergency SOS started at ${new Date().toLocaleTimeString()}`);
 
             // 2. Create Session record for recovery
             await setDoc(doc(db, 'sos_sessions', sosId), {

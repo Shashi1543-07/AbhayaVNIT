@@ -38,6 +38,7 @@ service cloud.firestore {
       );
       allow create: if hasRole('admin') || request.resource.data.uid == request.auth.uid; // Allow admin or self-signup
       allow update: if hasRole('admin') || request.auth.uid == userId;
+      allow delete: if hasRole('admin');
     }
 
     // SOS Events Collection
@@ -57,19 +58,29 @@ service cloud.firestore {
         (request.resource.data.sosToken == resource.data.sosToken && 
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt', 'resolutionSummary', 'timeline', 'liveLocation']))
       ;
+
+      // 4. Delete: Admin only (for cascading cleanup)
+      allow delete: if hasRole('admin');
     }
 
     // SOS Sessions Collection (for Spark plan client-side management)
     match /sos_sessions/{sessionId} {
       allow create: if isAuthenticated();
       allow read, update: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('security') || hasRole('admin'));
+      allow delete: if hasRole('admin');
     }
 
-    // Incidents Collection
+    // Incidents Collection (Reports)
     match /incidents/{incidentId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) || 
+        hasRole('admin') || 
+        hasRole('warden') || 
+        hasRole('security')
+      );
       allow create: if isAuthenticated();
       allow update: if hasRole('admin') || hasRole('warden') || hasRole('security');
+      allow delete: if hasRole('admin') || (isAuthenticated() && isOwner(resource.data.userId) && resource.data.status == 'resolved');
     }
 
     // Active Patrols
@@ -80,7 +91,13 @@ service cloud.firestore {
     // Broadcasts
     match /broadcasts/{broadcastId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if hasRole('security') || hasRole('warden') || hasRole('admin');
+      allow create: if hasRole('security') || hasRole('warden') || hasRole('admin');
+      allow update: if hasRole('security') || hasRole('warden') || hasRole('admin');
+      // Allow delete by creator (createdById) or admin
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.createdById ||
+        hasRole('admin')
+      );
     }
 
     // Audit Logs
@@ -104,6 +121,7 @@ service cloud.firestore {
         hasRole('admin') ||
         (hasRole('warden') && resource.data.hostelId == getUserData().hostelId)
       );
+      allow delete: if hasRole('admin');
     }
 
     // ============================================================================
@@ -209,12 +227,12 @@ service cloud.firestore {
       allow update: if hasRole('admin') || hasRole('warden');
     }
 
-    // Posts Collection (Public Feed)
+    // Posts Collection (Campus Feed)
     match /posts/{postId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && hasRole('student')
+      allow create: if isAuthenticated()
         && request.resource.data.authorId == request.auth.uid
-        && request.resource.data.authorRole == 'student'
+        && request.resource.data.authorRole in ['student', 'admin', 'warden', 'security']
         && request.resource.data.text.size() <= 280;
       allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.authorId;
     }

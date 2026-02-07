@@ -5,7 +5,7 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { safeWalkService, type SafeWalkSession } from '../../services/safeWalkService';
 import { useAuthStore } from '../../context/authStore';
-import { MapPin, Clock, Shield, Send, CheckCircle } from 'lucide-react';
+import { MapPin, Clock, Shield, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
 import EventDetailMap from '../../components/map/EventDetailMap';
 import { securityNavItems, wardenNavItems, adminNavItems } from '../../lib/navItems';
@@ -13,12 +13,7 @@ import { containerStagger, cardVariant } from '../../lib/animations';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
-const SECURITY_PERSONNEL = [
-    { id: 'sec_001', name: 'Ramesh Kumar' },
-    { id: 'sec_002', name: 'Suresh Patil' },
-    { id: 'sec_003', name: 'Mahesh Singh' },
-    { id: 'sec_004', name: 'Rajesh Sharma' },
-];
+
 
 export default function SafeWalkDetails() {
     const { id } = useParams<{ id: string }>();
@@ -27,8 +22,6 @@ export default function SafeWalkDetails() {
     const [walk, setWalk] = useState<SafeWalkSession | null>(null);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
-    const [selectedEscort, setSelectedEscort] = useState('');
-    const [assigning, setAssigning] = useState(false);
     const [liveLocation, setLiveLocation] = useState<any>(null);
 
     useEffect(() => {
@@ -63,23 +56,7 @@ export default function SafeWalkDetails() {
         };
     }, [walk?.userId]);
 
-    const handleAssignEscort = async () => {
-        if (!id || !selectedEscort || !user) return;
-        setAssigning(true);
-        try {
-            const escort = SECURITY_PERSONNEL.find(p => p.id === selectedEscort);
-            if (escort) {
-                await safeWalkService.assignEscort(id, escort.name);
-                alert(`Escort ${escort.name} assigned!`);
-                setSelectedEscort('');
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Failed to assign escort");
-        } finally {
-            setAssigning(false);
-        }
-    };
+
 
     const handleSendMessage = async () => {
         if (!id || !message.trim() || !user) return;
@@ -100,15 +77,7 @@ export default function SafeWalkDetails() {
         }
     };
 
-    const handleMarkCompleted = async () => {
-        if (!id || !confirm("Complete this walk?")) return;
-        try {
-            await safeWalkService.updateWalkStatus(id, 'completed');
-            navigate(-1);
-        } catch (error) {
-            console.error(error);
-        }
-    };
+
 
     if (!walk) return null;
 
@@ -180,28 +149,7 @@ export default function SafeWalkDetails() {
                             </h3>
 
                             <div className="space-y-6">
-                                <div>
-                                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-4 mb-2">Deploy Field Escort</p>
-                                    <div className="flex gap-3">
-                                        <select
-                                            value={selectedEscort}
-                                            onChange={(e) => setSelectedEscort(e.target.value)}
-                                            className="flex-1 bg-black/40 backdrop-blur-3xl p-4.5 rounded-[20px] border border-white/10 text-sm font-black text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/30 transition-all appearance-none"
-                                        >
-                                            <option value="" className="bg-zinc-900">Select Personnel...</option>
-                                            {SECURITY_PERSONNEL.map(p => (
-                                                <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>
-                                            ))}
-                                        </select>
-                                        <button
-                                            onClick={handleAssignEscort}
-                                            disabled={!selectedEscort || assigning}
-                                            className="px-6 bg-[#D4AF37] text-black rounded-[20px] font-black text-[11px] uppercase tracking-widest disabled:opacity-50 hover:scale-105 active:scale-95 transition-all shadow-lg"
-                                        >
-                                            {assigning ? '...' : 'Deploy'}
-                                        </button>
-                                    </div>
-                                </div>
+
 
                                 <div>
                                     <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-4 mb-2">Official Comms</p>
@@ -225,13 +173,7 @@ export default function SafeWalkDetails() {
                             </div>
                         </div>
 
-                        <button
-                            onClick={handleMarkCompleted}
-                            className="w-full py-5 bg-emerald-500 text-black font-black uppercase tracking-[0.2em] text-[11px] rounded-[24px] shadow-[0_10px_30px_rgba(16,185,129,0.3)] active:scale-95 transition-all border border-emerald-400/20 flex items-center justify-center gap-3"
-                        >
-                            <CheckCircle className="w-6 h-6" strokeWidth={3} />
-                            MARK COMPLETED
-                        </button>
+
                     </motion.div>
                 ) : (
                     <motion.div variants={cardVariant} className="glass p-8 rounded-[3rem] border border-white/5 shadow-2xl bg-black/40 text-center">

@@ -1,4 +1,4 @@
-import { db, storage } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import {
     collection,
     addDoc,
@@ -10,16 +10,15 @@ import {
     serverTimestamp,
     Timestamp
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export interface Post {
     id: string;
     authorId: string;
     authorName: string;
-    authorRole: 'student';
+    authorRole: 'student' | 'admin' | 'warden' | 'security';
     hostelId: string;
     text: string;
-    imageUrl?: string;
+    imageData?: string; // Base64 encoded image data
     createdAt: Timestamp;
 }
 
@@ -30,12 +29,66 @@ interface CreatePostData {
         uid: string;
         name: string;
         hostelId: string;
+        role?: 'student' | 'admin' | 'warden' | 'security';
     };
+}
+
+/**
+ * Compress and convert image to base64
+ * Max output size ~500KB to stay well under Firestore 1MB document limit
+ */
+async function compressImageToBase64(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Calculate new dimensions
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+
+                // Create canvas and draw resized image
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Could not get canvas context'));
+                    return;
+                }
+
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert to base64 JPEG
+                const base64 = canvas.toDataURL('image/jpeg', quality);
+
+                // Check size (base64 is ~33% larger than binary)
+                const sizeKB = (base64.length * 0.75) / 1024;
+                if (sizeKB > 500) {
+                    // Try with lower quality
+                    const lowerQuality = canvas.toDataURL('image/jpeg', 0.5);
+                    resolve(lowerQuality);
+                } else {
+                    resolve(base64);
+                }
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
 }
 
 class PostService {
     /**
-     * Create a new post with optional image
+     * Create a new post with optional image (stored as base64 in Firestore)
      */
     async createPost({ text, imageFile, userData }: CreatePostData): Promise<string> {
         try {
@@ -44,28 +97,31 @@ class PostService {
                 throw new Error('Post text cannot exceed 280 characters');
             }
 
-            // Validate image file size if present
-            if (imageFile && imageFile.size > 1024 * 1024) {
-                throw new Error('Image size must be less than 1MB');
+            // Validate image file size if present (original file)
+            if (imageFile && imageFile.size > 5 * 1024 * 1024) {
+                throw new Error('Image size must be less than 5MB');
             }
 
-            let imageUrl: string | undefined;
+            let imageData: string | undefined;
 
-            // Upload image if present
+            // Compress and convert image to base64 if present
             if (imageFile) {
-                const imageRef = ref(storage, `post_images/${Date.now()}_${imageFile.name}`);
-                await uploadBytes(imageRef, imageFile);
-                imageUrl = await getDownloadURL(imageRef);
+                try {
+                    imageData = await compressImageToBase64(imageFile);
+                } catch (imgError) {
+                    console.error('Image compression failed:', imgError);
+                    throw new Error('Failed to process image. Please try a different image.');
+                }
             }
 
             // Create post document
             const postData = {
                 authorId: userData.uid,
                 authorName: userData.name,
-                authorRole: 'student' as const,
+                authorRole: userData.role || 'student',
                 hostelId: userData.hostelId,
                 text: text.trim(),
-                imageUrl: imageUrl || null,
+                imageData: imageData || null,
                 createdAt: serverTimestamp()
             };
 
@@ -105,18 +161,10 @@ class PostService {
 
     /**
      * Delete a post (author only)
+     * No need to delete from storage since images are stored in Firestore
      */
-    async deletePost(postId: string, imageUrl?: string): Promise<void> {
+    async deletePost(postId: string): Promise<void> {
         try {
-            // Delete image from storage if exists
-            if (imageUrl) {
-                const imageRef = ref(storage, imageUrl);
-                await deleteObject(imageRef).catch(err => {
-                    console.warn('Failed to delete image:', err);
-                });
-            }
-
-            // Delete document
             await deleteDoc(doc(db, 'posts', postId));
         } catch (error) {
             console.error('Error deleting post:', error);

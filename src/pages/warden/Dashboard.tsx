@@ -2,24 +2,18 @@ import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import ActionCard from '../../components/ui/ActionCard';
-import StatusBadge from '../../components/ui/StatusBadge';
 import { useAuthStore } from '../../context/authStore';
-import { Users, PhoneMissed, X, Newspaper } from 'lucide-react';
+import { Users, PhoneMissed, X, Megaphone, Newspaper } from 'lucide-react';
 import WardenActiveSOS from '../../components/warden/WardenActiveSOS';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { useEffect, useState } from 'react';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { wardenNavItems } from '../../lib/navItems';
-import { doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
-import { incidentService, type Incident } from '../../services/incidentService';
-
 import { useNavigate } from 'react-router-dom';
-
 import BroadcastViewer from '../../components/shared/BroadcastViewer';
-import { Megaphone } from 'lucide-react';
 
 export default function WardenDashboard() {
     const navigate = useNavigate();
@@ -28,7 +22,6 @@ export default function WardenDashboard() {
 
     const wardenHostelId = profile?.hostelId || profile?.hostel || 'H6';
     const [notifications, setNotifications] = useState<any[]>([]);
-    const [incidents, setIncidents] = useState<Incident[]>([]);
 
     useEffect(() => {
         if (!user) return;
@@ -46,23 +39,14 @@ export default function WardenDashboard() {
             setNotifications(sorted);
         });
 
-        // Incidents subscription
-        const unsubscribeIncidents = incidentService.subscribeToIncidents(wardenHostelId, (data) => {
-            setIncidents(data.slice(0, 3)); // Show top 3 recent
-        });
-
         return () => {
             unsubscribeNotif();
-            unsubscribeIncidents();
         };
     }, [user, wardenHostelId]);
 
     const dismissNotification = async (id: string) => {
         await deleteDoc(doc(db, 'notifications', id));
     };
-
-
-    // Nav items imported from src/lib/navItems.ts
 
     return (
         <MobileWrapper>
@@ -78,14 +62,14 @@ export default function WardenDashboard() {
             />
 
             <motion.main
-                className="px-4 pt-nav-safe pb-nav-safe"
+                className="px-4 pt-nav-safe pb-nav-safe space-y-4"
                 variants={containerStagger}
                 initial="hidden"
                 animate="visible"
             >
                 {/* Alerts / Notifications */}
                 {notifications.length > 0 && (
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-2">
                         {notifications.map(notif => (
                             <motion.div
                                 key={notif.id}
@@ -124,43 +108,8 @@ export default function WardenDashboard() {
                     />
                 </motion.div>
 
-
-                {/* Recent Incidents Preview */}
-                <motion.div variants={cardVariant}>
-                    <div className="flex justify-between items-center mb-3 ml-1">
-                        <h3 className="text-sm font-bold text-[#D4AF37] uppercase tracking-tighter">Recent Incidents</h3>
-                        <button className="text-xs text-[#D4AF37]/60 font-medium">View All</button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {incidents.length === 0 ? (
-                            <div className="text-center py-4 text-zinc-500 text-xs col-span-full">
-                                No recent incidents reported.
-                            </div>
-                        ) : (
-                            incidents.map((incident) => (
-                                <div key={incident.id} className="glass rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-colors border border-white/5" onClick={() => navigate(`/warden/reports/${incident.id}`)}>
-                                    <div className="min-w-0 pr-2">
-                                        <p className="font-bold text-sm text-[#D4AF37] truncate">{incident.category}</p>
-                                        <p className="text-xs text-zinc-400 truncate">
-                                            {incident.reporterName || 'Student'} • {incident.createdAt?.seconds ? new Date(incident.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                                        </p>
-                                    </div>
-                                    <StatusBadge
-                                        status={
-                                            incident.status === 'resolved' ? 'success' :
-                                                incident.status === 'open' ? 'warning' : 'neutral'
-                                        }
-                                        label={incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
-                                    />
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </motion.div>
-
                 {/* Directory Link */}
-                {/* Directory Link and Feed */}
-                <motion.div variants={cardVariant} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <motion.div variants={cardVariant}>
                     <ActionCard
                         icon={Users}
                         label="Student Directory"
@@ -168,23 +117,13 @@ export default function WardenDashboard() {
                         className="w-full flex-row justify-start px-6 py-4 gap-4"
                         onClick={() => navigate('/warden/directory')}
                     />
-                    <ActionCard
-                        icon={Newspaper}
-                        label="Campus Feed"
-                        variant="default"
-                        className="w-full flex-row justify-start px-6 py-4 gap-4"
-                        onClick={() => navigate('/feed')}
-                    />
                 </motion.div>
 
-                {/* Bottom Spacer */}
-                <div className="h-4" />
-
-                {/* Admin Broadcast Button - Moved to Bottom */}
+                {/* Notice Button (Admin Broadcasts) */}
                 <motion.button
                     variants={cardVariant}
                     onClick={() => setShowBroadcasts(true)}
-                    className="w-full bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] p-[1.5px] rounded-[24px] shadow-2xl active:scale-95 transition-all mb-4 group"
+                    className="w-full bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] p-[1.5px] rounded-[24px] shadow-2xl active:scale-95 transition-all group"
                 >
                     <div className="bg-black/80 backdrop-blur-2xl rounded-[22px] p-4 flex items-center justify-between border border-white/5">
                         <div className="flex items-center gap-3">
@@ -192,8 +131,8 @@ export default function WardenDashboard() {
                                 <Megaphone className="w-5 h-5 text-[#D4AF37]" />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-black text-white text-sm font-heading tracking-tight">Admin Broadcasts</h3>
-                                <p className="text-[10px] text-[#D4AF37] font-bold opacity-60">Official alerts & info</p>
+                                <h3 className="font-black text-white text-sm font-heading tracking-tight">Notice</h3>
+                                <p className="text-[10px] text-[#D4AF37] font-bold opacity-60">Official alerts & announcements</p>
                             </div>
                         </div>
                         <div className="bg-[#D4AF37] px-3 py-1.5 rounded-xl text-[10px] font-black text-black uppercase tracking-widest shadow-lg">
@@ -202,6 +141,28 @@ export default function WardenDashboard() {
                     </div>
                 </motion.button>
 
+                {/* Campus Feed Button */}
+                <motion.button
+                    variants={cardVariant}
+                    onClick={() => navigate('/feed')}
+                    className="w-full glass rounded-[24px] p-4 flex items-center justify-between border border-white/10 active:scale-95 transition-all"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="bg-[#D4AF37]/10 p-2.5 rounded-2xl border border-[#D4AF37]/20">
+                            <Newspaper className="w-5 h-5 text-[#D4AF37]" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="font-bold text-white text-sm">Campus Feed</h3>
+                            <p className="text-[10px] text-zinc-500">Student posts & updates</p>
+                        </div>
+                    </div>
+                    <div className="bg-white/10 px-3 py-1.5 rounded-xl text-[10px] font-bold text-white uppercase tracking-widest">
+                        View
+                    </div>
+                </motion.button>
+
+                {/* Bottom Spacer */}
+                <div className="h-4" />
             </motion.main>
 
             <BottomNav items={wardenNavItems} />

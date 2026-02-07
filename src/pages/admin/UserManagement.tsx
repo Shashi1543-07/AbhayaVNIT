@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import BottomNav from '../../components/layout/BottomNav';
 import { adminNavItems } from '../../lib/navItems';
-import { UserPlus, Upload, Search, Filter, Trash2, Ban, CheckCircle, Download } from 'lucide-react';
+import { UserPlus, Upload, Search, Filter, Trash2, Ban, CheckCircle, Download, Mail, RefreshCw } from 'lucide-react';
 import { adminService, type CreateUserData, validateUser } from '../../services/adminService';
 import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -32,8 +32,9 @@ export default function UserManagement() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [generatedPassword, setGeneratedPassword] = useState('');
-    const [bulkCredentials, setBulkCredentials] = useState<any[]>([]);
+    const [emailSent, setEmailSent] = useState(false);
+    const [bulkResults, setBulkResults] = useState<{ success: number; emailsSent: string[]; errors: string[] } | null>(null);
+    const [resendingEmail, setResendingEmail] = useState<string | null>(null);
 
     // Fetch Users
     const fetchUsers = async () => {
@@ -85,12 +86,34 @@ export default function UserManagement() {
     };
 
     const handleDeleteUser = async (uid: string) => {
-        if (!confirm('Are you sure? This will delete the user record. Auth account must be deleted manually in Firebase Console (Free Tier limitation).')) return;
+        if (!confirm('Are you sure? This will delete the user record and ALL their data (Reports, SOS, SafeWalks). Auth account must be deleted manually in Firebase Console.')) return;
         try {
+            // 1. Delete user record
             await deleteDoc(doc(db, 'users', uid));
+
+            // 2. Cascade delete associated data
+            // Note: This is a client-side cleanup for Free Tier
+            const collectionsToDelete = ['incidents', 'sos_events', 'safe_walk'];
+            for (const collName of collectionsToDelete) {
+                const q = query(collection(db, collName), where('userId', '==', uid));
+                const snap = await getDocs(q);
+                snap.docs.forEach(async (d) => {
+                    await deleteDoc(doc(db, collName, d.id));
+                });
+            }
+
+            // Also check for 'reportedBy' in incidents (some legacy records)
+            const qLegacy = query(collection(db, 'incidents'), where('reportedBy', '==', uid));
+            const snapLegacy = await getDocs(qLegacy);
+            snapLegacy.docs.forEach(async (d) => {
+                await deleteDoc(doc(db, 'incidents', d.id));
+            });
+
+            await adminService.logAction('Delete User', uid, 'User and all associated data deleted');
             fetchUsers();
         } catch (err) {
-            alert('Failed to delete user');
+            console.error(err);
+            alert('Failed to delete user and data');
         }
     };
 
@@ -99,9 +122,8 @@ export default function UserManagement() {
         e.preventDefault();
         setLoading(true);
         setMessage('');
-        setGeneratedPassword('');
+        setEmailSent(false);
 
-        // Validate
         const validationError = validateUser(formData);
         if (validationError) {
             setMessage(`Error: ${validationError}`);
@@ -120,7 +142,7 @@ export default function UserManagement() {
             });
 
             setMessage(`Successfully created ${formData.role} account for ${formData.name}.`);
-            setGeneratedPassword(result.password || '');
+            setEmailSent(result.emailSent || false);
             setFormData(prev => ({ ...prev, name: '', email: '', phone: '', hostel: '', roomNo: '' }));
         } catch (error: any) {
             console.error(error);
@@ -138,7 +160,7 @@ export default function UserManagement() {
         setLoading(true);
         setError('');
         setSuccess('');
-        setBulkCredentials([]);
+        setBulkResults(null);
 
         const reader = new FileReader();
         reader.onload = async (event) => {
@@ -165,7 +187,6 @@ export default function UserManagement() {
                     const validationError = validateUser(userData);
                     if (validationError) {
                         console.warn(`Skipping invalid user at line ${i + 1}: ${validationError}`);
-                        // Optional: Add to errors list to show user
                         continue;
                     }
 
@@ -175,10 +196,8 @@ export default function UserManagement() {
                 if (users.length === 0) throw new Error('No valid users found in CSV');
 
                 const results = await adminService.bulkCreateUsers(users);
-                setSuccess(`Successfully processed batch. Created: ${results.success}, Failed: ${results.failed}`);
-                if (results.credentials.length > 0) {
-                    setBulkCredentials(results.credentials);
-                }
+                setSuccess(`Created ${results.success} accounts. Sent ${results.emailsSent.length} password reset emails.`);
+                setBulkResults(results);
                 if (results.failed > 0) {
                     setError(`Failed users: ${results.errors.join(', ')}`);
                 }
@@ -192,16 +211,17 @@ export default function UserManagement() {
         reader.readAsText(file);
     };
 
-    const downloadCredentials = () => {
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + "Email,Password,Role\n"
-            + bulkCredentials.map(c => `${c.email},${c.password},${c.role}`).join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "user_credentials.csv");
-        document.body.appendChild(link);
-        link.click();
+    // Resend password reset email
+    const handleResendEmail = async (email: string) => {
+        setResendingEmail(email);
+        try {
+            await adminService.resendPasswordResetEmail(email);
+            alert(`Password reset email sent to ${email}`);
+        } catch (error) {
+            alert('Failed to send email');
+        } finally {
+            setResendingEmail(null);
+        }
     };
 
     return (
@@ -274,6 +294,25 @@ export default function UserManagement() {
                                     <option value="security" className="bg-zinc-900">Security</option>
                                     <option value="admin" className="bg-zinc-900">Admins</option>
                                 </select>
+                                <button
+                                    onClick={() => {
+                                        const csvContent = "data:text/csv;charset=utf-8,"
+                                            + "Name,Email,Role,Hostel,Room,Phone,Status\n"
+                                            + users.map(u => `"${u.name}","${u.email}","${u.role}","${u.hostel || ''}","${u.roomNo || ''}","${u.phone || ''}","${u.status || 'active'}"`).join("\n");
+                                        const encodedUri = encodeURI(csvContent);
+                                        const link = document.createElement("a");
+                                        link.setAttribute("href", encodedUri);
+                                        link.setAttribute("download", `users_${roleFilter}.csv`);
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }}
+                                    className="p-2 bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] rounded-xl hover:bg-[#D4AF37]/20 transition-all flex items-center gap-2 text-xs font-black uppercase tracking-wider"
+                                    title="Export Current List to CSV"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Export
+                                </button>
                             </div>
                         </div>
 
@@ -317,7 +356,15 @@ export default function UserManagement() {
                                                         {user.status?.toUpperCase() || 'ACTIVE'}
                                                     </span>
                                                 </td>
-                                                <td className="p-4 text-right flex justify-end gap-2">
+                                                <td className="p-4 text-right flex justify-end gap-1">
+                                                    <button
+                                                        onClick={() => handleResendEmail(user.email)}
+                                                        disabled={resendingEmail === user.email}
+                                                        className="p-2 hover:bg-[#D4AF37]/10 rounded-lg text-zinc-500 hover:text-[#D4AF37] transition-colors disabled:opacity-50"
+                                                        title="Resend Password Reset Email"
+                                                    >
+                                                        {resendingEmail === user.email ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                                                    </button>
                                                     <button
                                                         onClick={() => handleDisableUser(user.id, user.status)}
                                                         className="p-2 hover:bg-white/10 rounded-lg text-zinc-500 hover:text-white transition-colors"
@@ -358,14 +405,13 @@ export default function UserManagement() {
                             </div>
                         )}
 
-                        {generatedPassword && (
-                            <div className="mb-6 p-6 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-2xl">
-                                <p className="text-sm text-[#D4AF37] font-black uppercase tracking-widest mb-2">User Created Successfully!</p>
-                                <p className="text-xs text-zinc-400 mb-4 font-medium">Please share these credentials securely with the user.</p>
-                                <div className="bg-black/40 p-4 rounded-xl border border-white/10 font-mono text-sm select-all text-white flex justify-between items-center">
-                                    <span>Password:</span>
-                                    <span className="font-bold text-[#D4AF37]">{generatedPassword}</span>
+                        {emailSent && (
+                            <div className="mb-6 p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Mail className="w-5 h-5 text-emerald-500" />
+                                    <p className="text-sm text-emerald-500 font-black uppercase tracking-widest">Password Reset Email Sent!</p>
                                 </div>
+                                <p className="text-xs text-zinc-400 font-medium">The user will receive an email to set their password. They can then log in using the link provided.</p>
                             </div>
                         )}
 
@@ -475,26 +521,20 @@ export default function UserManagement() {
                             Bulk Upload Users
                         </h2>
 
-                        {bulkCredentials.length > 0 && (
+                        {bulkResults && bulkResults.success > 0 && (
                             <div className="mb-6 bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <p className="font-black text-emerald-500 uppercase tracking-wide text-sm mb-1">Upload Successful!</p>
-                                        <p className="text-xs text-zinc-400 font-bold">{bulkCredentials.length} users created.</p>
-                                    </div>
-                                    <button
-                                        onClick={downloadCredentials}
-                                        className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-500 transition-colors text-xs font-black uppercase tracking-wider"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                        Download Credentials
-                                    </button>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Mail className="w-5 h-5 text-emerald-500" />
+                                    <p className="font-black text-emerald-500 uppercase tracking-wide text-sm">Upload Successful!</p>
                                 </div>
+                                <p className="text-xs text-zinc-400 font-bold">
+                                    {bulkResults.success} accounts created. {bulkResults.emailsSent.length} password reset emails sent.
+                                </p>
                             </div>
                         )}
 
                         {error && <div className="bg-red-500/10 text-red-500 p-4 rounded-xl mb-6 border border-red-500/20 text-xs font-bold">{error}</div>}
-                        {success && !bulkCredentials.length && <div className="bg-emerald-500/10 text-emerald-500 p-4 rounded-xl mb-6 border border-emerald-500/20 text-xs font-bold">{success}</div>}
+                        {success && !bulkResults && <div className="bg-emerald-500/10 text-emerald-500 p-4 rounded-xl mb-6 border border-emerald-500/20 text-xs font-bold">{success}</div>}
 
                         <div className="space-y-4">
                             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Megaphone, Clock, X } from 'lucide-react';
+import { Megaphone, Clock, X, Timer } from 'lucide-react';
 import { useAuthStore } from '../../context/authStore';
 import { broadcastService } from '../../services/broadcastService';
 
@@ -123,13 +123,21 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
                                         >
                                             {item.priority}
                                         </span>
-                                        <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-black font-heading uppercase tracking-widest">
-                                            <Clock className="w-4 h-4" strokeWidth={3} />
-                                            <span>
-                                                {item.createdAt?.seconds
-                                                    ? new Date(item.createdAt.seconds * 1000).toLocaleDateString()
-                                                    : 'Active'}
-                                            </span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                <span>
+                                                    {item.createdAt?.seconds
+                                                        ? new Date(item.createdAt.seconds * 1000).toLocaleDateString()
+                                                        : 'Active'}
+                                                </span>
+                                            </div>
+                                            {item.expiresAt && (
+                                                <div className="flex items-center gap-1.5 text-[10px] text-[#D4AF37] font-bold uppercase">
+                                                    <Timer className="w-3.5 h-3.5" />
+                                                    <span>{broadcastService.getTimeRemaining(item)}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -144,8 +152,8 @@ export default function BroadcastViewer({ isOpen, onClose, role }: BroadcastView
                                     <div className="relative z-10 pt-5 border-t border-white/5 flex flex-wrap gap-2 items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <span className={`text-[9px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-xl font-heading bg-white/5 border border-white/10 ${item.senderRole === 'admin' ? 'text-[#D4AF37]' :
-                                                    item.senderRole === 'security' ? 'text-red-400' :
-                                                        'text-purple-400'
+                                                item.senderRole === 'security' ? 'text-red-400' :
+                                                    'text-purple-400'
                                                 }`}>
                                                 Origin: {item.senderRole}
                                                 {item.senderRole === 'warden' && ` (H-${item.hostelId})`}
