@@ -31,6 +31,8 @@ export interface CallSession {
     callType: 'audio' | 'video';
     contextId: string; // sosId or safeWalkId
     contextType: 'sos' | 'safe_walk'; // Type of emergency context
+    hostelId?: string;
+    hostelName?: string;
     offer?: any;
     answer?: any;
     iceCandidates?: any[];
@@ -190,12 +192,14 @@ export class CallService {
             callerName: caller.name || caller.displayName || 'User',
             callerRole: caller.role || 'student',
             receiverId: receiver.uid,
-            receiverName: receiver.name || 'Staff',
+            receiverName: receiver.name || (receiver.role === 'security' ? 'Security' : 'Staff'),
             receiverRole: receiver.role || 'warden',
             status: 'ringing',
             callType: isVideo ? 'video' : 'audio',
             contextId,
             contextType,
+            hostelId: caller.hostelId || caller.hostel || null,
+            hostelName: caller.hostelName || caller.hostel || null,
             offer: {
                 type: offerDescription.type,
                 sdp: offerDescription.sdp,

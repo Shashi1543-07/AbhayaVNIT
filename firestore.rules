@@ -194,8 +194,14 @@ service cloud.firestore {
 
     // WebRTC Calls (Pure Signaling)
     match /calls/{callId} {
-      allow read, update, delete: if isAuthenticated() && 
-        (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.receiverId);
+      allow read, update, delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.callerId || 
+        request.auth.uid == resource.data.receiverId ||
+        (resource.data.receiverId == 'broadcast' && (
+          resource.data.receiverRole == getUserData().role || 
+          hasRole(resource.data.receiverRole)
+        ))
+      );
       allow create: if isAuthenticated();
 
       match /callerCandidates/{id} {

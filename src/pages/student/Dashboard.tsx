@@ -6,9 +6,8 @@ import SOSButton from '../../components/student/SOSButton';
 import ActionCard from '../../components/ui/ActionCard';
 import { X, Shield, Footprints, AlertTriangle, Home, Video, Newspaper, Megaphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { callService } from '../../services/callService';
-import { userService, type UserProfile } from '../../services/userService';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { useSOS } from '../../features/sos/useSOS';
 import { motion } from 'framer-motion';
@@ -18,17 +17,9 @@ export default function StudentDashboard() {
     const navigate = useNavigate();
     const { user, profile } = useAuthStore();
     const { activeSOS, resolveSOS } = useSOS();
-    const [staff, setStaff] = useState<UserProfile[]>([]);
     const [showBroadcasts, setShowBroadcasts] = useState(false);
 
 
-
-    useEffect(() => {
-        userService.getStaff().then(data => {
-            console.log("StudentDashboard: Staff list fetched:", data);
-            setStaff(data);
-        });
-    }, []);
 
     // Removed the automatic subscription to hostel broadcasts for the dashboard view to avoid duplication
     // We will use the BroadcastViewer for admin broadcasts.
@@ -151,17 +142,16 @@ export default function StudentDashboard() {
                             <button
                                 disabled={!isSOSActive}
                                 onClick={() => {
-                                    const security = staff.find(s => s.role === 'security');
-                                    if (security && user && activeSOS?.id) {
+                                    if (user && activeSOS?.id) {
                                         callService.startCall({
                                             uid: user.uid,
                                             name: profile?.name || user.displayName || 'Student',
-                                            role: 'student'
-                                        }, security, activeSOS.id, 'sos', false);
+                                            role: 'student',
+                                            hostelId: profile?.hostelId || profile?.hostel,
+                                            hostelName: profile?.hostelId || profile?.hostel
+                                        }, { uid: 'broadcast', role: 'security' }, activeSOS.id, 'sos', false);
                                     } else if (!isSOSActive) {
                                         alert("Calling is only enabled during an active SOS.");
-                                    } else {
-                                        alert("Security personnel currently unavailable.");
                                     }
                                 }}
                                 className={`w-full glass rounded-3xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/20 active:scale-95 transition-all shadow-xl ${!isSOSActive ? 'grayscale cursor-not-allowed opacity-50' : ''}`}
@@ -174,17 +164,16 @@ export default function StudentDashboard() {
                             <button
                                 disabled={!isSOSActive}
                                 onClick={() => {
-                                    const security = staff.find(s => s.role === 'security');
-                                    if (security && user && activeSOS?.id) {
+                                    if (user && activeSOS?.id) {
                                         callService.startCall({
                                             uid: user.uid,
                                             name: profile?.name || user.displayName || 'Student',
-                                            role: 'student'
-                                        }, security, activeSOS.id, 'sos', true);
+                                            role: 'student',
+                                            hostelId: profile?.hostelId || profile?.hostel,
+                                            hostelName: profile?.hostelId || profile?.hostel
+                                        }, { uid: 'broadcast', role: 'security' }, activeSOS.id, 'sos', true);
                                     } else if (!isSOSActive) {
                                         alert("Calling is only enabled during an active SOS.");
-                                    } else {
-                                        alert("Security personnel currently unavailable.");
                                     }
                                 }}
                                 className={`w-full glass rounded-3xl p-4 flex flex-col items-center gap-2 border border-emerald-500/20 active:scale-95 transition-all shadow-xl ${!isSOSActive ? 'grayscale cursor-not-allowed opacity-50' : ''}`}
@@ -201,21 +190,16 @@ export default function StudentDashboard() {
                             <button
                                 disabled={!isSOSActive}
                                 onClick={() => {
-                                    const studentHostel = profile?.hostelId || profile?.hostel;
-                                    const warden = staff.find(s =>
-                                        s.role === 'warden' &&
-                                        ((s as any).hostel === studentHostel || (s as any).hostelId === studentHostel)
-                                    );
-                                    if (warden && user && activeSOS?.id) {
+                                    if (user && activeSOS?.id) {
                                         callService.startCall({
                                             uid: user.uid,
                                             name: profile?.name || user.displayName || 'Student',
-                                            role: 'student'
-                                        }, warden, activeSOS.id, 'sos', false);
+                                            role: 'student',
+                                            hostelId: profile?.hostelId || profile?.hostel,
+                                            hostelName: profile?.hostelId || profile?.hostel
+                                        }, { uid: 'broadcast', role: 'warden' }, activeSOS.id, 'sos', false);
                                     } else if (!isSOSActive) {
                                         alert("Calling is only enabled during an active SOS.");
-                                    } else {
-                                        alert(`Warden unavailable. (Hostel: ${studentHostel || 'N/A'})`);
                                     }
                                 }}
                                 className={`w-full glass rounded-3xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/20 active:scale-95 transition-all shadow-xl ${!isSOSActive ? 'grayscale cursor-not-allowed opacity-50' : ''}`}
@@ -228,21 +212,16 @@ export default function StudentDashboard() {
                             <button
                                 disabled={!isSOSActive}
                                 onClick={() => {
-                                    const studentHostel = profile?.hostelId || profile?.hostel;
-                                    const warden = staff.find(s =>
-                                        s.role === 'warden' &&
-                                        ((s as any).hostel === studentHostel || (s as any).hostelId === studentHostel)
-                                    );
-                                    if (warden && user && activeSOS?.id) {
+                                    if (user && activeSOS?.id) {
                                         callService.startCall({
                                             uid: user.uid,
                                             name: profile?.name || user.displayName || 'Student',
-                                            role: 'student'
-                                        }, warden, activeSOS.id, 'sos', true);
+                                            role: 'student',
+                                            hostelId: profile?.hostelId || profile?.hostel,
+                                            hostelName: profile?.hostelId || profile?.hostel
+                                        }, { uid: 'broadcast', role: 'warden' }, activeSOS.id, 'sos', true);
                                     } else if (!isSOSActive) {
                                         alert("Calling is only enabled during an active SOS.");
-                                    } else {
-                                        alert(`Warden unavailable. (Hostel: ${studentHostel || 'N/A'})`);
                                     }
                                 }}
                                 className={`w-full glass rounded-3xl p-4 flex flex-col items-center gap-2 border border-amber-500/20 active:scale-95 transition-all shadow-xl ${!isSOSActive ? 'grayscale cursor-not-allowed opacity-50' : ''}`}

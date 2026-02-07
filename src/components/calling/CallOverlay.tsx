@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../context/authStore';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { callService, type CallSession } from '../../services/callService';
 import IncomingCallModal from './IncomingCallModal';
 import InCallScreen from './InCallScreen';
@@ -24,7 +24,7 @@ export default function CallOverlay() {
         };
     }, []);
 
-    const { user } = useAuthStore();
+    const { user, role, profile } = useAuthStore();
     const [incomingCall, setIncomingCall] = useState<CallSession | null>(null);
     const [outboundCall, setOutboundCall] = useState<CallSession | null>(null);
     const [activeCall, setActiveCall] = useState<CallSession | null>(null);
@@ -54,50 +54,76 @@ export default function CallOverlay() {
         });
     }, []);
 
-    // 1. Receiver Listener: Watch for calls where I am the receiver
+    // 1. Receiver Listener: Watch for calls where I am the receiver (Direct or Broadcast)
     useEffect(() => {
-        if (!user) return;
+        if (!user || !role) return;
 
-        console.log("CallOverlay: [RECEIVER] Starting listener for", user.uid);
+        console.log("CallOverlay: [RECEIVER] Starting listeners for Role:", role, "UID:", user.uid);
 
-        // Simple query to avoid composite index requirements
-        const qAll = query(
+        // Listener A: Direct calls to me
+        const qDirect = query(
             collection(db, 'calls'),
             where('receiverId', '==', user.uid)
         );
 
-        const unsubscribe = onSnapshot(qAll, (snapshot) => {
-            console.log("CallOverlay: [RECEIVER] Snapshot updated. Docs:", snapshot.size);
+        // Listener B: Broadcast calls to my role
+        const qBroadcast = query(
+            collection(db, 'calls'),
+            where('receiverId', '==', 'broadcast'),
+            where('receiverRole', '==', role)
+        );
 
-            // Filter in memory to avoid index issues
-            const activeDocs = snapshot.docs.filter(d =>
-                ['ringing', 'accepted'].includes(d.data().status)
-            );
+        const processSnapshot = (snapshot: any) => {
+            const activeDocs = snapshot.docs.filter((d: any) => {
+                const data = d.data();
+                const isStatusValid = ['ringing', 'accepted'].includes(data.status);
+                if (!isStatusValid) return false;
 
-            if (activeDocs.length === 0) {
+                // Role-specific filtering for broadcasting
+                if (data.receiverId === 'broadcast') {
+                    if (role === 'warden') {
+                        // Warden only sees calls from their hostel
+                        const myHostel = profile?.hostelId || profile?.hostel;
+                        const callerHostel = data.hostelId || data.hostelName;
+                        return myHostel && callerHostel && myHostel === callerHostel;
+                    }
+                    // Security or others see all matching Role broadcasts
+                    return true;
+                }
+                return true;
+            });
+
+            return activeDocs;
+        };
+
+        const handleSync = (directDocs: any[], broadcastDocs: any[]) => {
+            const allDocs = [...directDocs, ...broadcastDocs];
+
+            if (allDocs.length === 0) {
                 setIncomingCall(null);
-                setActiveCall(prev => (prev?.receiverId === user.uid ? null : prev));
+                setActiveCall(prev => {
+                    // Only clear active call if it was a call where I was the receiver
+                    if (prev?.receiverId === user.uid || (prev?.receiverId === 'broadcast' && prev.status === 'ringing')) {
+                        return null;
+                    }
+                    return prev;
+                });
                 return;
             }
 
             // Sort logic: Prioritize 'accepted' over 'ringing', then by date
-            const sortedDocs = activeDocs.sort((a, b) => {
+            const sortedDocs = allDocs.sort((a, b) => {
                 const aData = a.data();
                 const bData = b.data();
-                // Status priority: accepted (2) > ringing (1)
                 const aStatusScore = aData.status === 'accepted' ? 2 : 1;
                 const bStatusScore = bData.status === 'accepted' ? 2 : 1;
-
                 if (aStatusScore !== bStatusScore) return bStatusScore - aStatusScore;
-
                 const aTime = aData.createdAt?.toMillis?.() || aData.createdAt?.seconds * 1000 || Date.now();
                 const bTime = bData.createdAt?.toMillis?.() || bData.createdAt?.seconds * 1000 || Date.now();
                 return bTime - aTime;
             });
 
-
             const callData = { id: sortedDocs[0].id, ...sortedDocs[0].data() } as CallSession;
-            console.log("CallOverlay: [RECEIVER] Processing doc:", callData.id, "Status:", callData.status, "Type:", callData.callType);
 
             if (callData.status === 'ringing') {
                 setIncomingCall(callData);
@@ -108,12 +134,26 @@ export default function CallOverlay() {
                     setActiveCall(callData);
                 }
             }
-        }, (error) => {
-            console.error("CallOverlay: [RECEIVER] Listener Error:", error);
+        };
+
+        let directActiveDocs: any[] = [];
+        let broadcastActiveDocs: any[] = [];
+
+        const unsubDirect = onSnapshot(qDirect, (snap) => {
+            directActiveDocs = processSnapshot(snap);
+            handleSync(directActiveDocs, broadcastActiveDocs);
         });
 
-        return () => unsubscribe();
-    }, [user, activeCall?.id]);
+        const unsubBroadcast = onSnapshot(qBroadcast, (snap) => {
+            broadcastActiveDocs = processSnapshot(snap);
+            handleSync(directActiveDocs, broadcastActiveDocs);
+        });
+
+        return () => {
+            unsubDirect();
+            unsubBroadcast();
+        };
+    }, [user, role, profile, activeCall?.id]);
 
     // 2. Caller Listener: Watch for calls where I am the caller
     useEffect(() => {
@@ -207,12 +247,36 @@ export default function CallOverlay() {
         if (!incomingCall) return;
         console.log("CallOverlay: [ACTION] Accept call", incomingCall.id);
         try {
+            // Special handling for broadcast calls: claim the call using a transaction to prevent race conditions
+            if (incomingCall.receiverId === 'broadcast') {
+                const callDocRef = doc(db, 'calls', incomingCall.id);
+
+                await runTransaction(db, async (transaction) => {
+                    const callSnap = await transaction.get(callDocRef);
+                    if (!callSnap.exists()) throw new Error("Call no longer exists.");
+
+                    const callData = callSnap.data();
+                    if (callData.receiverId !== 'broadcast') {
+                        throw new Error("Call already accepted by another personnel.");
+                    }
+
+                    transaction.update(callDocRef, {
+                        receiverId: user?.uid,
+                        receiverName: profile?.name || user?.displayName || 'Staff',
+                        updatedAt: serverTimestamp()
+                    });
+                });
+            }
+
             await callService.joinCall(incomingCall.id);
             setActiveCall(incomingCall);
             setIncomingCall(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("CallOverlay: Failed to accept call:", error);
-            handleReject();
+            if (error.message?.includes("already accepted")) {
+                alert("This call was already picked up by another staff member.");
+            }
+            handleCleanup();
         }
     };
 
