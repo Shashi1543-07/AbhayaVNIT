@@ -86,7 +86,7 @@ export default function WardenReportDetail() {
         <MobileWrapper>
             <TopHeader title="Incident Details" showBackButton={true} />
 
-            <div className="flex flex-col h-screen pt-24 bg-black">
+            <div className="flex flex-col h-screen pt-nav-safe bg-black">
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto px-4 pb-32 space-y-6">
 
@@ -103,8 +103,8 @@ export default function WardenReportDetail() {
                                 </div>
                             </div>
                             <span className={`px - 3 py - 1.5 rounded - xl text - [10px] font - black uppercase tracking - widest border shadow - sm ${incident.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                    incident.status === 'in_review' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                        'bg-red-500/10 text-red-400 border-red-500/20'
+                                incident.status === 'in_review' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                    'bg-red-500/10 text-red-400 border-red-500/20'
                                 } `}>
                                 {incident.status.replace('_', ' ')}
                             </span>
