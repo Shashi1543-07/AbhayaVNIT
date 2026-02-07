@@ -33,8 +33,11 @@ export default function HostelBroadcasts({ hostelId }: HostelBroadcastsProps) {
                 message,
                 priority,
                 hostelId,
-                createdBy: user.uid,
-                senderRole: 'warden'
+                createdBy: user.displayName || 'Warden',
+                createdById: user.uid,
+                senderRole: 'warden',
+                targetGroup: 'student',
+                durationHours: 24
             });
             setTitle('');
             setMessage('');
@@ -139,7 +142,8 @@ export default function HostelBroadcasts({ hostelId }: HostelBroadcastsProps) {
                                         <h3 className="font-bold text-slate-800">{broadcast.title}</h3>
                                     </div>
                                     <span className="text-xs text-slate-400">
-                                        {broadcast.createdAt?.seconds ? new Date(broadcast.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
+                                        {broadcast.createdAt?.toDate ? broadcast.createdAt.toDate().toLocaleString() :
+                                            broadcast.createdAt?.seconds ? new Date(broadcast.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
                                     </span>
                                 </div>
                                 <p className="text-slate-600 text-sm whitespace-pre-wrap pl-7">

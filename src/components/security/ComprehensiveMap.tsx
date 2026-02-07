@@ -88,7 +88,7 @@ export default function ComprehensiveMap() {
                             <Popup>
                                 <div className="p-2">
                                     <h3 className="font-bold text-sm">{walk.userName}</h3>
-                                    <p className="text-xs text-slate-600">{walk.userHostel}</p>
+                                    <p className="text-xs text-slate-600">{walk.userHostel || walk.hostelId || 'Campus'}</p>
                                     <div className="flex items-center text-xs mt-1">
                                         <Navigation className="w-3 h-3 mr-1" />
                                         <span>{walk.destination.name}</span>
@@ -134,7 +134,7 @@ export default function ComprehensiveMap() {
                     <div className="flex justify-between items-start mb-3">
                         <div>
                             <h3 className="font-bold text-lg text-slate-800">{selectedWalk.userName}</h3>
-                            <p className="text-sm text-slate-500">{selectedWalk.userHostel}</p>
+                            <p className="text-sm text-slate-500">{selectedWalk.userHostel || selectedWalk.hostelId || 'Campus'}</p>
                         </div>
                         <button
                             onClick={() => setSelectedWalk(null)}

@@ -7,7 +7,7 @@ import { sosService, type SOSEvent } from '../../services/sosService';
 import { Users, Shield, UserCheck, UserX, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
-import { collection, getCountFromServer, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, getCountFromServer, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';

@@ -115,7 +115,7 @@ export default function WalkDetailPanel({ walk, onClose }: WalkDetailPanelProps)
                                 <div>
                                     <p className="text-xs text-muted">Start Location</p>
                                     <p className="font-semibold text-sm text-primary">
-                                        {walk.startLocation.name || `${walk.startLocation.lat.toFixed(4)}, ${walk.startLocation.lng.toFixed(4)}`}
+                                        {walk.startLocation?.name || (walk.startLocation ? `${walk.startLocation.lat.toFixed(4)}, ${walk.startLocation.lng.toFixed(4)}` : 'N/A')}
                                     </p>
                                 </div>
                             </div>
@@ -190,8 +190,9 @@ export default function WalkDetailPanel({ walk, onClose }: WalkDetailPanelProps)
                                     <div key={idx} className="relative">
                                         <span className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-surface border-2 border-white"></span>
                                         <p className="text-xs text-muted">
-                                            {event.timestamp?.toDate ? event.timestamp.toDate().toLocaleTimeString() :
-                                                event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : 'No time'}
+                                            {typeof event.timestamp === 'object' && event.timestamp?.toDate ? event.timestamp.toDate().toLocaleTimeString() :
+                                                typeof event.timestamp === 'number' ? new Date(event.timestamp).toLocaleTimeString() :
+                                                    typeof event.timestamp === 'object' && 'seconds' in event.timestamp ? new Date(event.timestamp.seconds * 1000).toLocaleTimeString() : 'No time'}
                                         </p>
                                         <p className="text-sm text-primary">{event.details}</p>
                                     </div>

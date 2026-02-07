@@ -39,6 +39,7 @@ export default function SafeWalkRequest({ onWalkStarted }: SafeWalkRequestProps)
             const requestData: SafeWalkRequestType = {
                 userId: user.uid,
                 userName: profile?.name || user.displayName || 'Student',
+                phone: profile?.phone || '',
                 hostelId: profile?.hostelId || profile?.hostel || '',
                 startLocation: {
                     lat: position.coords.latitude,

@@ -30,6 +30,9 @@ export interface SafeWalkSession {
     userId: string;
     userName: string;
     phone?: string;
+    hostelId?: string;
+    userHostel?: string;
+    message?: string;
     source?: SafeWalkLocation;
     destination: {
         lat: number;
@@ -52,7 +55,7 @@ export interface SafeWalkSession {
     timeline?: {
         type: 'status' | 'message';
         details: string;
-        timestamp: number;
+        timestamp: number | { seconds: number; toDate?: () => Date };
     }[];
 }
 
@@ -130,7 +133,7 @@ export const safeWalkService = {
             if (status === 'completed') {
                 const snap = await getDoc(walkRef);
                 const userId = snap.data()?.userId || 'unknown';
-                await adminService.logAction('SafeWalk Completed', userId, `Safe Walk reached destination safely`);
+                await adminService.logAction('SafeWalk Completed', userId, `Safe Walk reached destination safely. Note: ${note || 'No note'}`);
             }
         } catch (error) {
             console.error("Error updating walk status:", error);

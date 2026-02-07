@@ -15,9 +15,13 @@ export default function ActiveWalksList({ onSelectWalk, hostelFilter }: ActiveWa
 
     useEffect(() => {
         const unsubscribe = safeWalkService.subscribeToActiveWalks((data) => {
-            setWalks(data);
+            // Apply hostel filter client-side if provided
+            const filteredData = hostelFilter
+                ? data.filter(w => w.hostelId === hostelFilter || w.userHostel === hostelFilter)
+                : data;
+            setWalks(filteredData);
             setLoading(false);
-        }, hostelFilter);
+        });
 
         return () => unsubscribe();
     }, [hostelFilter]);

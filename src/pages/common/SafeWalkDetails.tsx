@@ -116,7 +116,7 @@ export default function SafeWalkDetails() {
                     <div className="w-full h-full rounded-[2.8rem] overflow-hidden border border-white/10 shadow-inner">
                         <EventDetailMap
                             location={liveLocation}
-                            center={walk.startLocation}
+                            center={walk.startLocation || { lat: 21.125, lng: 79.052, name: 'Campus' }}
                             destination={walk.destination}
                             userName={walk.userName}
                             eventType="SAFEWALK"
@@ -194,7 +194,12 @@ export default function SafeWalkDetails() {
                                 <div key={idx} className="relative">
                                     <div className="absolute -left-[37px] top-1 w-3 h-3 rounded-full bg-black border-2 border-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.4)]" />
                                     <p className="text-[8px] font-black text-[#D4AF37]/60 uppercase tracking-widest mb-1.5 font-mono">
-                                        {event.timestamp ? (typeof event.timestamp === 'string' ? event.timestamp : new Date(event.timestamp.seconds * 1000).toLocaleTimeString()) : 'Tactical Now'}
+                                        {event.timestamp ? (
+                                            typeof event.timestamp === 'object' && 'toDate' in event.timestamp ? (event.timestamp as any).toDate().toLocaleTimeString() :
+                                                typeof event.timestamp === 'object' && 'seconds' in event.timestamp ? new Date((event.timestamp as any).seconds * 1000).toLocaleTimeString() :
+                                                    typeof event.timestamp === 'number' ? new Date(event.timestamp).toLocaleTimeString() :
+                                                        String(event.timestamp)
+                                        ) : 'Tactical Now'}
                                     </p>
                                     <p className="text-sm font-black text-white leading-tight font-heading drop-shadow-sm">
                                         {event.details}

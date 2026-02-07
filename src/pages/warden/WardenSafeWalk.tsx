@@ -92,7 +92,7 @@ export default function WardenSafeWalk() {
                                             </div>
                                             <div>
                                                 <h4 className="font-black text-slate-800 text-lg leading-tight">{walk.userName}</h4>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{walk.hostelId}</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{walk.hostelId || walk.userHostel || 'Campus'}</p>
                                             </div>
                                         </div>
                                         <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] border shadow-sm ${getStatusStyles(walk.status)}`}>

@@ -149,7 +149,7 @@ export default function SecurityOverviewMap({ sosEvents, activeWalks, selectedId
                 const liveLoc = locations[walk.userId];
                 const pos: [number, number] = liveLoc
                     ? [liveLoc.lat, liveLoc.lng]
-                    : [walk.startLocation.lat, walk.startLocation.lng];
+                    : [walk.startLocation?.lat || 0, walk.startLocation?.lng || 0];
 
                 return (
                     <Marker
@@ -198,8 +198,8 @@ export default function SecurityOverviewMap({ sosEvents, activeWalks, selectedId
                 <Polyline
                     key={`route-${walk.id}`}
                     positions={[
-                        locations[walk.userId] ? [locations[walk.userId].lat, locations[walk.userId].lng] : [walk.startLocation.lat, walk.startLocation.lng],
-                        [walk.destination.lat, walk.destination.lng]
+                        locations[walk.userId] ? [locations[walk.userId].lat, locations[walk.userId].lng] : [walk.startLocation?.lat || 0, walk.startLocation?.lng || 0],
+                        [walk.destination?.lat || 0, walk.destination?.lng || 0]
                     ]}
                     color={walk.status === 'danger' ? '#ef4444' : '#10b981'}
                     weight={2}
