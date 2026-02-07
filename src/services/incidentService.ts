@@ -1,5 +1,6 @@
 import { db } from '../lib/firebase';
 import { adminService } from './adminService';
+import { compressImageToBase64 } from '../lib/imageUtils';
 import {
     collection,
     doc,
@@ -31,6 +32,7 @@ export interface Incident {
     createdAt: any;
     updatedAt?: any;
     photoURL?: string;
+    imageData?: string; // Base64 encoded image data
     hostelId?: string;
     isAnonymous?: boolean;
     timeline: {
@@ -43,14 +45,29 @@ export interface Incident {
 
 export const incidentService = {
     // 1. Create Incident
-    createIncident: async (data: Omit<Incident, 'id' | 'createdAt' | 'timeline' | 'status'>) => {
+    createIncident: async (data: Omit<Incident, 'id' | 'createdAt' | 'timeline' | 'status'> & { imageFile?: File }) => {
         try {
-            console.log('IncidentService: Creating incident for user:', data.userId);
+            const { imageFile, ...incidentFields } = data;
+            console.log('IncidentService: Creating incident for user:', incidentFields.userId);
+
+            let imageData: string | undefined;
+            if (imageFile) {
+                try {
+                    imageData = await compressImageToBase64(imageFile);
+                } catch (imgError) {
+                    console.error('Image compression failed:', imgError);
+                    // Continue without image or throw error? 
+                    // Let's throw to match postService behavior
+                    throw new Error('Failed to process image. Please try a different image.');
+                }
+            }
+
             const newIncidentRef = doc(collection(db, 'incidents'));
             const incidentId = newIncidentRef.id;
 
             const incidentData = {
-                ...data,
+                ...incidentFields,
+                imageData: imageData || null,
                 status: 'open' as const,
                 createdAt: serverTimestamp(),
                 timeline: [{

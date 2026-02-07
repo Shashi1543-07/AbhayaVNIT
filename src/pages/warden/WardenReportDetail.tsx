@@ -102,10 +102,10 @@ export default function WardenReportDetail() {
                                     <span>By <span className="text-white">{incident.reporterName || 'Anonymous'}</span></span>
                                 </div>
                             </div>
-                            <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${incident.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                incident.status === 'in_review' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                    'bg-red-500/10 text-red-400 border-red-500/20'
-                                }`}>
+                            <span className={`px - 3 py - 1.5 rounded - xl text - [10px] font - black uppercase tracking - widest border shadow - sm ${incident.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                    incident.status === 'in_review' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                        'bg-red-500/10 text-red-400 border-red-500/20'
+                                } `}>
                                 {incident.status.replace('_', ' ')}
                             </span>
                         </div>
@@ -136,6 +136,20 @@ export default function WardenReportDetail() {
                             {incident.description}
                         </div>
                     </div>
+
+                    {/* Evidence (Photo) */}
+                    {(incident.imageData || incident.photoURL) && (
+                        <div className="space-y-2">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Evidence</h3>
+                            <div className="rounded-2xl overflow-hidden border border-white/10 shadow-lg">
+                                <img
+                                    src={incident.imageData || incident.photoURL}
+                                    alt="Incident Evidence"
+                                    className="w-full max-h-80 object-cover"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Details Grid */}
                     <div className="space-y-2">

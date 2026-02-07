@@ -182,10 +182,10 @@ export default function Reports() {
                                                         <p className="text-sm text-white font-bold leading-relaxed">{report.description}</p>
                                                     </div>
 
-                                                    {report.photoURL && (
+                                                    {(report.imageData || report.photoURL) && (
                                                         <div className="bg-black/40 rounded-2xl p-4 border border-white/5 shadow-inner">
                                                             <h5 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-widest mb-3 font-heading">Evidence</h5>
-                                                            <img src={report.photoURL} alt="Evidence" className="w-full h-48 object-cover rounded-xl border border-white/5" />
+                                                            <img src={report.imageData || report.photoURL} alt="Evidence" className="w-full h-48 object-cover rounded-xl border border-white/5" />
                                                         </div>
                                                     )}
 

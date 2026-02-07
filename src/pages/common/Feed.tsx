@@ -98,7 +98,7 @@ export default function Feed() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => navigate('/create-post')}
-                    className="fixed bottom-24 right-6 z-40 w-14 h-14 bg-gradient-to-br from-[#D4AF37] to-[#8B6E13] text-black rounded-2xl shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/30"
+                    className="fixed bottom-32 right-6 z-40 w-14 h-14 bg-gradient-to-br from-[#D4AF37] to-[#8B6E13] text-black rounded-2xl shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/30"
                 >
                     <Plus className="w-7 h-7" strokeWidth={2.5} />
                 </motion.button>
