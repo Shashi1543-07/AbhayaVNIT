@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
-import { storage } from '../../lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthStore } from '../../context/authStore';
 import { incidentService } from '../../services/incidentService';
 import { useNavigate } from 'react-router-dom';
