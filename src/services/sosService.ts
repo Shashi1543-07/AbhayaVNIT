@@ -24,8 +24,12 @@ export interface SOSEvent {
     // Student information
     userId: string;
     userName: string;
-    studentId: string;  // For clarity (same as userId)
-    studentName: string; // For clarity (same as userName)
+    studentId: string;
+    studentName: string;
+    studentRealName?: string | null;
+    studentUsername?: string | null;
+    studentIdNumber?: string | null;
+    studentEnrollmentNumber?: string | null;
     userPhone: string;
     role: 'student' | 'warden' | 'staff';
 
@@ -130,19 +134,26 @@ export const sosService = {
             const sosId = uuidv4();
             const sosToken = uuidv4() + "-" + Date.now();
 
+            // Anonymity: Use username for studentName/userName if student
+            const studentDisplayName = studentProfile.role === 'student' ? (studentProfile.username || 'Anonymous') : (studentProfile.name || user.displayName || 'Unknown');
+
             // 1. Create SOS Event record
             const sosData = {
                 id: sosId,
                 userId: user.uid,
-                userName: studentProfile.name || user.displayName || 'Unknown',
+                userName: studentDisplayName,
                 studentId: user.uid,
-                studentName: studentProfile.name || user.displayName || 'Unknown',
+                studentName: studentDisplayName,
+                studentRealName: studentProfile.name || null,
+                studentUsername: studentProfile.username || null,
+                studentIdNumber: studentProfile.idNumber || null,
+                studentEnrollmentNumber: studentProfile.enrollmentNumber || null,
                 userPhone: studentProfile.phoneNumber || studentProfile.phone || user.phoneNumber || '',
                 role: 'student',
                 hostelId: studentProfile.hostelId || studentProfile.hostel || null,
                 hostel: studentProfile.hostelId || studentProfile.hostel || 'Unknown',
                 roomNumber: studentProfile.roomNo || studentProfile.roomNumber || 'N/A',
-                roomNo: studentProfile.roomNo || studentProfile.roomNumber || 'N/A', // Add both for compatibility
+                roomNo: studentProfile.roomNo || studentProfile.roomNumber || 'N/A',
                 status: {
                     recognised: false,
                     resolved: false
@@ -169,7 +180,12 @@ export const sosService = {
             await setDoc(doc(db, 'sos_events', sosId), sosData);
 
             // Audit Log
-            await adminService.logAction('SOS Triggered', user.uid, `Emergency SOS started at ${new Date().toLocaleTimeString()}`);
+            await adminService.logAction(
+                'SOS Triggered',
+                sosId,
+                `Triggered by ${studentDisplayName} from ${studentProfile.hostel || 'Unknown'}`,
+                studentProfile
+            );
 
             // 2. Create Session record for recovery
             await setDoc(doc(db, 'sos_sessions', sosId), {
@@ -266,7 +282,7 @@ export const sosService = {
     },
 
     // 3. Recognise SOS (Security Only)
-    recogniseSOS: async (sosId: string, securityId: string, securityName: string) => {
+    recogniseSOS: async (sosId: string, securityId: string, securityName: string, actorProfile?: any) => {
         const sosRef = doc(db, 'sos_events', sosId);
 
         await updateDoc(sosRef, {
@@ -284,6 +300,9 @@ export const sosService = {
                 note: `Recognised by ${securityName}`
             })
         });
+
+        // Audit Log
+        await adminService.logAction('SOS Recognised', sosId, `Recognised by ${securityName} (${securityId})`, actorProfile);
     },
 
     // 3.5 Assign Guard
@@ -293,7 +312,7 @@ export const sosService = {
 
     // 4. Resolve SOS (Security Only)
     // 4. Resolve SOS (Security Only)
-    resolveSOS: async (sosId: string, summary: string) => {
+    resolveSOS: async (sosId: string, summary: string, actorProfile?: any) => {
         try {
             const sosRef = doc(db, 'sos_events', sosId);
             const sessionRef = doc(db, 'sos_sessions', sosId);
@@ -314,6 +333,9 @@ export const sosService = {
                     isActive: false
                 });
             });
+
+            // Audit Log
+            await adminService.logAction('SOS Resolved', sosId, `Resolved with summary: ${summary}`, actorProfile);
 
             // Stop Native Service
             if (Capacitor.isNativePlatform()) {

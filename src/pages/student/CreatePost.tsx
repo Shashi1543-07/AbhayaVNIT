@@ -73,6 +73,7 @@ export default function CreatePost() {
                 userData: {
                     uid: user.uid,
                     name: profile.name || user.email?.split('@')[0] || 'Anonymous',
+                    username: profile.username || (profile as any).userName,
                     hostelId: hostelId,
                     role: profile.role as any
                 }

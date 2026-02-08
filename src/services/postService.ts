@@ -15,7 +15,7 @@ import {
 export interface Post {
     id: string;
     authorId: string;
-    authorName: string;
+    authorName: string; // This will store the username for students
     authorRole: 'student' | 'admin' | 'warden' | 'security';
     hostelId: string;
     text: string;
@@ -29,6 +29,7 @@ interface CreatePostData {
     userData: {
         uid: string;
         name: string;
+        username?: string;
         hostelId: string;
         role?: 'student' | 'admin' | 'warden' | 'security';
     };
@@ -62,10 +63,13 @@ class PostService {
                 }
             }
 
+            // Anonymity: Use username for students, name for staff/admins
+            const displayName = userData.role === 'student' ? (userData.username || 'Anonymous') : userData.name;
+
             // Create post document
             const postData = {
                 authorId: userData.uid,
-                authorName: userData.name,
+                authorName: displayName,
                 authorRole: userData.role || 'student',
                 hostelId: userData.hostelId,
                 text: text.trim(),

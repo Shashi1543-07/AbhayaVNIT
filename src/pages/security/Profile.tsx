@@ -29,12 +29,10 @@ export default function SecurityProfile() {
                         </div>
                     </div>
                     <h2 className="text-2xl font-bold text-white font-heading tracking-tight text-center">{profile?.name || 'Security Officer'}</h2>
-                    <div className="flex items-center gap-2 mt-2">
-                        <span className="px-3 py-1 bg-[#D4AF37]/10 text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#D4AF37]/20">
-                            {profile?.role || 'Security'}
-                        </span>
+                    <p className="text-[#D4AF37] text-sm font-bold mt-1">@{profile?.username || 'no_alias'}</p>
+                    <div className="flex items-center gap-2 mt-4">
                         <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-full border border-emerald-500/20">
-                            On Duty
+                            On Duty • {profile?.subRole || 'Officer'}
                         </span>
                     </div>
                 </motion.div>
@@ -50,13 +48,22 @@ export default function SecurityProfile() {
                             <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{user?.email || 'N/A'}</p>
                         </div>
                     </div>
+                    <div className="p-5 border-b border-white/5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0">
+                            <Shield className="w-5 h-5 text-blue-400" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Contact Number</p>
+                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.phone || 'N/A'}</p>
+                        </div>
+                    </div>
                     <div className="p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
                         <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shrink-0">
                             <Shield className="w-5 h-5 text-emerald-400" strokeWidth={2} />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Personnel ID</p>
-                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.employeeId || 'ID-SEC-001'}</p>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Assigned Section</p>
+                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.subRole || 'General Security'}</p>
                         </div>
                     </div>
                 </motion.div>

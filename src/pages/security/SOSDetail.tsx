@@ -12,6 +12,7 @@ import { useAuthStore } from '../../context/authStore';
 import { Phone, MapPin, Clock, Shield, CheckCircle, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { containerStagger } from '../../lib/animations';
+import CustomModal from '../../components/common/CustomModal';
 
 export default function SecuritySOSDetail() {
     const { id } = useParams();
@@ -20,6 +21,20 @@ export default function SecuritySOSDetail() {
     const [event, setEvent] = useState<SOSEvent | null>(null);
     const [loading, setLoading] = useState(true);
     const [liveLocation, setLiveLocation] = useState<LocationData | null>(null);
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'info' | 'danger' | 'success' | 'warning';
+        onConfirm?: () => void;
+        confirmText?: string;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
+    const [isActionLoading, setIsActionLoading] = useState(false);
 
     useEffect(() => {
         if (!event?.userId) return;
@@ -32,7 +47,12 @@ export default function SecuritySOSDetail() {
     const handleCall = (isVideo: boolean = false) => {
         if (!user || !event) return;
         if (!event.status.recognised) {
-            alert("Please recognise the SOS before initiating a call.");
+            setModalConfig({
+                isOpen: true,
+                title: 'Recognition Required',
+                message: 'Please recognise the SOS before initiating a call to establish priority connection.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -112,7 +132,10 @@ export default function SecuritySOSDetail() {
                         <h2 className="text-3xl font-black text-white font-heading tracking-tight drop-shadow-sm truncate">{event.userName}</h2>
                         <div className="flex flex-wrap items-center gap-3 text-[10px] text-[#D4AF37] font-black uppercase tracking-[0.2em] mt-3">
                             <span className="flex items-center gap-2 bg-[#D4AF37]/5 px-3 py-1.5 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
-                                <Shield className="w-3.5 h-3.5" strokeWidth={3} /> STUDENT ID: {event.userId.slice(0, 8).toUpperCase()}
+                                <Shield className="w-3.5 h-3.5" strokeWidth={3} /> ID: {event.studentIdNumber || 'N/A'}
+                            </span>
+                            <span className="flex items-center gap-2 bg-[#D4AF37]/5 px-3 py-1.5 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
+                                ENROLL: {event.studentEnrollmentNumber || 'N/A'}
                             </span>
                         </div>
                     </div>
@@ -215,18 +238,35 @@ export default function SecuritySOSDetail() {
                     <div className="pt-8 grid grid-cols-1 gap-6 pb-nav-safe">
                         {!event.status.recognised && (
                             <button
-                                onClick={async () => {
-                                    if (window.confirm('Recognise this SOS? You will be assigned to this emergency.')) {
-                                        try {
-                                            await sosService.recogniseSOS(
-                                                event.id,
-                                                user?.uid || '',
-                                                profile?.name || 'Security'
-                                            );
-                                        } catch (error) {
-                                            alert('Failed to recognise SOS: ' + (error as Error).message);
+                                onClick={() => {
+                                    setModalConfig({
+                                        isOpen: true,
+                                        title: 'Recognise SOS',
+                                        message: 'Are you sure you want to recognise this SOS? You will be assigned as the primary responder for this emergency.',
+                                        type: 'info',
+                                        confirmText: 'Acknowledge',
+                                        onConfirm: async () => {
+                                            setIsActionLoading(true);
+                                            try {
+                                                await sosService.recogniseSOS(
+                                                    event.id,
+                                                    user?.uid || '',
+                                                    profile?.name || 'Security',
+                                                    profile
+                                                );
+                                                setModalConfig(prev => ({ ...prev, isOpen: false }));
+                                            } catch (error) {
+                                                setModalConfig({
+                                                    isOpen: true,
+                                                    title: 'Auth Error',
+                                                    message: 'Failed to access Ops-Intel: ' + (error as Error).message,
+                                                    type: 'danger'
+                                                });
+                                            } finally {
+                                                setIsActionLoading(false);
+                                            }
                                         }
-                                    }
+                                    });
                                 }}
                                 className="flex items-center justify-center gap-4 bg-gradient-to-br from-[#CF9E1B] via-[#D4AF37] to-[#8B6E13] text-black py-5 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.3em] shadow-[0_20px_50px_rgba(212,175,55,0.3)] active:scale-95 transition-all w-full border border-white/20"
                             >
@@ -237,18 +277,35 @@ export default function SecuritySOSDetail() {
 
                         {event.status.recognised && !event.status.resolved && (
                             <button
-                                onClick={async () => {
-                                    if (window.confirm('Mark this SOS as resolved?')) {
-                                        try {
-                                            await sosService.resolveSOS(
-                                                event.id,
-                                                'Resolved by Security'
-                                            );
-                                            navigate('/security/dashboard');
-                                        } catch (error) {
-                                            alert('Failed to resolve SOS: ' + (error as Error).message);
+                                onClick={() => {
+                                    setModalConfig({
+                                        isOpen: true,
+                                        title: 'Resolve Incident',
+                                        message: 'Confirm that this emergency situation has been handled and can be marked as resolved in the logs?',
+                                        type: 'warning',
+                                        confirmText: 'Resolve',
+                                        onConfirm: async () => {
+                                            setIsActionLoading(true);
+                                            try {
+                                                await sosService.resolveSOS(
+                                                    event.id,
+                                                    'Resolved by Security',
+                                                    profile
+                                                );
+                                                setModalConfig(prev => ({ ...prev, isOpen: false }));
+                                                navigate('/security/dashboard');
+                                            } catch (error) {
+                                                setModalConfig({
+                                                    isOpen: true,
+                                                    title: 'Protocol Error',
+                                                    message: 'Failed to update system: ' + (error as Error).message,
+                                                    type: 'danger'
+                                                });
+                                            } finally {
+                                                setIsActionLoading(false);
+                                            }
                                         }
-                                    }
+                                    });
                                 }}
                                 className="flex items-center justify-center gap-4 bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 text-black py-5 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.3em] shadow-[0_20px_50px_rgba(16,185,129,0.3)] active:scale-95 transition-all w-full border border-white/20"
                             >
@@ -268,6 +325,11 @@ export default function SecuritySOSDetail() {
                     </div>
                 </div>
             </motion.main>
+            <CustomModal
+                {...modalConfig}
+                onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+                isLoading={isActionLoading}
+            />
             <BottomNav items={securityNavItems} />
         </MobileWrapper>
     );

@@ -99,10 +99,10 @@ export default function AuditLogs() {
 
     const downloadLogs = () => {
         const csvContent = "data:text/csv;charset=utf-8,"
-            + "Timestamp,Action,Target,Performed By,Details\n"
+            + "Timestamp,Action,Target,Performed By,Actor ID,Actor Phone,Actor Email,Details\n"
             + logs.map(log => {
                 const date = log.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'N/A';
-                return `"${date}","${log.action}","${log.target}","${log.performedBy}","${log.details}"`;
+                return `"${date}","${log.action}","${log.target}","${log.actorName || log.performedBy}","${log.actorIdNumber || ''}","${log.actorPhone || ''}","${log.actorEmail || ''}","${log.details}"`;
             }).join("\n");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
@@ -210,7 +210,17 @@ export default function AuditLogs() {
                                             </td>
                                             <td className="p-4 font-bold text-white group-hover:text-[#D4AF37] transition-colors">{log.action}</td>
                                             <td className="p-4 text-[#D4AF37] font-medium text-xs">{log.target}</td>
-                                            <td className="p-4 text-zinc-300 font-medium text-xs">{log.performedBy}</td>
+                                            <td className="p-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-zinc-300 font-bold text-xs">{log.actorName || log.performedBy}</span>
+                                                    {log.actorIdNumber && (
+                                                        <span className="text-[9px] text-zinc-500 font-black uppercase tracking-tighter">ID: {log.actorIdNumber}</span>
+                                                    )}
+                                                    {log.actorEmail && (
+                                                        <span className="text-[9px] text-[#D4AF37]/60 font-medium lowercase tracking-tight">{log.actorEmail}</span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="p-4 text-zinc-500 text-xs font-medium max-w-xs truncate" title={log.details}>{log.details}</td>
                                             <td className="p-4">
                                                 <button

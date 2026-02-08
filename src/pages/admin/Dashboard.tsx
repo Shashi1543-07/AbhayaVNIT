@@ -12,9 +12,11 @@ import { db } from '../../lib/firebase';
 import { motion } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import TopHeader from '../../components/layout/TopHeader';
+import { useAuthStore } from '../../context/authStore';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
+    const { profile } = useAuthStore();
     const [stats, setStats] = useState({
         totalStudents: 0,
         totalWardens: 0,
@@ -63,7 +65,7 @@ export default function AdminDashboard() {
 
     return (
         <MobileWrapper>
-            <TopHeader title="Admin Control" showBackButton={false} />
+            <TopHeader title={profile?.name ? `Admin: ${profile.name}` : profile?.username ? `Admin: ${profile.username}` : 'Admin Control'} showBackButton={false} />
 
             <motion.main
                 className="px-4 pt-nav-safe pb-nav-safe space-y-6"

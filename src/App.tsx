@@ -40,6 +40,7 @@ import Feed from './pages/common/Feed';
 import CreatePost from './pages/student/CreatePost';
 import EventMapPage from './pages/common/EventMapPage';
 import LiveTrackingManager from './components/common/LiveTrackingManager';
+import SecuritySirenManager from './components/security/SecuritySirenManager';
 import WardenReportDetail from './pages/warden/WardenReportDetail';
 
 
@@ -159,6 +160,7 @@ function App() {
       <AnimatedRoutes />
       <CallOverlay />
       <LiveTrackingManager />
+      <SecuritySirenManager />
     </Router>
   );
 }

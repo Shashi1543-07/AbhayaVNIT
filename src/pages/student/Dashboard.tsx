@@ -4,10 +4,12 @@ import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import SOSButton from '../../components/student/SOSButton';
 import ActionCard from '../../components/ui/ActionCard';
-import { X, Shield, Footprints, AlertTriangle, Home, Video, Newspaper, Megaphone } from 'lucide-react';
+import { X, Shield, Footprints, AlertTriangle, Home, Video, Newspaper, Megaphone, Phone, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { callService } from '../../services/callService';
+import { userService } from '../../services/userService';
+import type { UserProfile } from '../../services/userService';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { useSOS } from '../../features/sos/useSOS';
 import { motion } from 'framer-motion';
@@ -18,15 +20,24 @@ export default function StudentDashboard() {
     const { user, profile } = useAuthStore();
     const { activeSOS, resolveSOS } = useSOS();
     const [showBroadcasts, setShowBroadcasts] = useState(false);
+    const [wardens, setWardens] = useState<UserProfile[]>([]);
+    const [securityStaff, setSecurityStaff] = useState<UserProfile[]>([]);
+    const [expandedSection, setExpandedSection] = useState<'wardens' | 'security' | null>(null);
 
-
-
-    // Removed the automatic subscription to hostel broadcasts for the dashboard view to avoid duplication
-    // We will use the BroadcastViewer for admin broadcasts.
-    // Hostel specific broadcasts (if any) can remain if needed, but for now focusing on Admin Broadcasts.
+    // Fetch wardens and security staff on mount
+    useEffect(() => {
+        const fetchStaff = async () => {
+            const [w, s] = await Promise.all([
+                userService.getWardens(),
+                userService.getSecurityStaff()
+            ]);
+            setWardens(w);
+            setSecurityStaff(s);
+        };
+        fetchStaff();
+    }, []);
 
     const handleSOS = () => {
-        // Just vibrate, the button handles the API call
         if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
     };
 
@@ -35,8 +46,8 @@ export default function StudentDashboard() {
     return (
         <MobileWrapper>
             <TopHeader
-                title={profile?.name ? `Welcome, ${profile.name.split(' ')[0]}!` : 'Welcome!'}
-                showBackButton={true}
+                title={profile?.name ? `Hi, ${profile.name}!` : profile?.username ? `Welcome, ${profile.username}!` : 'Welcome!'}
+                showBackButton={false}
             />
 
             <BroadcastViewer
@@ -53,8 +64,6 @@ export default function StudentDashboard() {
             >
                 {/* SOS Section */}
                 <motion.div variants={cardVariant} className="flex flex-col items-center justify-center py-4 relative z-20">
-
-                    {/* SOS Button always visible, grayscale if active */}
                     <div className="relative">
                         <SOSButton
                             onActivate={handleSOS}
@@ -71,7 +80,6 @@ export default function StudentDashboard() {
                 {/* Unified SOS Status Card */}
                 {isSOSActive && (
                     <div className="w-full glass-card rounded-[40px] p-8 border border-[#D4AF37]/20 shadow-[0_0_50px_rgba(212,175,55,0.1)] relative overflow-hidden flex flex-col items-center mb-8 animate-in fade-in slide-in-from-top-6 duration-700">
-                        {/* Subtle internal pulse/glow */}
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.08)_0%,transparent_70%)] animate-pulse" />
 
                         <div className="flex items-center gap-2 mb-4 bg-red-500/10 px-4 py-1.5 rounded-full border border-red-500/20 relative z-10">
@@ -114,9 +122,8 @@ export default function StudentDashboard() {
                     </div>
                 )}
 
-
                 {/* Quick Actions */}
-                <motion.div variants={cardVariant}>
+                <motion.div variants={cardVariant} className="mt-4">
                     <h3 className="text-sm font-bold text-[#D4AF37] mb-3 ml-1 font-heading uppercase tracking-tighter">Quick Actions</h3>
                     <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                         <ActionCard icon={Footprints} label="Safe Walk" onClick={() => navigate('/student/safewalk')} />
@@ -125,9 +132,9 @@ export default function StudentDashboard() {
                     </div>
                 </motion.div>
 
-                {/* Calling Section */}
-                <motion.div variants={cardVariant} className={`mt-10 ${!isSOSActive ? 'opacity-60' : ''}`}>
-                    <div className="flex justify-between items-end mb-3 ml-1">
+                {/* Emergency Calling */}
+                <motion.div variants={cardVariant} className="mt-10">
+                    <div className="flex justify-between items-end mb-4 ml-1">
                         <h3 className="text-sm font-bold text-[#D4AF37] font-heading uppercase tracking-tighter">Emergency Calling</h3>
                         {!isSOSActive && (
                             <span className="text-[9px] text-[#CF9E1B] font-bold bg-[#D4AF37]/10 px-2 py-0.5 rounded-full border border-[#D4AF37]/20">
@@ -136,101 +143,198 @@ export default function StudentDashboard() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Security Calls */}
-                        <div className="space-y-2">
+                    <div className="space-y-4">
+
+                        {/* Wardens Section */}
+                        <div
+                            className={`glass-card rounded-3xl border border-[#D4AF37]/20 overflow-hidden transition-all duration-300 ${expandedSection === 'wardens' ? 'p-4' : 'p-3'}`}
+                        >
                             <button
-                                disabled={!isSOSActive}
-                                onClick={() => {
-                                    if (user && activeSOS?.id) {
-                                        callService.startCall({
-                                            uid: user.uid,
-                                            name: profile?.name || user.displayName || 'Student',
-                                            role: 'student',
-                                            hostelId: profile?.hostelId || profile?.hostel,
-                                            hostelName: profile?.hostelId || profile?.hostel
-                                        }, { uid: 'broadcast', role: 'security' }, activeSOS.id, 'sos', false);
-                                    } else if (!isSOSActive) {
-                                        alert("Calling is only enabled during an active SOS.");
-                                    }
-                                }}
-                                className={`w-full glass rounded-3xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/20 active:scale-95 transition-all shadow-xl ${!isSOSActive ? 'grayscale cursor-not-allowed opacity-50' : ''}`}
+                                onClick={() => setExpandedSection(expandedSection === 'wardens' ? null : 'wardens')}
+                                className="w-full flex items-center justify-between group"
                             >
-                                <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center border border-[#D4AF37]/20">
-                                    <Shield className="w-6 h-6 text-[#D4AF37]" />
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                                        <Home className="w-5 h-5 text-amber-400" />
+                                    </div>
+                                    <div className="text-left">
+                                        <h4 className="text-sm font-black text-amber-400 uppercase tracking-widest">Wardens</h4>
+                                        <p className="text-[10px] text-zinc-500 font-bold">{wardens.length} REGISTERED</p>
+                                    </div>
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] font-heading">Voice Security</span>
-                            </button>
-                            <button
-                                disabled={!isSOSActive}
-                                onClick={() => {
-                                    if (user && activeSOS?.id) {
-                                        callService.startCall({
-                                            uid: user.uid,
-                                            name: profile?.name || user.displayName || 'Student',
-                                            role: 'student',
-                                            hostelId: profile?.hostelId || profile?.hostel,
-                                            hostelName: profile?.hostelId || profile?.hostel
-                                        }, { uid: 'broadcast', role: 'security' }, activeSOS.id, 'sos', true);
-                                    } else if (!isSOSActive) {
-                                        alert("Calling is only enabled during an active SOS.");
-                                    }
-                                }}
-                                className={`w-full glass rounded-3xl p-4 flex flex-col items-center gap-2 border border-emerald-500/20 active:scale-95 transition-all shadow-xl ${!isSOSActive ? 'grayscale cursor-not-allowed opacity-50' : ''}`}
-                            >
-                                <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20">
-                                    <Video className="w-6 h-6 text-emerald-500" />
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 ${expandedSection === 'wardens' ? 'rotate-180 bg-amber-500/20' : 'bg-white/5'}`}>
+                                    <ChevronDown className={`w-4 h-4 ${expandedSection === 'wardens' ? 'text-amber-400' : 'text-zinc-500'}`} />
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 font-heading">Video Security</span>
                             </button>
+
+                            {expandedSection === 'wardens' && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    className="pt-4 mt-3 border-t border-white/10"
+                                >
+                                    <div className="max-h-60 overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-zinc-700">
+                                        {wardens.length === 0 ? (
+                                            <div className="text-center py-6 text-zinc-500 text-xs font-bold uppercase tracking-widest">No wardens registered</div>
+                                        ) : (
+                                            wardens.map((warden) => (
+                                                <div
+                                                    key={warden.uid}
+                                                    className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5 animate-in fade-in slide-in-from-right-4 duration-300"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-gradient-to-br from-amber-500/30 to-amber-600/30 rounded-xl flex items-center justify-center text-amber-400 font-black text-sm border border-amber-500/20">
+                                                            {warden.name?.charAt(0)?.toUpperCase() || 'W'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-white">{warden.name || 'Unnamed Warden'}</p>
+                                                            {warden.hostelId && (
+                                                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">{warden.hostelId}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            disabled={!isSOSActive}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (user && activeSOS?.id) {
+                                                                    callService.startCall({
+                                                                        uid: user.uid,
+                                                                        name: profile?.name || user.displayName || 'Student',
+                                                                        role: 'student',
+                                                                        hostelId: profile?.hostelId || profile?.hostel,
+                                                                        hostelName: profile?.hostelId || profile?.hostel
+                                                                    }, { uid: 'broadcast', role: 'staff', name: warden.name }, activeSOS.id, 'sos', false);
+                                                                }
+                                                            }}
+                                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border ${!isSOSActive ? 'bg-zinc-800/50 border-zinc-700/30 opacity-40 grayscale pointer-events-none' : 'bg-emerald-500/20 hover:bg-emerald-500/40 border-emerald-500/30 group/btn'}`}
+                                                            title={isSOSActive ? "Audio Call" : "Activate SOS to Call"}
+                                                        >
+                                                            <Phone className={`w-4 h-4 ${!isSOSActive ? 'text-zinc-500' : 'text-emerald-400'}`} />
+                                                        </button>
+                                                        <button
+                                                            disabled={!isSOSActive}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (user && activeSOS?.id) {
+                                                                    callService.startCall({
+                                                                        uid: user.uid,
+                                                                        name: profile?.name || user.displayName || 'Student',
+                                                                        role: 'student',
+                                                                        hostelId: profile?.hostelId || profile?.hostel,
+                                                                        hostelName: profile?.hostelId || profile?.hostel
+                                                                    }, { uid: 'broadcast', role: 'staff', name: warden.name }, activeSOS.id, 'sos', true);
+                                                                }
+                                                            }}
+                                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border ${!isSOSActive ? 'bg-zinc-800/50 border-zinc-700/30 opacity-40 grayscale pointer-events-none' : 'bg-blue-500/20 hover:bg-blue-500/40 border-blue-500/30 group/btn'}`}
+                                                            title={isSOSActive ? "Video Call" : "Activate SOS to Call"}
+                                                        >
+                                                            <Video className={`w-4 h-4 ${!isSOSActive ? 'text-zinc-500' : 'text-blue-400'}`} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
                         </div>
 
-                        {/* Warden Calls */}
-                        <div className="space-y-2">
+                        {/* Security Section */}
+                        <div
+                            className={`glass-card rounded-3xl border border-[#D4AF37]/20 overflow-hidden transition-all duration-300 ${expandedSection === 'security' ? 'p-4' : 'p-3'}`}
+                        >
                             <button
-                                disabled={!isSOSActive}
-                                onClick={() => {
-                                    if (user && activeSOS?.id) {
-                                        callService.startCall({
-                                            uid: user.uid,
-                                            name: profile?.name || user.displayName || 'Student',
-                                            role: 'student',
-                                            hostelId: profile?.hostelId || profile?.hostel,
-                                            hostelName: profile?.hostelId || profile?.hostel
-                                        }, { uid: 'broadcast', role: 'warden' }, activeSOS.id, 'sos', false);
-                                    } else if (!isSOSActive) {
-                                        alert("Calling is only enabled during an active SOS.");
-                                    }
-                                }}
-                                className={`w-full glass rounded-3xl p-4 flex flex-col items-center gap-2 border border-[#D4AF37]/20 active:scale-95 transition-all shadow-xl ${!isSOSActive ? 'grayscale cursor-not-allowed opacity-50' : ''}`}
+                                onClick={() => setExpandedSection(expandedSection === 'security' ? null : 'security')}
+                                className="w-full flex items-center justify-between group"
                             >
-                                <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center border border-[#D4AF37]/20">
-                                    <Home className="w-6 h-6 text-[#D4AF37]" />
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-[#D4AF37]/20 rounded-xl flex items-center justify-center">
+                                        <Shield className="w-4 h-4 text-[#D4AF37]" />
+                                    </div>
+                                    <div className="text-left">
+                                        <h4 className="text-sm font-black text-[#D4AF37] uppercase tracking-widest">Security</h4>
+                                        <p className="text-[10px] text-zinc-500 font-bold">{securityStaff.length} REGISTERED Staff</p>
+                                    </div>
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] font-heading">Voice Warden</span>
-                            </button>
-                            <button
-                                disabled={!isSOSActive}
-                                onClick={() => {
-                                    if (user && activeSOS?.id) {
-                                        callService.startCall({
-                                            uid: user.uid,
-                                            name: profile?.name || user.displayName || 'Student',
-                                            role: 'student',
-                                            hostelId: profile?.hostelId || profile?.hostel,
-                                            hostelName: profile?.hostelId || profile?.hostel
-                                        }, { uid: 'broadcast', role: 'warden' }, activeSOS.id, 'sos', true);
-                                    } else if (!isSOSActive) {
-                                        alert("Calling is only enabled during an active SOS.");
-                                    }
-                                }}
-                                className={`w-full glass rounded-3xl p-4 flex flex-col items-center gap-2 border border-amber-500/20 active:scale-95 transition-all shadow-xl ${!isSOSActive ? 'grayscale cursor-not-allowed opacity-50' : ''}`}
-                            >
-                                <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center border border-amber-500/20">
-                                    <Video className="w-6 h-6 text-amber-500" />
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 ${expandedSection === 'security' ? 'rotate-180 bg-[#D4AF37]/20' : 'bg-white/5'}`}>
+                                    <ChevronDown className={`w-4 h-4 ${expandedSection === 'security' ? 'text-[#D4AF37]' : 'text-zinc-500'}`} />
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 font-heading">Video Warden</span>
                             </button>
+
+                            {expandedSection === 'security' && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    className="pt-4 mt-3 border-t border-white/10"
+                                >
+                                    <div className="max-h-60 overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-zinc-700">
+                                        {securityStaff.length === 0 ? (
+                                            <div className="text-center py-6 text-zinc-500 text-xs font-bold uppercase tracking-widest">No security staff registered</div>
+                                        ) : (
+                                            securityStaff.map((security) => (
+                                                <div
+                                                    key={security.uid}
+                                                    className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5 animate-in fade-in slide-in-from-right-4 duration-300"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37]/30 to-[#8B6E13]/30 rounded-xl flex items-center justify-center text-[#D4AF37] font-black text-sm border border-[#D4AF37]/20">
+                                                            {security.name?.charAt(0)?.toUpperCase() || 'S'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-white">{security.name || 'Unnamed Security'}</p>
+                                                            {security.hostelId && (
+                                                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">{security.hostelId}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            disabled={!isSOSActive}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (user && activeSOS?.id) {
+                                                                    callService.startCall({
+                                                                        uid: user.uid,
+                                                                        name: profile?.name || user.displayName || 'Student',
+                                                                        role: 'student',
+                                                                        hostelId: profile?.hostelId || profile?.hostel,
+                                                                        hostelName: profile?.hostelId || profile?.hostel
+                                                                    }, { uid: 'broadcast', role: 'staff', name: security.name }, activeSOS.id, 'sos', false);
+                                                                }
+                                                            }}
+                                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border ${!isSOSActive ? 'bg-zinc-800/50 border-zinc-700/30 opacity-40 grayscale pointer-events-none' : 'bg-emerald-500/20 hover:bg-emerald-500/40 border-emerald-500/30'}`}
+                                                            title={isSOSActive ? "Audio Call" : "Activate SOS to Call"}
+                                                        >
+                                                            <Phone className={`w-4 h-4 ${!isSOSActive ? 'text-zinc-500' : 'text-emerald-400'}`} />
+                                                        </button>
+                                                        <button
+                                                            disabled={!isSOSActive}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (user && activeSOS?.id) {
+                                                                    callService.startCall({
+                                                                        uid: user.uid,
+                                                                        name: profile?.name || user.displayName || 'Student',
+                                                                        role: 'student',
+                                                                        hostelId: profile?.hostelId || profile?.hostel,
+                                                                        hostelName: profile?.hostelId || profile?.hostel
+                                                                    }, { uid: 'broadcast', role: 'staff', name: security.name }, activeSOS.id, 'sos', true);
+                                                                }
+                                                            }}
+                                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border ${!isSOSActive ? 'bg-zinc-800/50 border-zinc-700/30 opacity-40 grayscale pointer-events-none' : 'bg-blue-500/20 hover:bg-blue-500/40 border-blue-500/30'}`}
+                                                            title={isSOSActive ? "Video Call" : "Activate SOS to Call"}
+                                                        >
+                                                            <Video className={`w-4 h-4 ${!isSOSActive ? 'text-zinc-500' : 'text-blue-400'}`} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
                         </div>
                     </div>
                 </motion.div>
@@ -260,12 +364,6 @@ export default function StudentDashboard() {
                 </motion.button>
 
                 <div className="h-20" />
-
-                {/* Alerts / Broadcasts */}
-                {/* Alerts / Broadcasts - Replaced by BroadcastViewer */}
-
-                {/* My Reports Preview */}
-
             </motion.main>
 
             <BottomNav />

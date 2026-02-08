@@ -9,7 +9,7 @@ import { containerStagger } from '../../lib/animations';
 import { type SOSEvent } from '../../services/sosService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { MapPin, Clock, Shield, Phone, User, AlertTriangle } from 'lucide-react';
+import { MapPin, Clock, Shield, User, AlertTriangle } from 'lucide-react';
 import { mapService, type LocationData } from '../../services/mapService';
 
 export default function AdminSOSDetail() {
@@ -93,7 +93,10 @@ export default function AdminSOSDetail() {
                                 <User className="w-3.5 h-3.5" strokeWidth={3} /> {event.role?.toUpperCase()}
                             </span>
                             <span className="flex items-center gap-2 bg-[#D4AF37]/5 px-3 py-1.5 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
-                                <Phone className="w-3.5 h-3.5" strokeWidth={3} /> {event.userPhone || 'PROTOCOL VOID'}
+                                <Shield className="w-3.5 h-3.5" strokeWidth={3} /> ID: {event.studentIdNumber || 'N/A'}
+                            </span>
+                            <span className="flex items-center gap-2 bg-[#D4AF37]/5 px-3 py-1.5 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
+                                ENROLL: {event.studentEnrollmentNumber || 'N/A'}
                             </span>
                         </div>
                     </div>

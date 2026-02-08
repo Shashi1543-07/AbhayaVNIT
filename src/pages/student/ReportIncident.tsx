@@ -49,7 +49,17 @@ export default function ReportIncident() {
                     longitude: position.coords.longitude
                 },
                 hostelId: targetHostelId,
-                isAnonymous
+                isAnonymous,
+                // Pass identification if not anonymous
+                ...(isAnonymous ? {} : {
+                    studentUsername: profile?.username,
+                    studentRealName: profile?.name,
+                    studentIdNumber: profile?.idNumber,
+                    studentEnrollmentNumber: profile?.enrollmentNumber,
+                    studentPhone: profile?.phone || profile?.phoneNumber,
+                    studentHostel: profile?.hostel || profile?.hostelId,
+                    studentRoom: profile?.roomNo
+                })
             });
 
             navigate('/student/reports');

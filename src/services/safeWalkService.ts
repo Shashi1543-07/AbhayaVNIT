@@ -8,7 +8,8 @@ import {
     where,
     onSnapshot,
     serverTimestamp,
-    limit
+    limit,
+    orderBy
 } from "firebase/firestore";
 import {
     ref,
@@ -32,6 +33,11 @@ export interface SafeWalkSession {
     phone?: string;
     hostelId?: string;
     userHostel?: string;
+    studentRealName?: string | null;
+    studentIdNumber?: string | null;
+    studentEnrollmentNumber?: string | null;
+    studentUsername?: string | null;
+    roomNo?: string;
     message?: string;
     source?: SafeWalkLocation;
     destination: {
@@ -64,6 +70,11 @@ export interface SafeWalkRequest {
     userName: string;
     phone: string;
     hostelId?: string;
+    studentRealName?: string | null;
+    studentIdNumber?: string | null;
+    studentEnrollmentNumber?: string | null;
+    studentUsername?: string | null;
+    roomNo?: string;
     startLocation: {
         lat: number;
         lng: number;
@@ -95,6 +106,9 @@ export const safeWalkService = {
                 status: 'active'
             };
 
+            // Ensure the data has the correct anonymity applied if it's a student request
+            // (The UI should handle this, but as a safeguard we can check here if we had profile access)
+
             await setDoc(walkRef, sessionData);
 
             // Initialize location in RTDB (live_locations)
@@ -109,7 +123,7 @@ export const safeWalkService = {
             });
 
             // Audit Log
-            await adminService.logAction('SafeWalk Started', data.userId, `Safe Walk initiated to ${data.destination.name}`);
+            await adminService.logAction('SafeWalk Started', data.userId, `Safe Walk initiated to ${data.destination.name}`, data);
 
             return walkId;
         } catch (error) {
@@ -119,7 +133,7 @@ export const safeWalkService = {
     },
 
     // Update Status
-    updateWalkStatus: async (walkId: string, status: SafeWalkSession['status'], note?: string) => {
+    updateWalkStatus: async (walkId: string, status: SafeWalkSession['status'], note?: string, actorProfile?: any) => {
         try {
             const walkRef = doc(db, COLLECTION_NAME, walkId);
             const updateData: any = {
@@ -133,7 +147,7 @@ export const safeWalkService = {
             if (status === 'completed') {
                 const snap = await getDoc(walkRef);
                 const userId = snap.data()?.userId || 'unknown';
-                await adminService.logAction('SafeWalk Completed', userId, `Safe Walk reached destination safely. Note: ${note || 'No note'}`);
+                await adminService.logAction('SafeWalk Completed', userId, `Safe Walk reached destination safely. Note: ${note || 'No note'}`, actorProfile);
             }
         } catch (error) {
             console.error("Error updating walk status:", error);
@@ -170,12 +184,14 @@ export const safeWalkService = {
         });
     },
 
-    // Subscribe to User's Active Walk (RESTORED)
+    // Subscribe to User's Active Walk (REFACTORED for Live Refresh)
     subscribeToUserActiveWalk: (userId: string, callback: (session: SafeWalkSession | null) => void) => {
+        // We fetch the most recent walk for this user, regardless of status.
+        // This ensures the subscription persists through status transitions (e.g. to 'completed').
         const q = query(
             collection(db, COLLECTION_NAME),
             where('userId', '==', userId),
-            where('status', 'not-in', ['completed', 'cancelled', 'sos']),
+            orderBy('startTime', 'desc'),
             limit(1)
         );
 
@@ -183,9 +199,20 @@ export const safeWalkService = {
             if (snapshot.empty) {
                 callback(null);
             } else {
-                const doc = snapshot.docs[0];
-                callback({ id: doc.id, ...doc.data() } as SafeWalkSession);
+                const data = snapshot.docs[0].data() as SafeWalkSession;
+                const id = snapshot.docs[0].id;
+
+                // Return null if the latest session is in a terminal state
+                const { id: _unusedId, ...rest } = data;
+                const terminalStatuses = ['completed', 'cancelled', 'sos'];
+                if (terminalStatuses.includes(data.status)) {
+                    callback(null);
+                } else {
+                    callback({ id, ...rest } as SafeWalkSession);
+                }
             }
+        }, (error) => {
+            console.error("SafeWalkService: Error subscribing to active walk:", error);
         });
     },
 

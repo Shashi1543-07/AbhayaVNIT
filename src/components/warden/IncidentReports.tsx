@@ -115,8 +115,9 @@ export default function IncidentReports({ hostelId }: IncidentReportsProps) {
                             </p>
 
                             <div className="mt-4 flex items-center justify-between">
-                                <span className="text-[9px] font-black text-[#D4AF37] uppercase tracking-[0.1em] bg-[#D4AF37]/10 px-2 py-0.5 rounded-md">
-                                    BY {incident.reporterName || 'STUDENT'}
+                                <span className={`text-[9px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded-md ${incident.isAnonymous ? 'bg-zinc-800 text-zinc-500' : 'bg-[#D4AF37]/10 text-[#D4AF37]'}`}>
+                                    BY {incident.isAnonymous ? 'ANONYMOUS' : (incident.reporterName || 'STUDENT')}
+                                    {!incident.isAnonymous && incident.studentUsername && ` (@${incident.studentUsername})`}
                                 </span>
                                 <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">
                                     ID: {incident.id.slice(-6).toUpperCase()}

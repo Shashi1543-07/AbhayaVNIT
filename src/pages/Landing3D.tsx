@@ -88,10 +88,10 @@ export default function Landing3D() {
                         className="mb-12 md:mb-20 lg:mb-24"
                     >
                         <h3 className="flex flex-col items-center font-black tracking-normal leading-tight drop-shadow-2xl">
-                            <span className="text-xl md:text-2xl lg:text-3xl font-serif italic text-white uppercase tracking-tighter">
+                            <span className="text-xl md:text-2xl lg:text-3xl font-sans font-black text-white uppercase tracking-tighter">
                                 Visvesvaraya
                             </span>
-                            <span className="text-sm md:text-lg lg:text-xl font-sans font-bold text-[#D4AF37] tracking-[0.2em] md:tracking-[0.4em] uppercase mt-1">
+                            <span className="text-xl md:text-2xl lg:text-3xl font-sans font-black text-[#D4AF37] tracking-tighter uppercase mt-1">
                                 National Institute of Technology
                             </span>
                         </h3>
@@ -123,7 +123,7 @@ export default function Landing3D() {
                                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-white drop-shadow-2xl font-heading leading-tight">
                                     ABHAYA <span className="text-[#D4AF37]">CONNECT</span>
                                 </h1>
-                                <h2 className="text-base md:text-lg lg:text-xl font-black font-hindi mt-1 uppercase tracking-[0.2em] opacity-90">
+                                <h2 className="text-2xl md:text-3xl lg:text-4xl font-black font-hindi mt-1 uppercase tracking-[0.2em] opacity-90">
                                     <span className="text-white">अभया</span> <span className="text-[#D4AF37]">कनेक्ट</span>
                                 </h2>
                             </div>

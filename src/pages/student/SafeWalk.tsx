@@ -32,9 +32,9 @@ const CAMPUS_LOCATIONS = [
     { name: 'Mathematics Department', lat: 21.1252, lng: 79.0518, category: 'Departments' },
     { name: 'Humanities & Social Sciences', lat: 21.1250, lng: 79.0515, category: 'Departments' },
 
-    // --- HOSTELS (GIRLS) ---
-    { name: 'GH-1 (Kalpana Chawla Hall)', lat: 21.1255, lng: 79.0495, category: 'G-Hostels' },
-    { name: 'GH-2 (Dr. Anandi Joshi Hall)', lat: 21.1258, lng: 79.0498, category: 'G-Hostels' },
+    // --- HOSTELS ---
+    { name: 'Kalpana Chawala Hostel', lat: 21.1255, lng: 79.0495, category: 'G-Hostels' },
+    { name: 'Anandi Gopal Joshi Hostel', lat: 21.1258, lng: 79.0498, category: 'G-Hostels' },
     { name: 'New GIRLS Hostel (A Block)', lat: 21.1259, lng: 79.0500, category: 'G-Hostels' },
 
     // --- HOSTELS (BOYS) ---
@@ -225,9 +225,14 @@ export default function SafeWalk() {
 
             await safeWalkService.startSafeWalk({
                 userId: user.uid,
-                userName: profile?.name || user.displayName || 'Student',
+                userName: profile?.username || profile?.name || user.displayName || 'Student',
                 phone: profile?.phoneNumber || profile?.phone || '',
-                hostelId: profile?.hostelId || 'Unknown',
+                hostelId: profile?.hostelId || profile?.hostel || 'Unknown',
+                studentRealName: profile?.name || null,
+                studentIdNumber: profile?.idNumber || null,
+                studentEnrollmentNumber: profile?.enrollmentNumber || null,
+                studentUsername: profile?.username || null,
+                roomNo: profile?.roomNo || profile?.roomNumber || 'N/A',
                 startLocation: { ...startCoords, name: 'Current Location' },
                 destination: { ...destCoords, name: selectedDestName },
                 expectedDuration: duration,
@@ -243,11 +248,17 @@ export default function SafeWalk() {
 
     const handleEndWalk = async () => {
         if (!activeSession) return;
+        const sessionId = activeSession.id;
+
+        // Optimistic UI: Clear session immediately for perceived speed
+        setActiveSession(null);
+        stopGPSTracking();
+
         try {
-            await safeWalkService.updateWalkStatus(activeSession.id, 'completed');
-            stopGPSTracking();
+            await safeWalkService.updateWalkStatus(sessionId, 'completed');
         } catch (error) {
             console.error('Error ending walk:', error);
+            // Re-fetch or handle error if needed, but usually firestore handles offline
         }
     };
 
@@ -256,11 +267,15 @@ export default function SafeWalk() {
 
         const confirmMsg = "ESCALATE TO SOS? This will stop the Safe Walk and alert Security IMMEDIATELY.";
         if (confirm(confirmMsg)) {
-            try {
-                const currentPos = lastLocationRef.current || { lat: 0, lng: 0 };
-                await safeWalkService.convertToSOS(activeSession.id, user, { lat: currentPos.lat, lng: currentPos.lng });
+            const sessionId = activeSession.id;
+            const currentPos = lastLocationRef.current || { lat: 0, lng: 0 };
 
-                stopGPSTracking();
+            // Optimistic UI
+            setActiveSession(null);
+            stopGPSTracking();
+
+            try {
+                await safeWalkService.convertToSOS(sessionId, user, { lat: currentPos.lat, lng: currentPos.lng });
                 alert('Emergency SOS triggered.');
             } catch (error) {
                 console.error('SOS Escalation failed:', error);
@@ -425,7 +440,7 @@ export default function SafeWalk() {
                             {/* Tactical Intel Map Pod */}
                             <motion.div variants={cardVariant} className="glass rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl h-[300px] relative">
                                 <EventDetailMap
-                                    userName={profile?.name || user?.displayName || 'Student'}
+                                    userName={profile?.username || profile?.name || user?.displayName || 'Student'}
                                     eventType="SAFEWALK"
                                     location={liveLocation}
                                     destination={{

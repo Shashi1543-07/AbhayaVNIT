@@ -35,6 +35,14 @@ export interface Incident {
     imageData?: string; // Base64 encoded image data
     hostelId?: string;
     isAnonymous?: boolean;
+    // Student identification fields (for audit/warden review)
+    studentUsername?: string;
+    studentRealName?: string;
+    studentIdNumber?: string;
+    studentEnrollmentNumber?: string;
+    studentPhone?: string;
+    studentHostel?: string;
+    studentRoom?: string;
     timeline: {
         time: number;
         action: string;
@@ -84,7 +92,8 @@ export const incidentService = {
             await adminService.logAction(
                 'Report Submitted',
                 incidentData.userId || 'unknown',
-                `Category: ${incidentData.category} | Description: ${incidentData.description.substring(0, 50)}...`
+                `Category: ${incidentData.category} | Description: ${incidentData.description.substring(0, 50)}...`,
+                incidentFields // For students, the fields passed include identification if non-anonymous
             );
 
             return incidentId;
@@ -104,17 +113,15 @@ export const incidentService = {
 
         const q = query(
             collection(db, 'incidents'),
-            where('userId', '==', userId)
+            where('userId', '==', userId),
+            orderBy('createdAt', 'desc')
         );
 
         return onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() } as Incident))
-                .sort((a, b) => {
-                    const timeA = a.createdAt?.seconds || 0;
-                    const timeB = b.createdAt?.seconds || 0;
-                    return timeB - timeA;
-                });
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Incident));
             callback(data);
         }, (error) => {
             console.error("IncidentService: Error in subscribeToUserIncidents (Checking permission/index):", error);
@@ -150,7 +157,7 @@ export const incidentService = {
     },
 
     // 4. Update Status
-    updateIncidentStatus: async (id: string, status: Incident['status'], userId: string, note?: string) => {
+    updateIncidentStatus: async (id: string, status: Incident['status'], userId: string, note?: string, actorProfile?: any) => {
         const incidentRef = doc(db, 'incidents', id);
         try {
             await updateDoc(incidentRef, {
@@ -163,6 +170,10 @@ export const incidentService = {
                     note: note || ''
                 })
             });
+
+            if (status === 'resolved') {
+                await adminService.logAction('Resolve Incident', id, `Details: ${note || 'No details provided'}`, actorProfile);
+            }
         } catch (error) {
             console.error("IncidentService: Error updating incident status:", error);
             throw error;
@@ -194,7 +205,8 @@ export const incidentService = {
             await adminService.logAction(
                 'Report Deleted',
                 requesterUserId,
-                `${requesterRole} deleted resolved report: ${id}`
+                `${requesterRole} deleted resolved report: ${id}`,
+                null // Profile will be fetched from current user if available, or we can pass it
             );
         } catch (error) {
             console.error("IncidentService: Error deleting incident:", error);

@@ -87,7 +87,7 @@ export default function ActiveSafeWalk({ walkId, initialData, onWalkEnded }: Act
 
                 // Auto-update status if off-route
                 if (result.isOffRoute && status === 'active') {
-                    safeWalkService.updateWalkStatus(walkId, 'off-route', 'User appears to be moving away from destination');
+                    safeWalkService.updateWalkStatus(walkId, 'off-route', 'User appears to be moving away from destination', profile);
                 }
             }
 
@@ -133,7 +133,7 @@ export default function ActiveSafeWalk({ walkId, initialData, onWalkEnded }: Act
     }, [lastMovementTime]);
 
     const handleEndWalk = async () => {
-        await safeWalkService.updateWalkStatus(walkId, 'completed');
+        await safeWalkService.updateWalkStatus(walkId, 'completed', undefined, profile);
         onWalkEnded();
     };
 
@@ -155,7 +155,7 @@ export default function ActiveSafeWalk({ walkId, initialData, onWalkEnded }: Act
         setSosTriggering(true);
         try {
             // Update walk status to danger
-            await safeWalkService.updateWalkStatus(walkId, 'danger', 'SOS Triggered by user');
+            await safeWalkService.updateWalkStatus(walkId, 'danger', 'SOS Triggered by user', profile);
 
             // Also trigger main SOS service
             if (user && profile) {
@@ -295,14 +295,14 @@ export default function ActiveSafeWalk({ walkId, initialData, onWalkEnded }: Act
             {/* Pause/Resume Button */}
             {walkData?.status !== 'paused' ? (
                 <button
-                    onClick={() => safeWalkService.updateWalkStatus(walkId, 'paused', 'Walk paused by student')}
+                    onClick={() => safeWalkService.updateWalkStatus(walkId, 'paused', 'Walk paused by student', profile)}
                     className="w-full p-3 bg-muted text-white rounded-2xl font-semibold hover:bg-slate-600 transition-colors"
                 >
                     Pause Walk
                 </button>
             ) : (
                 <button
-                    onClick={() => safeWalkService.updateWalkStatus(walkId, 'active', 'Walk resumed by student')}
+                    onClick={() => safeWalkService.updateWalkStatus(walkId, 'active', 'Walk resumed by student', profile)}
                     className="w-full p-3 bg-primary text-white rounded-2xl font-semibold hover:bg-primary/90 transition-colors"
                 >
                     Resume Walk

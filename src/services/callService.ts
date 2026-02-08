@@ -25,6 +25,8 @@ export interface CallSession {
     receiverId: string;
     callerName: string;
     receiverName: string;
+    callerUsername?: string;
+    receiverUsername?: string;
     callerRole: string;
     receiverRole: string;
     status: 'ringing' | 'accepted' | 'ended' | 'rejected' | 'missed';
@@ -190,9 +192,11 @@ export class CallService {
         const callData = {
             callerId: caller.uid,
             callerName: caller.name || caller.displayName || 'User',
+            callerUsername: caller.username || null,
             callerRole: caller.role || 'student',
             receiverId: receiver.uid,
             receiverName: receiver.name || (receiver.role === 'security' ? 'Security' : 'Staff'),
+            receiverUsername: receiver.username || null,
             receiverRole: receiver.role || 'warden',
             status: 'ringing',
             callType: isVideo ? 'video' : 'audio',

@@ -6,7 +6,7 @@ import { useAuthStore } from '../../context/authStore';
 import { Users, PhoneMissed, X, Megaphone, Newspaper } from 'lucide-react';
 import WardenActiveSOS from '../../components/warden/WardenActiveSOS';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import { useEffect, useState } from 'react';
 import { collection, query, where, doc, deleteDoc, onSnapshot, limit } from 'firebase/firestore';
@@ -14,11 +14,14 @@ import { db } from '../../lib/firebase';
 import { wardenNavItems } from '../../lib/navItems';
 import { useNavigate } from 'react-router-dom';
 import BroadcastViewer from '../../components/shared/BroadcastViewer';
+import { incidentService, type Incident } from '../../services/incidentService';
+import { AlertCircle, ChevronRight } from 'lucide-react';
 
 export default function WardenDashboard() {
     const navigate = useNavigate();
     const { profile, user } = useAuthStore();
     const [showBroadcasts, setShowBroadcasts] = useState(false);
+    const [pendingReports, setPendingReports] = useState<Incident[]>([]);
 
     const wardenHostelId = profile?.hostelId || profile?.hostel || 'H6';
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -44,6 +47,16 @@ export default function WardenDashboard() {
         };
     }, [user, wardenHostelId]);
 
+    // Reports subscription
+    useEffect(() => {
+        if (!wardenHostelId) return;
+        const unsubscribeReports = incidentService.subscribeToIncidents(wardenHostelId, (reports) => {
+            const pending = reports.filter(r => r.status !== 'resolved');
+            setPendingReports(pending);
+        });
+        return () => unsubscribeReports();
+    }, [wardenHostelId]);
+
     const dismissNotification = async (id: string) => {
         await deleteDoc(doc(db, 'notifications', id));
     };
@@ -51,8 +64,8 @@ export default function WardenDashboard() {
     return (
         <MobileWrapper>
             <TopHeader
-                title={`Hostel ${wardenHostelId} Warden`}
-                showBackButton={true}
+                title={profile?.name ? `Warden: ${profile.name}` : profile?.username ? `Warden: ${profile.username}` : `Hostel ${wardenHostelId} Warden`}
+                showBackButton={false}
             />
 
             <BroadcastViewer
@@ -93,6 +106,36 @@ export default function WardenDashboard() {
                         ))}
                     </div>
                 )}
+
+                {/* Live Reports Counter */}
+                <AnimatePresence>
+                    {pendingReports.length > 0 && (
+                        <motion.div
+                            variants={cardVariant}
+                            initial="hidden"
+                            animate="visible"
+                            exit={{ opacity: 0, x: -20 }}
+                            onClick={() => navigate('/warden/reports')}
+                            className="glass rounded-3xl p-5 border border-amber-500/30 bg-amber-500/5 shadow-2xl relative overflow-hidden group cursor-pointer mb-6"
+                        >
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-3xl transition-all duration-700 group-hover:bg-amber-500/20" />
+                            <div className="flex justify-between items-center relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-amber-500/20 p-3 rounded-2xl border border-amber-500/30">
+                                        <AlertCircle className="w-6 h-6 text-amber-500 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black text-white text-base font-heading tracking-tight uppercase">Security Intel</h4>
+                                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{pendingReports.length} Active Reports in {wardenHostelId}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-amber-500/20 w-8 h-8 rounded-full flex items-center justify-center border border-amber-500/30 group-hover:translate-x-1 transition-transform">
+                                    <ChevronRight className="w-4 h-4 text-amber-500" />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Active SOS Section */}
                 <motion.div variants={cardVariant}>

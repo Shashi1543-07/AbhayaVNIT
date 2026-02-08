@@ -9,9 +9,11 @@ import { db } from '../../lib/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { containerStagger, cardVariant, overlayVariants, modalVariants } from '../../lib/animations';
 
+import { useAuthStore } from '../../context/authStore';
 import TopHeader from '../../components/layout/TopHeader';
 
 export default function UserManagement() {
+    const { profile: currentAdminProfile } = useAuthStore();
     const [activeTab, setActiveTab] = useState<'list' | 'create' | 'bulk'>('list');
     // List State
     const [users, setUsers] = useState<any[]>([]);
@@ -22,11 +24,15 @@ export default function UserManagement() {
     // Create/Bulk State
     const [formData, setFormData] = useState<CreateUserData>({
         name: '',
+        username: '',
         email: '',
         role: 'student',
         phone: '',
         hostel: '',
-        roomNo: ''
+        roomNo: '',
+        idNumber: '',
+        enrollmentNumber: '',
+        subRole: 'Security'
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -151,7 +157,8 @@ export default function UserManagement() {
                 await adminService.logAction(
                     currentStatus === 'active' ? 'Disable User' : 'Enable User',
                     uid,
-                    `User status changed from ${currentStatus}`
+                    `User status changed from ${currentStatus}`,
+                    currentAdminProfile
                 );
             } else if (type === 'delete' && uid) {
                 const batch = writeBatch(db);
@@ -173,7 +180,7 @@ export default function UserManagement() {
                 snapLegacy.docs.forEach(d => batch.delete(doc(db, 'incidents', d.id)));
 
                 await batch.commit();
-                await adminService.logAction('Delete User', uid, 'User and all data deleted via batch');
+                await adminService.logAction('Delete User', uid, 'User and all data deleted via batch', currentAdminProfile);
             } else if (type === 'reset_email' && email) {
                 await handleResendEmail(email);
             }
@@ -209,16 +216,31 @@ export default function UserManagement() {
         try {
             const result = await adminService.createUser({
                 name: formData.name,
+                username: formData.username,
                 email: formData.email,
                 role: formData.role,
                 phone: formData.phone,
                 hostel: (formData.role === 'student' || formData.role === 'warden') ? formData.hostel : undefined,
-                roomNo: formData.role === 'student' ? formData.roomNo : undefined
-            });
+                roomNo: formData.role === 'student' ? formData.roomNo : undefined,
+                idNumber: formData.role === 'student' ? formData.idNumber : undefined,
+                enrollmentNumber: formData.role === 'student' ? formData.enrollmentNumber : undefined,
+                subRole: formData.role === 'security' ? formData.subRole : undefined
+            }, currentAdminProfile);
 
             setMessage(`Successfully created ${formData.role} account for ${formData.name}.`);
             setEmailSent(result.emailSent || false);
-            setFormData(prev => ({ ...prev, name: '', email: '', phone: '', hostel: '', roomNo: '' }));
+            setFormData(prev => ({
+                ...prev,
+                name: '',
+                username: '',
+                email: '',
+                phone: '',
+                hostel: '',
+                roomNo: '',
+                idNumber: '',
+                enrollmentNumber: '',
+                subRole: 'Security'
+            }));
         } catch (error: any) {
             console.error(error);
             setMessage(`Error creating account: ${error.message} `);
@@ -247,16 +269,20 @@ export default function UserManagement() {
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
-                    const [name, email, role, phone, hostel, roomNo] = line.split(',');
-                    if (!name || !email || !role || !phone) continue;
+                    const [name, username, email, role, phone, hostel, roomNo, idNumber, enrollmentNumber, subRole] = line.split(',');
+                    if (!name || !username || !email || !role || !phone) continue;
 
                     const userData: CreateUserData = {
                         name: name.trim(),
+                        username: username.trim(),
                         email: email.trim(),
                         role: role.trim() as any,
                         phone: phone.trim(),
                         hostel: hostel?.trim(),
-                        roomNo: roomNo?.trim()
+                        roomNo: roomNo?.trim(),
+                        idNumber: idNumber?.trim(),
+                        enrollmentNumber: enrollmentNumber?.trim(),
+                        subRole: subRole?.trim() as any
                     };
 
                     const validationError = validateUser(userData);
@@ -270,7 +296,7 @@ export default function UserManagement() {
 
                 if (users.length === 0) throw new Error('No valid users found in CSV');
 
-                const results = await adminService.bulkCreateUsers(users);
+                const results = await adminService.bulkCreateUsers(users, currentAdminProfile);
                 setSuccess(`Created ${results.success} accounts.Sent ${results.emailsSent.length} password reset emails.`);
                 setBulkResults(results);
                 if (results.failed > 0) {
@@ -382,8 +408,8 @@ export default function UserManagement() {
                                 <button
                                     onClick={() => {
                                         const csvContent = "data:text/csv;charset=utf-8,"
-                                            + "Name,Email,Role,Hostel,Room,Phone,Status\n"
-                                            + users.map(u => `"${u.name}", "${u.email}", "${u.role}", "${u.hostel || ''}", "${u.roomNo || ''}", "${u.phone || ''}", "${u.status || 'active'}"`).join("\n");
+                                            + "Name,Username,Email,Role,Hostel,Room,Phone,ID,Enrollment,SubRole,Status\n"
+                                            + users.map(u => `"${u.name}", "${u.username || ''}", "${u.email}", "${u.role}", "${u.hostel || ''}", "${u.roomNo || ''}", "${u.phone || ''}", "${u.idNumber || ''}", "${u.enrollmentNumber || ''}", "${u.subRole || ''}", "${u.status || 'active'}"`).join("\n");
                                         const encodedUri = encodeURI(csvContent);
                                         const link = document.createElement("a");
                                         link.setAttribute("href", encodedUri);
@@ -518,13 +544,13 @@ export default function UserManagement() {
                                     </select>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Full Name</label>
                                         <input
                                             type="text"
                                             required
-                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700"
+                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700 font-heading"
                                             value={formData.name}
                                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                                             placeholder="John Doe"
@@ -532,14 +558,28 @@ export default function UserManagement() {
                                     </div>
 
                                     <div>
+                                        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">User Name (Alias)</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700 font-heading"
+                                            value={formData.username}
+                                            onChange={e => setFormData({ ...formData, username: e.target.value })}
+                                            placeholder="john_doe_99"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
                                         <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Official Email</label>
                                         <input
                                             type="email"
                                             required
-                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700"
+                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700 font-heading"
                                             value={formData.email}
                                             onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            placeholder="john@example.com"
+                                            placeholder="john@students.vnit.ac.in"
                                         />
                                     </div>
 
@@ -548,44 +588,87 @@ export default function UserManagement() {
                                         <input
                                             type="tel"
                                             required
-                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700"
+                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700 font-heading"
                                             value={formData.phone}
                                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                            placeholder="+91 98765 43210"
+                                            placeholder="9876543210"
                                         />
                                     </div>
+                                </div>
 
-                                    {(formData.role === 'warden' || formData.role === 'student') && (
-                                        <div>
-                                            <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Assign Hostel</label>
-                                            <select
-                                                required
-                                                className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold appearance-none"
-                                                value={formData.hostel}
-                                                onChange={e => setFormData({ ...formData, hostel: e.target.value })}
-                                            >
-                                                <option value="" className="bg-zinc-900">Select Hostel</option>
-                                                <option value="Ganga" className="bg-zinc-900">Ganga Hostel</option>
-                                                <option value="Yamuna" className="bg-zinc-900">Yamuna Hostel</option>
-                                                <option value="Saraswati" className="bg-zinc-900">Saraswati Hostel</option>
-                                            </select>
+                                {formData.role === 'security' && (
+                                    <div>
+                                        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Assign Section (Sub-Role)</label>
+                                        <select
+                                            required
+                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold appearance-none font-heading"
+                                            value={formData.subRole}
+                                            onChange={e => setFormData({ ...formData, subRole: e.target.value as any })}
+                                        >
+                                            <option value="Security" className="bg-zinc-900">Security</option>
+                                            <option value="Hostel Affairs Section" className="bg-zinc-900">Hostel Affairs Section</option>
+                                            <option value="Ladies Representative" className="bg-zinc-900">Ladies Representative</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {(formData.role === 'warden' || formData.role === 'student') && (
+                                    <div>
+                                        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Assign Hostel</label>
+                                        <select
+                                            required
+                                            className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold appearance-none font-heading"
+                                            value={formData.hostel}
+                                            onChange={e => setFormData({ ...formData, hostel: e.target.value })}
+                                        >
+                                            <option value="" className="bg-zinc-900">Select Hostel</option>
+                                            <option value="Kalpana Chawala Hostel" className="bg-zinc-900">Kalpana Chawala Hostel</option>
+                                            <option value="Anandi Gopal Joshi Hostel" className="bg-zinc-900">Anandi Gopal Joshi Hostel</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {formData.role === 'student' && (
+                                    <>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">ID Number</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700 font-heading"
+                                                    value={formData.idNumber}
+                                                    onChange={e => setFormData({ ...formData, idNumber: e.target.value })}
+                                                    placeholder="ID-12345"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Enrollment Number</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700 font-heading"
+                                                    value={formData.enrollmentNumber}
+                                                    onChange={e => setFormData({ ...formData, enrollmentNumber: e.target.value })}
+                                                    placeholder="BT21CSE001"
+                                                />
+                                            </div>
                                         </div>
-                                    )}
 
-                                    {formData.role === 'student' && (
                                         <div>
                                             <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Room Number</label>
                                             <input
                                                 type="text"
                                                 required
-                                                className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700"
+                                                className="w-full p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#D4AF37]/50 text-white font-bold placeholder:text-zinc-700 font-heading"
                                                 value={formData.roomNo}
                                                 onChange={e => setFormData({ ...formData, roomNo: e.target.value })}
                                                 placeholder="A-101"
                                             />
                                         </div>
-                                    )}
-                                </div>
+                                    </>
+                                )}
 
                                 <button
                                     type="submit"
@@ -629,7 +712,9 @@ export default function UserManagement() {
                                 <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide">
                                     Upload a CSV file with the following columns in order:
                                     <br />
-                                    <code className="bg-white/10 px-3 py-2 rounded-lg text-[10px] text-[#D4AF37] block mt-3 overflow-x-auto border border-white/10 font-mono">name,email,role,phone,hostel,roomNo</code>
+                                    <code className="bg-white/10 px-3 py-2 rounded-lg text-[10px] text-[#D4AF37] block mt-3 overflow-x-auto border border-white/10 font-mono italic">
+                                        full_name,user_name,email,role,phone,hostel,room,id_number,enrollment,sub_role
+                                    </code>
                                 </p>
 
                                 <div className="border-2 border-dashed border-white/20 rounded-2xl p-12 text-center hover:bg-white/5 hover:border-[#D4AF37]/50 transition-all cursor-pointer relative group">

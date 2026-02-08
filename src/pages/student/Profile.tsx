@@ -29,12 +29,13 @@ export default function Profile() {
                         </div>
                     </div>
                     <h2 className="text-2xl font-bold text-white font-heading tracking-tight text-center">{profile?.name || user?.displayName || 'Student'}</h2>
-                    <div className="flex items-center gap-2 mt-2">
+                    <p className="text-[#D4AF37] text-sm font-bold mt-1">@{profile?.username || 'no_alias'}</p>
+                    <div className="flex items-center gap-2 mt-4">
                         <span className="px-3 py-1 bg-[#D4AF37]/10 text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#D4AF37]/20">
-                            {profile?.rollNo || 'N/A'}
+                            {profile?.enrollmentNumber || profile?.rollNo || 'ID - N/A'}
                         </span>
                         <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-full border border-emerald-500/20">
-                            Active
+                            Active Student
                         </span>
                     </div>
                 </motion.div>
@@ -63,16 +64,33 @@ export default function Profile() {
                         </div>
                     </div>
 
-                    {/* Hostel Info */}
-                    <div className="p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                    {/* Hostel & Room */}
+                    <div className="p-5 border-b border-white/5 flex items-center gap-4 hover:bg-white/5 transition-colors">
                         <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 shrink-0">
                             <Home className="w-5 h-5 text-purple-400" strokeWidth={2} />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Resident Details</p>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Campus Residence</p>
                             <p className="text-sm font-semibold text-zinc-200 truncate font-heading">
-                                Hostel {profile?.hostelId || '-'} • Room {profile?.roomNo || '-'}
+                                {profile?.hostel || profile?.hostelId || 'N/A'} • Room {profile?.roomNo || 'N/A'}
                             </p>
+                        </div>
+                    </div>
+
+                    {/* ID & Enrollment */}
+                    <div className="p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-pink-500/10 flex items-center justify-center border border-pink-500/20 shrink-0">
+                            <Shield className="w-5 h-5 text-pink-400" strokeWidth={2} />
+                        </div>
+                        <div className="flex-1 grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">ID Number</p>
+                                <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.idNumber || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Enrollment</p>
+                                <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.enrollmentNumber || 'N/A'}</p>
+                            </div>
                         </div>
                     </div>
                 </motion.div>

@@ -139,7 +139,10 @@ export default function WardenSOSDetail() {
                                 <User className="w-3.5 h-3.5" strokeWidth={3} /> {event.role?.toUpperCase()}
                             </span>
                             <span className="flex items-center gap-2 bg-[#D4AF37]/5 px-3 py-1.5 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
-                                <Phone className="w-3.5 h-3.5" strokeWidth={3} /> {event.userPhone || 'PROTOCOL VOID'}
+                                <Shield className="w-3.5 h-3.5" strokeWidth={3} /> ID: {event.studentIdNumber || 'N/A'}
+                            </span>
+                            <span className="flex items-center gap-2 bg-[#D4AF37]/5 px-3 py-1.5 rounded-full border border-[#D4AF37]/10 whitespace-nowrap">
+                                ENROLL: {event.studentEnrollmentNumber || 'N/A'}
                             </span>
                         </div>
                     </div>

@@ -5,7 +5,7 @@ import { userService, type StudentProfile } from '../../services/userService';
 import { useAuthStore } from '../../context/authStore';
 import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
-import { User, Phone, Mail, MapPin, MessageSquare } from 'lucide-react';
+import { User, Phone, Mail, MapPin, MessageSquare, Shield, Hash, Fingerprint } from 'lucide-react';
 
 export default function WardenReportDetail() {
     const { id } = useParams();
@@ -21,20 +21,20 @@ export default function WardenReportDetail() {
             const data = await incidentService.getIncidentById(id);
             if (data) {
                 setIncident(data);
-                if (data.userId) {
-                    const profileData = await userService.getUserProfile(data.userId);
-                    if (profileData) {
-                        setReporterProfile({
-                            id: profileData.id,
-                            displayName: profileData.name || profileData.displayName || 'Unnamed',
-                            email: profileData.email || '',
-                            role: 'student',
-                            hostelId: profileData.hostelId,
-                            roomNo: profileData.roomNo,
-                            phone: profileData.phoneNumber || profileData.phone,
-                            emergencyContact: profileData.emergencyContact || profileData.emergencyPhone,
-                        } as StudentProfile);
-                    }
+                // If not anonymous, the warden should see all details stored in the incident snapshot
+                if (!data.isAnonymous) {
+                    setReporterProfile({
+                        id: data.userId,
+                        displayName: data.studentRealName || data.reporterName || 'Unnamed',
+                        username: data.studentUsername || 'N/A',
+                        email: data.userId ? (await userService.getUserProfile(data.userId))?.email : 'N/A',
+                        role: 'student',
+                        hostelId: data.studentHostel || data.hostelId || 'N/A',
+                        roomNo: data.studentRoom || 'N/A',
+                        phone: data.studentPhone || 'N/A',
+                        idNumber: data.studentIdNumber || 'N/A',
+                        enrollmentNumber: data.studentEnrollmentNumber || 'N/A',
+                    } as any);
                 }
             }
             setLoading(false);
@@ -45,7 +45,7 @@ export default function WardenReportDetail() {
     const handleStatusUpdate = async (status: Incident['status']) => {
         if (!incident || !user) return;
         try {
-            await incidentService.updateIncidentStatus(incident.id, status, user.uid);
+            await incidentService.updateIncidentStatus(incident.id, status, user.uid, undefined, profile);
             const updated = await incidentService.getIncidentById(incident.id);
             if (updated) setIncident(updated);
         } catch (error) {
@@ -99,7 +99,10 @@ export default function WardenReportDetail() {
                                 </h1>
                                 <div className="flex items-center gap-2 text-zinc-400 text-xs font-bold">
                                     <User size={12} className="text-[#D4AF37]" />
-                                    <span>By <span className="text-white">{incident.reporterName || 'Anonymous'}</span></span>
+                                    <span>By <span className="text-white">
+                                        {incident.isAnonymous ? 'Anonymous' : (incident.reporterName || 'Student')}
+                                        {!incident.isAnonymous && incident.studentUsername && ` (@${incident.studentUsername})`}
+                                    </span></span>
                                 </div>
                             </div>
                             <span className={`px - 3 py - 1.5 rounded - xl text - [10px] font - black uppercase tracking - widest border shadow - sm ${incident.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
@@ -152,16 +155,31 @@ export default function WardenReportDetail() {
                     )}
 
                     {/* Details Grid */}
-                    <div className="space-y-2">
-                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Context</h3>
+                    <div className="space-y-4">
+                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Context & Identification</h3>
                         <div className="grid grid-cols-1 gap-3">
-                            <DetailItem icon={<MapPin size={16} />} label="Location" value={typeof incident.location === 'string' ? incident.location : 'See Map'} />
-                            {reporterProfile && (
-                                <>
-                                    <DetailItem icon={<MapPin size={16} />} label="Room" value={reporterProfile.roomNo || 'N/A'} />
+                            <DetailItem icon={<MapPin size={16} />} label="Incident Location" value={typeof incident.location === 'string' ? incident.location : 'Campus Map'} />
+
+                            {incident.isAnonymous ? (
+                                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center">
+                                    <p className="text-[10px] font-black text-[#D4AF37] uppercase tracking-widest">Identifying Protocol: Anonymous</p>
+                                    <p className="text-xs text-zinc-500 mt-1">Student has requested anonymity for this report.</p>
+                                </div>
+                            ) : reporterProfile ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <DetailItem icon={<User size={16} />} label="Full Name" value={reporterProfile.displayName} />
+                                    <DetailItem icon={<Shield size={16} />} label="Username" value={`@${reporterProfile.username || 'N/A'}`} />
+                                    <DetailItem icon={<Fingerprint size={16} />} label="Student ID" value={reporterProfile.idNumber || 'N/A'} />
+                                    <DetailItem icon={<Hash size={16} />} label="Enrollment No" value={reporterProfile.enrollmentNumber || 'N/A'} />
                                     <DetailItem icon={<Phone size={16} />} label="Phone" value={reporterProfile.phone || 'N/A'} />
                                     <DetailItem icon={<Mail size={16} />} label="Email" value={reporterProfile.email} />
-                                </>
+                                    <DetailItem icon={<MapPin size={16} />} label="Hostel / Room" value={`${reporterProfile.hostelId} • ${reporterProfile.roomNo || 'N/A'}`} />
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center">
+                                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Identification Pending</p>
+                                    <p className="text-xs text-zinc-500 mt-1">Loading student profile data...</p>
+                                </div>
                             )}
                         </div>
                     </div>

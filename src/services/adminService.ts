@@ -6,17 +6,26 @@ import { db, firebaseConfig, auth as primaryAuth } from '../lib/firebase';
 export interface CreateUserData {
     email: string;
     name: string;
+    username: string;
     role: 'student' | 'warden' | 'security' | 'admin';
     phone: string;
     hostel?: string;
     roomNo?: string;
+    idNumber?: string;
+    enrollmentNumber?: string;
+    subRole?: 'Security' | 'Hostel Affairs Section' | 'Ladies Representative';
 }
 
 export interface AuditLog {
+    id: string;
     action: string;
     target: string;
     details: string;
-    performedBy: string;
+    performedBy: string; // Usually email
+    actorName?: string;
+    actorIdNumber?: string;
+    actorPhone?: string;
+    actorEmail?: string;
     timestamp: any;
 }
 
@@ -32,8 +41,8 @@ const generateTempPassword = () => {
 
 // Validation Helper
 export const validateUser = (user: CreateUserData): string | null => {
-    if (!user.name || !user.email || !user.role || !user.phone) {
-        return 'Missing required fields (Name, Email, Role, Phone)';
+    if (!user.name || !user.username || !user.email || !user.role || !user.phone) {
+        return 'Missing required fields (Name, Username, Email, Role, Phone)';
     }
 
     const emailRegex = /^[a-zA-Z0-9._-]+@(students\.)?vnit\.ac\.in$/;
@@ -47,8 +56,8 @@ export const validateUser = (user: CreateUserData): string | null => {
             return `Invalid student email: ${user.email}. Must follow format: enrollmentno@students.vnit.ac.in`;
         }
 
-        if (!user.hostel || !user.roomNo) {
-            return 'Student requires Hostel and Room Number';
+        if (!user.hostel || !user.roomNo || !user.idNumber || !user.enrollmentNumber) {
+            return 'Student requires Hostel, Room Number, ID Number, and Enrollment Number';
         }
     }
 
@@ -57,8 +66,13 @@ export const validateUser = (user: CreateUserData): string | null => {
         return `Invalid phone number: ${user.phone}. Must be 10 digits.`;
     }
 
-    if (user.role === 'warden' && !user.hostel) {
-        return 'Warden requires an assigned Hostel';
+    const validHostels = ['Kalpana Chawala Hostel', 'Anandi Gopal Joshi Hostel'];
+    if ((user.role === 'warden' || user.role === 'student') && (!user.hostel || !validHostels.includes(user.hostel))) {
+        return `Please select a valid hostel: ${validHostels.join(', ')}`;
+    }
+
+    if (user.role === 'security' && !user.subRole) {
+        return 'Security personnel require a specific Section (Security, Hostel Affairs, or Ladies Rep)';
     }
 
     return null;
@@ -68,7 +82,7 @@ export const adminService = {
     /**
      * Logs an admin action to Firestore.
      */
-    logAction: async (action: string, target: string, details: string) => {
+    logAction: async (action: string, target: string, details: string, actorProfile?: any) => {
         try {
             const auth = getAuth();
             const currentUser = auth.currentUser;
@@ -77,7 +91,11 @@ export const adminService = {
                 action,
                 target,
                 details,
-                performedBy: currentUser?.email || 'Unknown Admin',
+                performedBy: currentUser?.email || 'Unknown Actor',
+                actorName: actorProfile?.name || actorProfile?.displayName || 'System/Staff',
+                actorIdNumber: actorProfile?.idNumber || 'N/A',
+                actorPhone: actorProfile?.phone || actorProfile?.phoneNumber || 'N/A',
+                actorEmail: actorProfile?.email || currentUser?.email || 'N/A',
                 timestamp: serverTimestamp()
             });
         } catch (error) {
@@ -89,7 +107,7 @@ export const adminService = {
      * Creates a new user and sends password reset email.
      * User receives email to set their own password - more secure than auto-generated.
      */
-    createUser: async (userData: CreateUserData) => {
+    createUser: async (userData: CreateUserData, actorProfile?: any) => {
         const validationError = validateUser(userData);
         if (validationError) {
             throw new Error(validationError);
@@ -109,11 +127,15 @@ export const adminService = {
             await setDoc(doc(db, 'users', user.uid), {
                 uid: user.uid,
                 name: userData.name,
+                username: userData.username,
                 email: userData.email,
                 role: userData.role,
                 phone: userData.phone,
                 hostel: userData.hostel || null,
                 roomNo: userData.roomNo || null,
+                idNumber: userData.idNumber || null,
+                enrollmentNumber: userData.enrollmentNumber || null,
+                subRole: userData.subRole || null,
                 status: 'active',
                 passwordResetSent: true,
                 createdAt: serverTimestamp(),
@@ -127,7 +149,7 @@ export const adminService = {
             await sendPasswordResetEmail(primaryAuth, userData.email);
 
             // Log the action
-            await adminService.logAction('Create User', userData.email, `Created ${userData.role} account with password reset email`);
+            await adminService.logAction('Create User', userData.email, `Created ${userData.role} account with password reset email`, actorProfile);
 
             return { success: true, uid: user.uid, emailSent: true };
 
@@ -142,7 +164,7 @@ export const adminService = {
     /**
      * Bulk creates users and sends password reset emails.
      */
-    bulkCreateUsers: async (usersData: CreateUserData[]) => {
+    bulkCreateUsers: async (usersData: CreateUserData[], actorProfile?: any) => {
         const results = {
             success: 0,
             failed: 0,
@@ -170,11 +192,15 @@ export const adminService = {
                     await setDoc(doc(db, 'users', user.uid), {
                         uid: user.uid,
                         name: userData.name,
+                        username: userData.username,
                         email: userData.email,
                         role: userData.role,
                         phone: userData.phone,
                         hostel: userData.hostel || null,
                         roomNo: userData.roomNo || null,
+                        idNumber: userData.idNumber || null,
+                        enrollmentNumber: userData.enrollmentNumber || null,
+                        subRole: userData.subRole || null,
                         status: 'active',
                         passwordResetSent: true,
                         createdAt: serverTimestamp(),
@@ -203,7 +229,7 @@ export const adminService = {
             }
 
             if (results.success > 0) {
-                await adminService.logAction('Bulk Create', 'Multiple Users', `Created ${results.success} users, sent ${results.emailsSent.length} reset emails`);
+                await adminService.logAction('Bulk Create', 'Multiple Users', `Created ${results.success} users, sent ${results.emailsSent.length} reset emails`, actorProfile);
             }
 
         } finally {
@@ -216,10 +242,10 @@ export const adminService = {
     /**
      * Resend password reset email to a user.
      */
-    resendPasswordResetEmail: async (email: string) => {
+    resendPasswordResetEmail: async (email: string, actorProfile?: any) => {
         try {
             await sendPasswordResetEmail(primaryAuth, email);
-            await adminService.logAction('Resend Reset Email', email, 'Password reset email resent');
+            await adminService.logAction('Resend Reset Email', email, 'Password reset email resent', actorProfile);
             return { success: true };
         } catch (error: any) {
             console.error('Failed to send reset email:', error);

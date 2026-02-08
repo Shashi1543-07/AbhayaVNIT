@@ -13,11 +13,14 @@ export interface UserProfile {
 export interface StudentProfile {
     id: string;
     displayName: string;
+    username?: string;
     email: string;
     role: 'student';
     hostelId: string;
     roomNo?: string;
     phone?: string;
+    idNumber?: string;
+    enrollmentNumber?: string;
     emergencyContact?: string;
     course?: string;
     year?: string;
@@ -72,11 +75,14 @@ export const userService = {
                 return {
                     id: doc.id,
                     displayName: data.name || data.displayName || 'Unnamed',
+                    username: data.username,
                     email: data.email || '',
                     role: 'student',
                     hostelId: data.hostelId || data.hostel || '',
                     roomNo: data.roomNo,
                     phone: data.phoneNumber || data.phone,
+                    idNumber: data.idNumber,
+                    enrollmentNumber: data.enrollmentNumber,
                     emergencyContact: data.emergencyContact || data.emergencyPhone,
                     course: data.course,
                     year: data.year,
@@ -110,11 +116,14 @@ export const userService = {
                 return {
                     id: doc.id,
                     displayName: data.name || data.displayName || 'Unnamed',
+                    username: data.username,
                     email: data.email || '',
                     role: 'student',
                     hostelId: data.hostelId || data.hostel || '',
                     roomNo: data.roomNo,
                     phone: data.phoneNumber || data.phone,
+                    idNumber: data.idNumber,
+                    enrollmentNumber: data.enrollmentNumber,
                     emergencyContact: data.emergencyContact || data.emergencyPhone,
                     course: data.course,
                     year: data.year,
@@ -123,6 +132,40 @@ export const userService = {
             });
         } catch (error) {
             console.error("Error fetching all students:", error);
+            return [];
+        }
+    },
+
+    getWardens: async (): Promise<UserProfile[]> => {
+        try {
+            const q = query(
+                collection(db, 'users'),
+                where('role', '==', 'warden')
+            );
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({
+                uid: doc.id,
+                ...doc.data()
+            } as UserProfile));
+        } catch (error) {
+            console.error("Error fetching wardens:", error);
+            return [];
+        }
+    },
+
+    getSecurityStaff: async (): Promise<UserProfile[]> => {
+        try {
+            const q = query(
+                collection(db, 'users'),
+                where('role', '==', 'security')
+            );
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({
+                uid: doc.id,
+                ...doc.data()
+            } as UserProfile));
+        } catch (error) {
+            console.error("Error fetching security staff:", error);
             return [];
         }
     }

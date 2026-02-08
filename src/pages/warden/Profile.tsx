@@ -29,12 +29,10 @@ export default function WardenProfile() {
                         </div>
                     </div>
                     <h2 className="text-2xl font-bold text-white font-heading tracking-tight text-center">{profile?.name || 'Warden'}</h2>
-                    <div className="flex items-center gap-2 mt-2">
-                        <span className="px-3 py-1 bg-[#D4AF37]/10 text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#D4AF37]/20">
-                            {profile?.role || 'Warden'}
-                        </span>
+                    <p className="text-[#D4AF37] text-sm font-bold mt-1">@{profile?.username || 'no_alias'}</p>
+                    <div className="flex items-center gap-2 mt-4">
                         <span className="px-3 py-1 bg-purple-500/10 text-purple-400 text-[10px] font-bold uppercase tracking-widest rounded-full border border-purple-500/20">
-                            Admin
+                            Authorized Warden
                         </span>
                     </div>
                 </motion.div>
@@ -50,13 +48,22 @@ export default function WardenProfile() {
                             <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{user?.email || 'N/A'}</p>
                         </div>
                     </div>
-                    <div className="p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
-                        <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 shrink-0">
-                            <Shield className="w-5 h-5 text-purple-400" strokeWidth={2} />
+                    <div className="p-5 border-b border-white/5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0">
+                            <User className="w-5 h-5 text-blue-400" strokeWidth={2} />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Assigned Block</p>
-                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.hostelId || 'Main Hostel'}</p>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Contact Number</p>
+                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.phone || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div className="p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                            <Shield className="w-5 h-5 text-emerald-400" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Assigned Hostel</p>
+                            <p className="text-sm font-semibold text-zinc-200 truncate font-heading">{profile?.hostel || profile?.hostelId || 'N/A'}</p>
                         </div>
                     </div>
                 </motion.div>
