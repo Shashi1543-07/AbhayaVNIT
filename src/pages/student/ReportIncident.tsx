@@ -96,6 +96,11 @@ export default function ReportIncident() {
                             >
                                 <option value="harassment" className="bg-zinc-900">Harassment</option>
                                 <option value="stalking" className="bg-zinc-900">Stalking</option>
+                                <option value="cyber_bullying" className="bg-zinc-900">Cyber Bullying</option>
+                                <option value="unauthorized_entry" className="bg-zinc-900">Unauthorized Entry</option>
+                                <option value="theft" className="bg-zinc-900">Theft / Lost Property</option>
+                                <option value="medical" className="bg-zinc-900">Medical Emergency</option>
+                                <option value="facility" className="bg-zinc-900">Facility / Maintenance Issue</option>
                                 <option value="unsafe_area" className="bg-zinc-900">Unsafe Area / Lighting</option>
                                 <option value="suspicious_activity" className="bg-zinc-900">Suspicious Activity</option>
                                 <option value="other" className="bg-zinc-900">Other</option>

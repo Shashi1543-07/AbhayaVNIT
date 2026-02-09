@@ -7,7 +7,7 @@ import type { Conversation } from '../../services/chatService';
 import { userService } from '../../services/userService';
 import type { UserProfile } from '../../services/userService';
 import { useAuthStore } from '../../context/authStore';
-import { MessageSquare, Shield, Plus, User as UserIcon, Search, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Shield, Plus, User as UserIcon, Search, ArrowLeft, Users, GraduationCap, ChevronDown } from 'lucide-react';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { wardenNavItems, securityNavItems } from '../../lib/navItems';
 
@@ -23,9 +23,20 @@ export default function Messages() {
 
     // New Chat Modal State
     const [showNewChatModal, setShowNewChatModal] = useState(false);
-    const [staffList, setStaffList] = useState<UserProfile[]>([]);
+
+    // Categorized Contacts
+    const [wardensList, setWardensList] = useState<UserProfile[]>([]);
+    const [securityList, setSecurityList] = useState<UserProfile[]>([]);
+    const [studentList, setStudentList] = useState<UserProfile[]>([]); // For Wardens/Security to msg students
     const [loadingStaff, setLoadingStaff] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Expanded Sections State
+    const [expandedSections, setExpandedSections] = useState({
+        wardens: true,
+        security: true,
+        students: false
+    });
 
     useEffect(() => {
         if (!user) return;
@@ -55,51 +66,62 @@ export default function Messages() {
         setShowNewChatModal(true);
         setLoadingStaff(true);
         setSearchTerm(''); // Reset search when opening
+        setWardensList([]);
+        setSecurityList([]);
+        setStudentList([]);
+
         try {
+            // 1. Fetch Staff (Wardens & Security)
             const allStaff = await userService.getStaff();
-            let contactList: UserProfile[] = [];
-            const myHostel = profile?.hostelId || profile?.hostel;
+            // Robust hostel key extraction
+            const myHostelRaw = profile?.hostelId || (profile as any)?.hostel || (profile as any)?.hostelName || '';
+            const myHostel = myHostelRaw.toString().toLowerCase().trim();
+
+            console.log("Chat Debug - My Hostel:", myHostel);
 
             if (role === 'student') {
-                // Students: Can message their Warden and Security
-                contactList = allStaff.filter(s =>
-                    s.role === 'security' ||
-                    (s.role === 'warden' && (
-                        s.hostelId?.toLowerCase() === myHostel?.toLowerCase() ||
-                        (s as any).hostel?.toLowerCase() === myHostel?.toLowerCase()
-                    ))
-                );
+                // Wardens: All users with role 'warden'
+                const allWardens = allStaff.filter(s => s.role?.toLowerCase() === 'warden');
+                setWardensList(allWardens.sort((a, b) => a.name.localeCompare(b.name)));
+
+                // Security: All security personnel
+                const allSecurity = allStaff.filter(s => s.role?.toLowerCase() === 'security');
+                setSecurityList(allSecurity.sort((a, b) => a.name.localeCompare(b.name)));
+
             } else if (role === 'warden') {
-                // Wardens: Can message Security and Students from their hostel
-                const security = allStaff.filter(s => s.role === 'security');
+                // Warden View: All Security + My Students
+                const allSecurity = allStaff.filter(s => s.role?.toLowerCase() === 'security');
+                setSecurityList(allSecurity.sort((a, b) => a.name.localeCompare(b.name)));
+
                 const myStudents = await userService.getStudentsByHostel(myHostel || '');
-                contactList = [
-                    ...security,
-                    ...myStudents.map(s => ({
-                        uid: s.id,
-                        name: s.displayName,
-                        role: 'student' as const,
-                        roomNo: s.roomNo,
-                        hostelId: s.hostelId
-                    }))
-                ];
+                setStudentList(myStudents.map(s => ({
+                    uid: s.id,
+                    name: s.displayName,
+                    role: 'student' as const,
+                    roomNo: s.roomNo,
+                    hostelId: s.hostelId,
+                    phoneNumber: s.phone
+                })).sort((a, b) => a.name.localeCompare(b.name)));
+
             } else if (role === 'security') {
-                // Security: Can message all staff and all students
+                // Security View: All Staff (excluding self) + All Students
                 const otherStaff = allStaff.filter(s => s.uid !== user?.uid);
+
+                // Split other staff into Wardens and Security
+                setWardensList(otherStaff.filter(s => s.role?.toLowerCase() === 'warden').sort((a, b) => a.name.localeCompare(b.name)));
+                setSecurityList(otherStaff.filter(s => s.role?.toLowerCase() === 'security').sort((a, b) => a.name.localeCompare(b.name)));
+
                 const allStudents = await userService.getAllStudents();
-                contactList = [
-                    ...otherStaff,
-                    ...allStudents.map(s => ({
-                        uid: s.id,
-                        name: s.displayName,
-                        role: 'student' as const,
-                        roomNo: s.roomNo,
-                        hostelId: s.hostelId
-                    }))
-                ];
+                setStudentList(allStudents.map(s => ({
+                    uid: s.id,
+                    name: s.displayName,
+                    role: 'student' as const,
+                    roomNo: s.roomNo,
+                    hostelId: s.hostelId,
+                    phoneNumber: s.phone
+                })).sort((a, b) => a.name.localeCompare(b.name)));
             }
 
-            setStaffList(contactList);
         } catch (error) {
             console.error("Error fetching contacts:", error);
         } finally {
@@ -108,20 +130,37 @@ export default function Messages() {
     };
 
     const startChatWithUser = async (targetUser: UserProfile) => {
-        if (!user || !profile) return;
+        if (!user || !profile) {
+            alert("Authentication profile not found. Please try logging in again.");
+            return;
+        }
+
+        if (!targetUser.uid) {
+            alert("Contact profile is incomplete. Cannot start chat.");
+            return;
+        }
+
         try {
             const participants = [
-                { uid: user.uid, name: profile.name || 'Student', role: role || 'student' },
-                { uid: targetUser.uid, name: targetUser.name || 'Staff', role: targetUser.role }
+                {
+                    uid: user.uid,
+                    name: profile.name || (profile as any).displayName || 'User',
+                    role: role || 'student'
+                },
+                {
+                    uid: targetUser.uid,
+                    name: targetUser.name || 'Staff',
+                    role: targetUser.role
+                }
             ];
 
             const id = await chatService.createConversation('manual', participants);
 
             setShowNewChatModal(false);
             setSelectedChatId(id);
-        } catch (error) {
-            console.error("Failed to start chat", error);
-            alert("Could not start chat. Please try again.");
+        } catch (error: any) {
+            console.error("Failed to start chat:", error);
+            alert(`Technical Error: ${error.message || "Could not bridge communications."}`);
         }
     };
 
@@ -143,7 +182,10 @@ export default function Messages() {
 
         if (chat.participantRoles && user) {
             const otherId = Object.keys(chat.participantRoles).find(id => id !== user.uid);
-            if (otherId) return chat.participantRoles[otherId];
+            if (otherId) {
+                // If we have detailed logic to show sub-role here, we could, but basic role for now
+                return chat.participantRoles[otherId];
+            }
         }
         return '';
     };
@@ -152,6 +194,101 @@ export default function Messages() {
         if (role === 'warden') return wardenNavItems;
         if (role === 'security') return securityNavItems;
         return undefined;
+    };
+
+    const toggleSection = (section: keyof typeof expandedSections) => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
+    };
+
+    // Helper to render contact list section
+    const renderContactSection = (
+        sectionKey: keyof typeof expandedSections,
+        title: string,
+        contacts: UserProfile[],
+        icon: any,
+        colorClass: string
+    ) => {
+        if (contacts.length === 0) return null;
+
+        const filtered = contacts.filter(c =>
+            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.subRole?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.roomNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (c as any).hostel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.hostelId?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        if (filtered.length === 0 && searchTerm) return null;
+
+        const isExpanded = expandedSections[sectionKey] || !!searchTerm;
+
+        return (
+            <div className="mb-4 animate-in slide-in-from-bottom-2 duration-300">
+                <button
+                    onClick={() => toggleSection(sectionKey)}
+                    className="w-full flex items-center justify-between py-3 px-4 bg-white/[0.03] hover:bg-white/[0.08] rounded-[20px] transition-all mb-2 group border border-white/5 active:scale-[0.99]"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl ${colorClass.split(' ')[0]} bg-opacity-10`}>
+                            {icon}
+                        </div>
+                        <h3 className="text-[13px] font-black text-white/90 uppercase tracking-[0.15em] flex items-center gap-2 group-hover:text-[#D4AF37] transition-colors">
+                            {title} <span className="text-zinc-600 text-[10px] ml-1 font-bold">({filtered.length})</span>
+                        </h3>
+                    </div>
+                    <div className={`transition-transform duration-500 ${isExpanded ? 'rotate-180' : ''}`}>
+                        <ChevronDown className={`w-5 h-5 ${isExpanded ? 'text-[#D4AF37]' : 'text-zinc-600'}`} />
+                    </div>
+                </button>
+
+                {isExpanded && (
+                    <div className="space-y-2.5 mt-3 px-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-500">
+                        {filtered.map(item => (
+                            <button
+                                key={item.uid}
+                                onClick={() => startChatWithUser(item)}
+                                className="w-full flex items-center gap-4 p-4 bg-white/5 backdrop-blur-xl rounded-[24px] hover:bg-white/10 text-left transition-all border border-white/10 active:scale-95 group shadow-lg ring-1 ring-white/5 hover:ring-[#D4AF37]/20"
+                            >
+                                <div className={`w-12 h-12 ${colorClass} rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-white/10`}>
+                                    <UserIcon className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-black text-white text-[15px] truncate tracking-tight group-hover:text-[#D4AF37] transition-colors font-heading uppercase tracking-[0.05em]">{item.name}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        {item.role === 'security' && item.subRole ? (
+                                            <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest bg-[#D4AF37]/10 px-1.5 py-0.5 rounded border border-[#D4AF37]/20">
+                                                {item.subRole}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{item.role}</span>
+                                        )}
+
+                                        {(item.hostelId || (item as any).hostel) && (
+                                            <>
+                                                <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                                                <span className="text-[10px] text-zinc-500 font-bold truncate">
+                                                    {item.hostelId || (item as any).hostel}
+                                                </span>
+                                            </>
+                                        )}
+
+                                        {item.roomNo && (
+                                            <>
+                                                <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                                                <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Room {item.roomNo}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -182,7 +319,7 @@ export default function Messages() {
                     <div className="bg-[#D4AF37]/10 p-1.5 rounded-xl">
                         <Plus className="w-5 h-5 text-[#D4AF37]" />
                     </div>
-                    New Message
+                    Start New Conversation
                 </button>
 
                 {/* Chat List - Highly Rounded & Glassy */}
@@ -260,7 +397,7 @@ export default function Messages() {
                                 <ArrowLeft className="w-5 h-5" strokeWidth={3} />
                             </button>
                             <div>
-                                <h1 className="text-xl font-heading font-black text-[#D4AF37] tracking-tight uppercase tracking-[0.2em]">New Message</h1>
+                                <h1 className="text-xl font-heading font-black text-[#D4AF37] tracking-tight uppercase tracking-[0.2em]">Start Chat</h1>
                             </div>
                         </div>
                     </div>
@@ -273,7 +410,7 @@ export default function Messages() {
                             </div>
                             <input
                                 type="text"
-                                placeholder="Search by name or room number..."
+                                placeholder="Search by name, role or hostel..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-black/40 border border-white/10 rounded-[28px] py-4 pl-12 pr-4 text-[15px] font-black text-white placeholder:text-zinc-700 focus:outline-none focus:ring-4 focus:ring-[#D4AF37]/10 transition-all backdrop-blur-md font-heading"
@@ -282,50 +419,25 @@ export default function Messages() {
                     </div>
 
                     {/* List Content */}
-                    <div className="flex-1 overflow-y-auto px-4 pb-20 z-10">
-                        <div className="space-y-3">
-                            {loadingStaff ? (
-                                <div className="flex flex-col items-center justify-center py-20">
-                                    <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(212,175,55,0.3)]" />
+                    <div className="flex-1 overflow-y-auto px-4 pb-20 z-10 custom-scrollbar">
+                        {loadingStaff ? (
+                            <div className="flex flex-col items-center justify-center py-20">
+                                <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(212,175,55,0.3)]" />
+                            </div>
+                        ) : (wardensList.length === 0 && securityList.length === 0 && studentList.length === 0) ? (
+                            <div className="py-20 text-center opacity-60">
+                                <div className="w-20 h-20 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center border border-white/10 shadow-2xl backdrop-blur-3xl">
+                                    <UserIcon className="w-10 h-10 text-zinc-600" />
                                 </div>
-                            ) : staffList.length === 0 ? (
-                                <div className="py-20 text-center opacity-60">
-                                    <div className="w-20 h-20 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center border border-white/10 shadow-2xl backdrop-blur-3xl">
-                                        <UserIcon className="w-10 h-10 text-zinc-600" />
-                                    </div>
-                                    <p className="font-black text-white uppercase tracking-widest text-[10px]">No contacts found</p>
-                                </div>
-                            ) : (
-                                staffList
-                                    .filter(item =>
-                                        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                        item.roomNo?.toLowerCase().includes(searchTerm.toLowerCase())
-                                    )
-                                    .map(item => (
-                                        <button
-                                            key={item.uid}
-                                            onClick={() => startChatWithUser(item)}
-                                            className="w-full flex items-center gap-4 p-4 bg-white/5 backdrop-blur-xl rounded-[24px] hover:bg-white/10 text-left transition-all border border-white/10 active:scale-95 group shadow-xl ring-1 ring-white/5 hover:ring-[#D4AF37]/20"
-                                        >
-                                            <div className="w-12 h-12 bg-white/5 text-[#D4AF37] rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-white/10">
-                                                <UserIcon className="w-6 h-6" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-black text-white text-[16px] truncate tracking-tight group-hover:text-[#D4AF37] transition-colors font-heading uppercase tracking-[0.05em]">{item.name}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{item.role}</span>
-                                                    {item.roomNo && (
-                                                        <>
-                                                            <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                                                            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Room {item.roomNo}</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))
-                            )}
-                        </div>
+                                <p className="font-black text-white uppercase tracking-widest text-[10px]">No contacts found</p>
+                            </div>
+                        ) : (
+                            <>
+                                {renderContactSection("wardens", "Hostel Wardens", wardensList, <GraduationCap className="w-4 h-4" />, "bg-emerald-500/10 text-emerald-500")}
+                                {renderContactSection("security", "Campus Security & Support", securityList, <Shield className="w-4 h-4" />, "bg-amber-500/10 text-amber-500")}
+                                {renderContactSection("students", "Students", studentList, <Users className="w-4 h-4" />, "bg-blue-500/10 text-blue-500")}
+                            </>
+                        )}
                     </div>
                 </div>
             )}

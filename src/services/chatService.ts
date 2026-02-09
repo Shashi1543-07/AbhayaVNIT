@@ -78,58 +78,73 @@ export const chatService = {
         customId?: string
     ) => {
         try {
+            if (!participantProfiles || participantProfiles.length < 2) {
+                throw new Error("At least two participants are required.");
+            }
+
             const participants: { [uid: string]: boolean } = {};
             const participantIds: string[] = [];
             const participantRoles: { [uid: string]: string } = {};
             const participantNames: { [uid: string]: string } = {};
 
             participantProfiles.forEach(p => {
-                participants[p.uid] = true;
-                participantIds.push(p.uid);
-                participantRoles[p.uid] = p.role;
-                participantNames[p.uid] = p.name;
+                const uid = p.uid.trim();
+                participants[uid] = true;
+                if (!participantIds.includes(uid)) {
+                    participantIds.push(uid);
+                }
+                participantRoles[uid] = (p.role || 'student').toLowerCase();
+                participantNames[uid] = p.name || 'Anonymous';
             });
 
-            // Generate deterministic ID for manual chats if not provided
             let finalId = customId;
             if (!finalId && type === 'manual') {
-                // Sort UIDs to ensure A->B and B->A produce the same ID
-                const uids = Object.keys(participants).sort();
-                finalId = `manual_${uids.join('_')}`;
+                const sortedIds = [...participantIds].sort();
+                finalId = `manual_${sortedIds.join('_')}`;
             }
 
             const conversationId = finalId || doc(collection(db, 'conversations')).id;
             const conversationRef = doc(db, 'conversations', conversationId);
 
-            const initialData: Omit<Conversation, 'id'> = {
-                type,
-                participants,
-                participantIds,
-                participantRoles,
-                participantNames,
-                lastMessage: 'Chat started',
-                lastMessageAt: serverTimestamp(),
-                createdAt: serverTimestamp()
-            };
+            // To avoid permission errors on getDoc for non-existent private docs:
+            // We use a "Safe Get" or just try to create.
+            let existingDoc = null;
+            try {
+                const docSnap = await getDoc(conversationRef);
+                if (docSnap.exists()) {
+                    existingDoc = docSnap.data();
+                }
+            } catch (err) {
+                // Ignore permission errors - it likely doesn't exist or we're creating it
+                console.log("Note: Permission check or doc existence check suppressed", err);
+            }
 
-            const docSnap = await getDoc(conversationRef);
-
-            if (!docSnap.exists()) {
+            if (!existingDoc) {
+                const initialData = {
+                    type,
+                    participants,
+                    participantIds,
+                    participantRoles,
+                    participantNames,
+                    lastMessage: 'Chat started',
+                    lastMessageAt: serverTimestamp(),
+                    createdAt: serverTimestamp()
+                };
                 await setDoc(conversationRef, initialData);
             } else {
-                // If it exists, update metadata in case names/roles changed
                 await updateDoc(conversationRef, {
                     participantRoles,
                     participantNames,
                     participantIds,
-                    participants // Ensure all participants are added
+                    participants,
+                    lastMessageAt: serverTimestamp()
                 });
             }
 
             return conversationId;
-        } catch (error) {
-            console.error("Error creating conversation:", error);
-            throw error;
+        } catch (error: any) {
+            console.error("Critical error in createConversation:", error);
+            throw new Error(error.message || "Failed to initialize secure chat.");
         }
     },
 

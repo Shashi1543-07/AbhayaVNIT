@@ -8,6 +8,7 @@ export interface UserProfile {
     hostelId?: string;
     phoneNumber?: string;
     roomNo?: string;
+    subRole?: string; // Added subRole
 }
 
 export interface StudentProfile {
@@ -33,14 +34,21 @@ export const userService = {
             const q = query(
                 collection(db, 'users'),
                 where('role', 'in', ['warden', 'security']),
-                limit(20)
+                limit(50) // Increased limit to ensure we get enough contacts
             );
 
             const snapshot = await getDocs(q);
-            return snapshot.docs.map(doc => ({
-                uid: doc.id,
-                ...doc.data()
-            } as UserProfile));
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    uid: doc.id,
+                    name: data.name || data.displayName || 'Unknown',
+                    role: data.role,
+                    hostelId: data.hostelId || data.hostel,
+                    phoneNumber: data.phoneNumber || data.phone,
+                    subRole: data.subRole // Map subRole
+                } as UserProfile;
+            });
         } catch (error) {
             console.error("Error fetching staff:", error);
             return [];
