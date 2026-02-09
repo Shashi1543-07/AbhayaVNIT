@@ -74,40 +74,123 @@ export default function UserManagement() {
     // Fetch Users
     const fetchUsers = async () => {
         setListLoading(true);
+        setError('');
         try {
-            let q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
-
+            let q;
             if (roleFilter !== 'all') {
+                // Try strict sort first
                 q = query(collection(db, 'users'), where('role', '==', roleFilter), orderBy('createdAt', 'desc'), limit(50));
+            } else {
+                q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
             }
 
-            const snapshot = await getDocs(q);
-            let fetchedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            // Client-side search (Firestore doesn't support native full-text search)
-            if (searchTerm) {
-                const lowerTerm = searchTerm.toLowerCase();
-                fetchedUsers = fetchedUsers.filter((u: any) =>
-                    u.name.toLowerCase().includes(lowerTerm) ||
-                    u.email.toLowerCase().includes(lowerTerm)
-                );
+            try {
+                const snapshot = await getDocs(q);
+                processSnapshot(snapshot);
+            } catch (strictError: any) {
+                // Fallback for missing index on filtered queries
+                if (roleFilter !== 'all' && strictError.code === 'failed-precondition') {
+                    console.warn("Index missing, falling back to simple query", strictError);
+                    const fallbackQ = query(collection(db, 'users'), where('role', '==', roleFilter), limit(50));
+                    const snapshot = await getDocs(fallbackQ);
+                    processSnapshot(snapshot);
+                } else {
+                    throw strictError;
+                }
             }
-
-            setUsers(fetchedUsers);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error fetching users:", err);
+            setError(`Failed to load users: ${err.message}`);
         } finally {
             setListLoading(false);
         }
     };
 
+    const processSnapshot = (snapshot: any) => {
+        let fetchedUsers = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            fetchedUsers = fetchedUsers.filter((u: any) =>
+                u.name.toLowerCase().includes(lowerTerm) ||
+                u.email.toLowerCase().includes(lowerTerm)
+            );
+        }
+        setUsers(fetchedUsers);
+    };
+
     useEffect(() => {
         if (activeTab === 'list') {
+            setUsers([]); // Clear users to avoid stale data
             fetchUsers();
         }
     }, [activeTab, roleFilter, searchTerm]);
 
     // Actions
+    const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+
+    const toggleSelectAll = () => {
+        if (selectedUsers.size === users.length) {
+            setSelectedUsers(new Set());
+        } else {
+            setSelectedUsers(new Set(users.map(u => u.id)));
+        }
+    };
+
+    const toggleSelectUser = (id: string) => {
+        const newSelected = new Set(selectedUsers);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedUsers(newSelected);
+    };
+
+    const handleExport = () => {
+        const usersToExport = selectedUsers.size > 0
+            ? users.filter(u => selectedUsers.has(u.id))
+            : users;
+
+        if (usersToExport.length === 0) return;
+
+        const headers = [
+            'Name', 'Username', 'Email', 'Role', 'Phone',
+            'Hostel', 'Room No', 'ID Number', 'Enrollment Number',
+            'Sub-Role', 'Status', 'Created At', 'UID'
+        ];
+
+        const csvRows = [headers.join(',')];
+
+        usersToExport.forEach(user => {
+            const createdAtDate = user.createdAt?.toDate ? user.createdAt.toDate().toLocaleString() : user.createdAt;
+            const row = [
+                `"${user.name || ''}"`,
+                `"${user.username || ''}"`,
+                `"${user.email || ''}"`,
+                `"${user.role || ''}"`,
+                `"${user.phone || ''}"`,
+                `"${user.hostel || ''}"`,
+                `"${user.roomNo || ''}"`,
+                `"${user.idNumber || ''}"`,
+                `"${user.enrollmentNumber || ''}"`,
+                `"${user.subRole || ''}"`,
+                `"${user.status || 'active'}"`,
+                `"${createdAtDate || ''}"`,
+                `"${user.uid || user.id}"`
+            ];
+            csvRows.push(row.join(','));
+        });
+
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleStatusAction = (uid: string, currentStatus: string) => {
         setConfirmModal({
             show: true,
@@ -406,23 +489,12 @@ export default function UserManagement() {
                                     <option value="admin" className="bg-zinc-900">Admins</option>
                                 </select>
                                 <button
-                                    onClick={() => {
-                                        const csvContent = "data:text/csv;charset=utf-8,"
-                                            + "Name,Username,Email,Role,Hostel,Room,Phone,ID,Enrollment,SubRole,Status\n"
-                                            + users.map(u => `"${u.name}", "${u.username || ''}", "${u.email}", "${u.role}", "${u.hostel || ''}", "${u.roomNo || ''}", "${u.phone || ''}", "${u.idNumber || ''}", "${u.enrollmentNumber || ''}", "${u.subRole || ''}", "${u.status || 'active'}"`).join("\n");
-                                        const encodedUri = encodeURI(csvContent);
-                                        const link = document.createElement("a");
-                                        link.setAttribute("href", encodedUri);
-                                        link.setAttribute("download", `users_${roleFilter}.csv`);
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        document.body.removeChild(link);
-                                    }}
+                                    onClick={handleExport}
                                     className="p-2 bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] rounded-xl hover:bg-[#D4AF37]/20 transition-all flex items-center gap-2 text-xs font-black uppercase tracking-wider"
-                                    title="Export Current List to CSV"
+                                    title="Export List to CSV"
                                 >
                                     <Download className="w-4 h-4" />
-                                    Export
+                                    {selectedUsers.size > 0 ? `Export (${selectedUsers.size})` : 'Export All'}
                                 </button>
                             </div>
                         </div>
@@ -431,6 +503,14 @@ export default function UserManagement() {
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-white/5 text-zinc-500 font-black uppercase tracking-widest text-[10px] border-b border-white/10">
                                     <tr>
+                                        <th className="p-4 w-10">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-zinc-700 bg-zinc-800 text-[#D4AF37] focus:ring-[#D4AF37]"
+                                                checked={users.length > 0 && selectedUsers.size === users.length}
+                                                onChange={toggleSelectAll}
+                                            />
+                                        </th>
                                         <th className="p-4">Name</th>
                                         <th className="p-4">Email</th>
                                         <th className="p-4">Role</th>
@@ -441,12 +521,20 @@ export default function UserManagement() {
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {listLoading ? (
-                                        <tr><td colSpan={6} className="p-8 text-center text-zinc-500 font-bold uppercase tracking-widest text-xs">Loading users...</td></tr>
+                                        <tr><td colSpan={7} className="p-8 text-center text-zinc-500 font-bold uppercase tracking-widest text-xs">Loading users...</td></tr>
                                     ) : users.length === 0 ? (
-                                        <tr><td colSpan={6} className="p-8 text-center text-zinc-500 font-bold uppercase tracking-widest text-xs">No users found.</td></tr>
+                                        <tr><td colSpan={7} className="p-8 text-center text-zinc-500 font-bold uppercase tracking-widest text-xs">No users found.</td></tr>
                                     ) : (
                                         users.map(user => (
-                                            <tr key={user.id} className="hover:bg-white/5 transition-colors group">
+                                            <tr key={user.id} className={`hover:bg-white/5 transition-colors group ${selectedUsers.has(user.id) ? 'bg-white/5' : ''}`}>
+                                                <td className="p-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="rounded border-zinc-700 bg-zinc-800 text-[#D4AF37] focus:ring-[#D4AF37]"
+                                                        checked={selectedUsers.has(user.id)}
+                                                        onChange={() => toggleSelectUser(user.id)}
+                                                    />
+                                                </td>
                                                 <td className="p-4 font-bold text-white group-hover:text-[#D4AF37] transition-colors">{user.name}</td>
                                                 <td className="p-4 text-zinc-400 text-xs font-medium">{user.email}</td>
                                                 <td className="p-4">

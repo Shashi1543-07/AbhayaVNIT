@@ -47,15 +47,14 @@ export default function WardenDashboard() {
         };
     }, [user, wardenHostelId]);
 
-    // Reports subscription
+    // Reports subscription - Fetch ALL active reports for comprehensive safety
     useEffect(() => {
-        if (!wardenHostelId) return;
-        const unsubscribeReports = incidentService.subscribeToIncidents(wardenHostelId, (reports) => {
+        const unsubscribeReports = incidentService.subscribeToIncidents('all', (reports) => {
             const pending = reports.filter(r => r.status !== 'resolved');
             setPendingReports(pending);
         });
         return () => unsubscribeReports();
-    }, [wardenHostelId]);
+    }, []);
 
     const dismissNotification = async (id: string) => {
         await deleteDoc(doc(db, 'notifications', id));
@@ -126,7 +125,7 @@ export default function WardenDashboard() {
                                     </div>
                                     <div>
                                         <h4 className="font-black text-white text-base font-heading tracking-tight uppercase">Security Intel</h4>
-                                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{pendingReports.length} Active Reports in {wardenHostelId}</p>
+                                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{pendingReports.length} Active Reports (Campus Wide)</p>
                                     </div>
                                 </div>
                                 <div className="bg-amber-500/20 w-8 h-8 rounded-full flex items-center justify-center border border-amber-500/30 group-hover:translate-x-1 transition-transform">
@@ -140,7 +139,7 @@ export default function WardenDashboard() {
                 {/* Active SOS Section */}
                 <motion.div variants={cardVariant}>
                     <h3 className="text-sm font-bold text-[#D4AF37] mb-3 ml-1 uppercase tracking-tighter">Active Emergencies</h3>
-                    <WardenActiveSOS hostelId={wardenHostelId} />
+                    <WardenActiveSOS />
                 </motion.div>
 
                 {/* Active Safe Walks Section */}

@@ -2,36 +2,17 @@ import { useEffect, useState } from 'react';
 import { sosService, type SOSEvent } from '../../services/sosService';
 import SOSCard from '../common/SOSCard';
 
-interface WardenActiveSOSProps {
-    hostelId?: string;
-}
-
-export default function WardenActiveSOS({ hostelId }: WardenActiveSOSProps) {
+export default function WardenActiveSOS() {
     const [allEvents, setAllEvents] = useState<SOSEvent[]>([]);
 
     useEffect(() => {
-        // Subscribe to ALL active SOS events and filter client-side for robustness
+        // Subscribe to ALL active SOS events - No filtering by hostel for safety
+        // This ensures all wardens see all alerts
         const unsubscribe = sosService.subscribeToActiveSOS((events) => {
-            if (!hostelId) {
-                setAllEvents(events);
-                return;
-            }
-
-            // Robust client-side filtering
-            const filtered = events.filter(event => {
-                const hId = hostelId.toLowerCase().trim();
-                const eventHId = (event.hostelId || '').toLowerCase().trim();
-                const eventHostel = (event.hostel || '').toLowerCase().trim();
-
-                return eventHId === hId ||
-                    eventHostel === hId ||
-                    eventHId.includes(hId) ||
-                    hId.includes(eventHId);
-            });
-            setAllEvents(filtered);
-        }); // Removed hostelId param to fetch all
+            setAllEvents(events);
+        });
         return () => unsubscribe();
-    }, [hostelId]);
+    }, []);
 
     if (allEvents.length === 0) {
         return (

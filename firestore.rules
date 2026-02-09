@@ -113,13 +113,13 @@ service cloud.firestore {
         request.auth.uid == resource.data.userId ||
         hasRole('security') ||
         hasRole('admin') ||
-        (hasRole('warden') && resource.data.hostelId == getUserData().hostelId)
+        hasRole('warden')
       );
       allow update: if isAuthenticated() && (
         request.auth.uid == resource.data.userId ||
         hasRole('security') ||
         hasRole('admin') ||
-        (hasRole('warden') && resource.data.hostelId == getUserData().hostelId)
+        hasRole('warden')
       );
       allow delete: if hasRole('admin');
     }

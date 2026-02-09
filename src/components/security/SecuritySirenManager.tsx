@@ -19,6 +19,8 @@ export default function SecuritySirenManager() {
     useEffect(() => {
         if (!isSecurity) return;
 
+        console.log('SecuritySirenManager: Active for Security Role (includes Hostel Affairs & Ladies Rep)');
+
         // Initialize Siren Audio with custom local asset
         sirenRef.current = new Audio('/siren.mp3');
         sirenRef.current.loop = true;
