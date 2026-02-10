@@ -21,13 +21,13 @@ import SecurityMapView from './pages/security/MapView';
 import SecurityProfile from './pages/security/Profile';
 import AdminDashboard from './pages/admin/Dashboard';
 import UserManagement from './pages/admin/UserManagement';
-import SystemSettings from './pages/admin/SystemSettings';
 import AuditLogs from './pages/admin/AuditLogs';
 import Broadcasts from './pages/admin/Broadcasts';
 import AdminSOSDetail from './pages/admin/SOSDetail';
 import SafeWalkMonitor from './pages/security/SafeWalkMonitor';
 import WardenSafeWalk from './pages/warden/WardenSafeWalk';
 import SafeWalkDetails from './pages/common/SafeWalkDetails';
+import AdminProfile from './pages/admin/Profile';
 import SecurityBroadcasts from './pages/security/Broadcasts';
 import ProtectedRoute from './features/auth/ProtectedRoute';
 import { useAuthListener } from './hooks/useAuthListener';
@@ -42,6 +42,7 @@ import EventMapPage from './pages/common/EventMapPage';
 import LiveTrackingManager from './components/common/LiveTrackingManager';
 import SecuritySirenManager from './components/security/SecuritySirenManager';
 import WardenReportDetail from './pages/warden/WardenReportDetail';
+import About from './pages/common/About';
 
 
 import { App as CapacitorApp } from '@capacitor/app';
@@ -95,6 +96,7 @@ function AnimatedRoutes() {
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/feed" element={<Feed />} />
           <Route path="/create-post" element={<CreatePost />} />
+          <Route path="/about" element={<About />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
@@ -138,12 +140,12 @@ function AnimatedRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserManagement />} />
-          <Route path="/admin/settings" element={<SystemSettings />} />
           <Route path="/admin/logs" element={<AuditLogs />} />
           <Route path="/admin/broadcasts" element={<Broadcasts />} />
           <Route path="/admin/sos/:id" element={<AdminSOSDetail />} />
           <Route path="/admin/map/:id" element={<EventMapPage />} />
           <Route path="/admin/safe-walk/:id" element={<SafeWalkDetails />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
         </Route>
       </Routes>
     </AnimatePresence>

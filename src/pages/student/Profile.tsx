@@ -2,12 +2,15 @@ import MobileWrapper from '../../components/layout/MobileWrapper';
 import TopHeader from '../../components/layout/TopHeader';
 import BottomNav from '../../components/layout/BottomNav';
 import { useAuthStore } from '../../context/authStore';
-import { User, Phone, Mail, Home, ChevronRight, Shield, Bell } from 'lucide-react';
+import { User, Phone, Mail, Home, ChevronRight, Shield, Bell, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { containerStagger, cardVariant } from '../../lib/animations';
+import EmergencyContactsList from '../../components/common/EmergencyContactsList';
 
 export default function Profile() {
     const { user, profile } = useAuthStore();
+    const navigate = useNavigate();
 
     return (
         <MobileWrapper>
@@ -118,6 +121,24 @@ export default function Profile() {
                         </div>
                         <ChevronRight className="w-5 h-5 text-zinc-600" />
                     </div>
+
+                    <div
+                        onClick={() => navigate('/about')}
+                        className="glass rounded-[2rem] p-4 flex items-center justify-between border border-white/5 bg-[#1a1a1a]/40 hover:bg-[#1a1a1a]/60 transition-all cursor-pointer group"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
+                                <Info className="w-5 h-5 text-zinc-400 group-hover:text-[#D4AF37] transition-colors" />
+                            </div>
+                            <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">About App</span>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-zinc-600" />
+                    </div>
+                </motion.div>
+
+                {/* Emergency Contacts */}
+                <motion.div variants={cardVariant} className="mb-8">
+                    <EmergencyContactsList />
                 </motion.div>
 
             </motion.main>

@@ -243,6 +243,12 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.authorId;
     }
 
+    // System Settings (Global Config)
+    match /system_settings/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('admin');
+    }
+
     // Default catch-all (restrictive)
     match /{document=**} {
       allow read, write: if false;

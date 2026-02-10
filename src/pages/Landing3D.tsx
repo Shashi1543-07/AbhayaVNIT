@@ -61,20 +61,20 @@ function Scene() {
 export default function Landing3D() {
     return (
         <div
-            className="relative w-full h-screen overflow-hidden bg-black"
+            className="relative w-full min-h-screen bg-black overflow-x-hidden"
             style={{
                 background: 'radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%)'
             }}
         >
             {/* 3D Background */}
-            <div className="absolute inset-0 z-0">
+            <div className="fixed inset-0 z-0">
                 <Canvas camera={{ position: [0, 0, 1] }}>
                     <Scene />
                 </Canvas>
             </div>
 
             {/* Overlay Content */}
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white px-4 pointer-events-none">
+            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white px-4 py-12 pointer-events-none">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}

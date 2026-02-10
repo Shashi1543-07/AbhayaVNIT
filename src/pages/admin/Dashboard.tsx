@@ -4,7 +4,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import { adminNavItems } from '../../lib/navItems';
 import SOSCard from '../../components/common/SOSCard';
 import { sosService, type SOSEvent } from '../../services/sosService';
-import { Users, Shield, UserCheck, UserX, Activity } from 'lucide-react';
+import { Users, Shield, UserCheck, UserX, Activity, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ActiveWalksList from '../../components/security/ActiveWalksList';
 import { collection, getCountFromServer, query, where } from 'firebase/firestore';
@@ -65,7 +65,18 @@ export default function AdminDashboard() {
 
     return (
         <MobileWrapper>
-            <TopHeader title={profile?.name ? `Admin: ${profile.name}` : profile?.username ? `Admin: ${profile.username}` : 'Admin Control'} showBackButton={false} />
+            <TopHeader
+                title={profile?.name ? `Admin: ${profile.name}` : profile?.username ? `Admin: ${profile.username}` : 'Admin Control'}
+                showBackButton={false}
+                leftElement={
+                    <button
+                        onClick={() => navigate('/admin/profile')}
+                        className="p-2 mr-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#D4AF37] border border-white/10 transition-all active:scale-95"
+                    >
+                        <User className="w-5 h-5" />
+                    </button>
+                }
+            />
 
             <motion.main
                 className="px-4 pt-nav-safe pb-nav-safe space-y-6"
