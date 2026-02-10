@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">vnit-girls-safety</string>
-    <string name="title_activity_main">vnit-girls-safety</string>
+    <string name="app_name">Abhaya Connect</string>
+    <string name="title_activity_main">Abhaya Connect</string>
     <string name="package_name">com.vnit.girlsafety</string>
     <string name="custom_url_scheme">com.vnit.girlsafety</string>
 </resources>
