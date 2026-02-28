@@ -11,6 +11,7 @@ import { containerStagger, cardVariant } from '../../lib/animations';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { adminService } from '../../services/adminService';
+import BiometricSettings from '../../components/shared/BiometricSettings';
 
 export default function AdminProfile() {
     const { user, profile } = useAuthStore();
@@ -196,6 +197,11 @@ export default function AdminProfile() {
                         </div>
                         <ChevronRight className="w-5 h-5 text-zinc-600" />
                     </div>
+                </motion.div>
+
+                {/* Biometric Auth Settings */}
+                <motion.div variants={cardVariant} className="mb-24">
+                    <BiometricSettings role="admin" />
                 </motion.div>
             </motion.main>
             <BottomNav items={adminNavItems} />

@@ -8,6 +8,7 @@ import { securityNavItems } from '../../lib/navItems';
 import { Shield, Info, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import EmergencyContactsList from '../../components/common/EmergencyContactsList';
+import BiometricSettings from '../../components/shared/BiometricSettings';
 
 export default function SecurityProfile() {
     const { user, profile } = useAuthStore();
@@ -96,6 +97,11 @@ export default function SecurityProfile() {
                         </div>
                         <ChevronRight className="w-5 h-5 text-zinc-600" />
                     </div>
+                </motion.div>
+
+                {/* Biometric Auth Settings */}
+                <motion.div variants={cardVariant}>
+                    <BiometricSettings role="security" />
                 </motion.div>
 
                 {/* Emergency Contacts */}

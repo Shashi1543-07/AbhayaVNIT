@@ -15,11 +15,13 @@
     "@capacitor/cli": "^7.4.4",
     "@capacitor/core": "^8.0.0",
     "@capacitor/haptics": "^8.0.0",
+    "@capgo/capacitor-native-biometric": "^8.4.2",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
     "@react-three/postprocessing": "^3.0.4",
     "@types/three": "^0.181.0",
+    "@types/uuid": "^10.0.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.6.0",
@@ -34,6 +36,7 @@
     "recharts": "^3.4.1",
     "tailwind-merge": "^3.4.0",
     "three": "^0.181.2",
+    "uuid": "^13.0.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

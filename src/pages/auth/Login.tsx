@@ -3,7 +3,8 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth, db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Home } from 'lucide-react';
+import { Eye, EyeOff, Home, Fingerprint } from 'lucide-react';
+import { biometricService } from '../../services/biometricService';
 
 export default function Login() {
     const [searchParams] = useSearchParams();
@@ -15,7 +16,78 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [biometricAvailable, setBiometricAvailable] = useState(false);
     const navigate = useNavigate();
+
+    React.useEffect(() => {
+        const checkBiometric = async () => {
+            const isAvailable = await biometricService.isAvailable();
+            setBiometricAvailable(isAvailable);
+        };
+        checkBiometric();
+    }, []);
+
+    const handleBiometricLogin = async () => {
+        setError('');
+        try {
+            const credentials = await biometricService.getCredentials(roleParam, 'Authenticate to login into your Dashboard');
+            if (credentials && credentials.username && credentials.password) {
+                // If credentials match the current role's expected prefix/suffix or we just trust them
+                // To be safe we should try logging in
+                setLoading(true);
+                const userCredential = await signInWithEmailAndPassword(auth, credentials.username, credentials.password);
+                const user = userCredential.user;
+
+                // Fetch user role from Firestore
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const userRole = userData.role;
+
+                    // STRICT ROLE ENFORCEMENT
+                    if (userRole !== roleParam) {
+                        await signOut(auth);
+                        setError(`Access Denied: You are trying to login as ${displayRole} but your account is registered as ${userRole}.`);
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (userData.status === 'disabled') {
+                        await signOut(auth);
+                        setError('Access Denied: Your account has been disabled.');
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (userData.forcePasswordReset) {
+                        navigate('/change-password');
+                        return;
+                    }
+
+                    routeToDashboard(userRole);
+                } else {
+                    setError('User profile not found.');
+                }
+            } else {
+                setError('No biometric credentials saved. Please login manually first.');
+            }
+        } catch (err) {
+            console.error('Biometric login failed:', err);
+            setError('Biometric login failed or was cancelled.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const routeToDashboard = (userRole: string) => {
+        switch (userRole) {
+            case 'student': navigate('/student/dashboard'); break;
+            case 'warden': navigate('/warden/dashboard'); break;
+            case 'security': navigate('/security/dashboard'); break;
+            case 'admin': navigate('/admin/dashboard'); break;
+            default: navigate('/student/dashboard'); // Fallback
+        }
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,22 +124,14 @@ export default function Login() {
                     return;
                 }
 
-                switch (userRole) {
-                    case 'student':
-                        navigate('/student/dashboard');
-                        break;
-                    case 'warden':
-                        navigate('/warden/dashboard');
-                        break;
-                    case 'security':
-                        navigate('/security/dashboard');
-                        break;
-                    case 'admin':
-                        navigate('/admin/dashboard');
-                        break;
-                    default:
-                        navigate('/student/dashboard'); // Fallback
+                // If biometric is available, suggest saving it or just save it securely under the hood
+                if (biometricAvailable) {
+                    // Try to save the credentials securely
+                    // Note: This relies on native prompt "Do you want to allow this app to use Face ID/Touch ID?" 
+                    await biometricService.saveCredentials(email, password, roleParam);
                 }
+
+                routeToDashboard(userRole);
             } else {
                 setError('User profile not found.');
             }
@@ -152,6 +216,18 @@ export default function Login() {
                     >
                         {loading ? 'Authorizing...' : 'Authorize Access'}
                     </button>
+
+                    {biometricAvailable && (
+                        <button
+                            type="button"
+                            onClick={handleBiometricLogin}
+                            disabled={loading}
+                            className="w-full mt-3 bg-black/40 border border-[#D4AF37]/50 text-[#D4AF37] py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[#D4AF37]/10 transition-all shadow-inner"
+                        >
+                            <Fingerprint className="w-5 h-5" />
+                            Fast Login with Biometrics
+                        </button>
+                    )}
                 </form>
 
                 <div className="mt-6 text-center text-sm">

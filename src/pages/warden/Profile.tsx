@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { containerStagger, cardVariant } from '../../lib/animations';
 import EmergencyContactsList from '../../components/common/EmergencyContactsList';
+import BiometricSettings from '../../components/shared/BiometricSettings';
 
 export default function WardenProfile() {
     const { user, profile } = useAuthStore();
@@ -96,6 +97,11 @@ export default function WardenProfile() {
                         </div>
                         <ChevronRight className="w-5 h-5 text-zinc-600" />
                     </div>
+                </motion.div>
+
+                {/* Biometric Auth Settings */}
+                <motion.div variants={cardVariant}>
+                    <BiometricSettings role="warden" />
                 </motion.div>
 
                 {/* Emergency Contacts */}
