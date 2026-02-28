@@ -1,51 +1,61 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import Landing3D from './pages/Landing3D';
-import Login from './pages/auth/Login';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import ChangePassword from './pages/auth/ChangePassword';
-import StudentDashboard from './pages/student/Dashboard';
-import ReportIncident from './pages/student/ReportIncident';
-import SafeWalk from './pages/student/SafeWalk';
-import Reports from './pages/student/Reports';
-import Messages from './pages/student/Messages';
-import Profile from './pages/student/Profile';
-import WardenDashboard from './pages/warden/Dashboard';
-import WardenSOS from './pages/warden/SOS';
-import WardenReports from './pages/warden/Reports';
-import WardenProfile from './pages/warden/Profile';
-import SecurityDashboard from './pages/security/Dashboard';
-import SecuritySOSDetail from './pages/security/SOSDetail';
-import SecurityMapView from './pages/security/MapView';
-import SecurityProfile from './pages/security/Profile';
-import AdminDashboard from './pages/admin/Dashboard';
-import UserManagement from './pages/admin/UserManagement';
-import AuditLogs from './pages/admin/AuditLogs';
-import Broadcasts from './pages/admin/Broadcasts';
-import AdminSOSDetail from './pages/admin/SOSDetail';
-import SafeWalkMonitor from './pages/security/SafeWalkMonitor';
-import WardenSafeWalk from './pages/warden/WardenSafeWalk';
-import SafeWalkDetails from './pages/common/SafeWalkDetails';
-import AdminProfile from './pages/admin/Profile';
-import SecurityBroadcasts from './pages/security/Broadcasts';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+// Layout & Core
 import ProtectedRoute from './features/auth/ProtectedRoute';
 import { useAuthListener } from './hooks/useAuthListener';
-import WardenBroadcasts from './pages/warden/Broadcasts';
-import WardenSOSDetail from './pages/warden/WardenSOSDetail';
-import WardenDirectory from './pages/warden/Directory';
 import CallOverlay from './components/calling/CallOverlay';
-import Feed from './pages/common/Feed';
-
-import CreatePost from './pages/student/CreatePost';
-import EventMapPage from './pages/common/EventMapPage';
 import LiveTrackingManager from './components/common/LiveTrackingManager';
 import SecuritySirenManager from './components/security/SecuritySirenManager';
-import WardenReportDetail from './pages/warden/WardenReportDetail';
-import About from './pages/common/About';
-
-
 import { App as CapacitorApp } from '@capacitor/app';
+
+// Lazy-loaded Pages (Code Splitting)
+const Landing3D = lazy(() => import('./pages/Landing3D'));
+const Login = lazy(() => import('./pages/auth/Login'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ChangePassword = lazy(() => import('./pages/auth/ChangePassword'));
+const About = lazy(() => import('./pages/common/About'));
+const Feed = lazy(() => import('./pages/common/Feed'));
+const EventMapPage = lazy(() => import('./pages/common/EventMapPage'));
+const SafeWalkDetails = lazy(() => import('./pages/common/SafeWalkDetails'));
+
+// Student Pages
+const StudentDashboard = lazy(() => import('./pages/student/Dashboard'));
+const ReportIncident = lazy(() => import('./pages/student/ReportIncident'));
+const SafeWalk = lazy(() => import('./pages/student/SafeWalk'));
+const Reports = lazy(() => import('./pages/student/Reports'));
+const Messages = lazy(() => import('./pages/student/Messages'));
+const Profile = lazy(() => import('./pages/student/Profile'));
+const CreatePost = lazy(() => import('./pages/student/CreatePost'));
+
+// Warden Pages
+const WardenDashboard = lazy(() => import('./pages/warden/Dashboard'));
+const WardenSOS = lazy(() => import('./pages/warden/SOS'));
+const WardenReports = lazy(() => import('./pages/warden/Reports'));
+const WardenProfile = lazy(() => import('./pages/warden/Profile'));
+const WardenBroadcasts = lazy(() => import('./pages/warden/Broadcasts'));
+const WardenSOSDetail = lazy(() => import('./pages/warden/WardenSOSDetail'));
+const WardenDirectory = lazy(() => import('./pages/warden/Directory'));
+const WardenSafeWalk = lazy(() => import('./pages/warden/WardenSafeWalk'));
+const WardenReportDetail = lazy(() => import('./pages/warden/WardenReportDetail'));
+
+// Security Pages
+const SecurityDashboard = lazy(() => import('./pages/security/Dashboard'));
+const SecuritySOSDetail = lazy(() => import('./pages/security/SOSDetail'));
+const SecurityMapView = lazy(() => import('./pages/security/MapView'));
+const SecurityProfile = lazy(() => import('./pages/security/Profile'));
+const SecurityBroadcasts = lazy(() => import('./pages/security/Broadcasts'));
+const SafeWalkMonitor = lazy(() => import('./pages/security/SafeWalkMonitor'));
+
+// Admin Pages
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const UserManagement = lazy(() => import('./pages/admin/UserManagement'));
+const AuditLogs = lazy(() => import('./pages/admin/AuditLogs'));
+const Broadcasts = lazy(() => import('./pages/admin/Broadcasts'));
+const AdminSOSDetail = lazy(() => import('./pages/admin/SOSDetail'));
+const AdminProfile = lazy(() => import('./pages/admin/Profile'));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -155,15 +165,21 @@ function AnimatedRoutes() {
 function App() {
   useAuthListener();
 
-  console.log("App: Rendering Shell");
-
   return (
-    <Router>
-      <AnimatedRoutes />
-      <CallOverlay />
-      <LiveTrackingManager />
-      <SecuritySirenManager />
-    </Router>
+    <ErrorBoundary>
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      }>
+        <Router>
+          <AnimatedRoutes />
+          <CallOverlay />
+          <LiveTrackingManager />
+          <SecuritySirenManager />
+        </Router>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

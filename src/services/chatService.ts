@@ -12,7 +12,8 @@ import {
     updateDoc,
     getDoc,
     limit,
-    arrayUnion
+    arrayUnion,
+    writeBatch
 } from 'firebase/firestore';
 
 export interface ChatMessage {
@@ -302,7 +303,8 @@ export const chatService = {
     },
 
     /**
-     * Mark messages as delivered or seen
+     * Mark messages as delivered or seen — uses a batch write instead of
+     * individual writes per message (fixes N+1 Firestore write problem)
      */
     updateMessageStatus: async (
         conversationId: string,
@@ -310,13 +312,15 @@ export const chatService = {
         status: 'delivered' | 'seen'
     ) => {
         try {
-            const promises = messageIds.map(messageId => {
+            if (!messageIds.length) return;
+            const batch = writeBatch(db);
+            messageIds.forEach(messageId => {
                 const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
-                return updateDoc(messageRef, { status });
+                batch.update(messageRef, { status });
             });
-            await Promise.all(promises);
+            await batch.commit();
         } catch (error) {
-            console.error("Error updating message status:", error);
+            console.error('Error updating message status:', error);
         }
     },
 
@@ -392,14 +396,16 @@ export const chatService = {
     },
 
     /**
-     * Upload voice note (placeholder - requires Firebase Storage setup)
-     */
-    /**
-     * Send a voice note
+     * Send a voice note — using DataURL (base64) because Firebase Storage
+     * is unavailable on this project's current pricing plan.
      */
     sendVoiceNote: async (conversationId: string, audioBlob: Blob, duration: number, user: any) => {
         try {
-            // For now, using DataURL placeholder
+            // Check size to prevent Firestore 1MB document limit crash
+            if (audioBlob.size > 700000) { // ~700KB max to be safe with base64 overhead
+                throw new Error("Voice note is too long. Please keep it under 30 seconds.");
+            }
+
             const reader = new FileReader();
             const audioUrl = await new Promise<string>((resolve) => {
                 reader.onloadend = () => resolve(reader.result as string);
@@ -411,7 +417,7 @@ export const chatService = {
                 duration
             });
         } catch (error) {
-            console.error("Error sending voice note:", error);
+            console.error('Error sending voice note:', error);
             throw error;
         }
     },

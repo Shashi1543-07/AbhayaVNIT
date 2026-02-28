@@ -42,17 +42,36 @@ export interface CallSession {
     updatedAt: any;
 }
 
+// ICE server config — uses Metered.ca TURN for reliable connectivity across
+// mobile networks, university NATs, and firewalls.
+// Credentials are loaded from .env (VITE_TURN_USERNAME / VITE_TURN_CREDENTIAL)
+const TURN_USERNAME = import.meta.env.VITE_TURN_USERNAME as string;
+const TURN_CREDENTIAL = import.meta.env.VITE_TURN_CREDENTIAL as string;
+
 const servers = {
     iceServers: [
         {
-            urls: [
-                'stun:stun1.l.google.com:19302',
-                'stun:stun2.l.google.com:19302',
-                'stun:stun3.l.google.com:19302',
-                'stun:stun4.l.google.com:19302',
-                'stun:stun.l.google.com:19302',
-                'stun:global.stun.twilio.com:3478',
-            ],
+            urls: 'stun:stun.relay.metered.ca:80',
+        },
+        {
+            urls: 'turn:global.relay.metered.ca:80',
+            username: TURN_USERNAME,
+            credential: TURN_CREDENTIAL,
+        },
+        {
+            urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+            username: TURN_USERNAME,
+            credential: TURN_CREDENTIAL,
+        },
+        {
+            urls: 'turn:global.relay.metered.ca:443',
+            username: TURN_USERNAME,
+            credential: TURN_CREDENTIAL,
+        },
+        {
+            urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+            username: TURN_USERNAME,
+            credential: TURN_CREDENTIAL,
         },
     ],
     iceCandidatePoolSize: 10,
