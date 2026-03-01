@@ -101,7 +101,7 @@ export default function WardenProfile() {
 
                 {/* Biometric Auth Settings */}
                 <motion.div variants={cardVariant}>
-                    <BiometricSettings role="warden" />
+                    <BiometricSettings role="warden" userEmail={user?.email || ''} />
                 </motion.div>
 
                 {/* Emergency Contacts */}

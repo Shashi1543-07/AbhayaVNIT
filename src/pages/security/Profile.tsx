@@ -101,7 +101,7 @@ export default function SecurityProfile() {
 
                 {/* Biometric Auth Settings */}
                 <motion.div variants={cardVariant}>
-                    <BiometricSettings role="security" />
+                    <BiometricSettings role="security" userEmail={user?.email || ''} />
                 </motion.div>
 
                 {/* Emergency Contacts */}

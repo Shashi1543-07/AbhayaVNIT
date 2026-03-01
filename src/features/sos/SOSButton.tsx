@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import gsap from 'gsap';
 import { useSOS } from './useSOS';
 import { AlertTriangle, Mic, MicOff, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -15,29 +16,36 @@ export default function SOSButton() {
     useLiveLocationTracking(!!activeSOS, user?.uid);
 
     const [isPressed, setIsPressed] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [dismissedEventId, setDismissedEventId] = useState<string | null>(null);
-    const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+    const progressTween = useRef<gsap.core.Tween | null>(null);
+    const progressBarRef = useRef<HTMLDivElement>(null);
+
+    // Import GSAP if not present, but wait, I should check if it's imported.
+    // I will add the import at the top too.
 
     const handleMouseDown = () => {
         if (activeSOS) return; // Already active
         setIsPressed(true);
 
-        // Start progress
-        let p = 0;
-        progressInterval.current = setInterval(() => {
-            p += 2; // 50ms * 20 = 1000ms (1 second hold)
-            if (p >= 100) p = 100;
-            setProgress(p);
-        }, 20);
+        // Kill any existing tween
+        if (progressTween.current) progressTween.current.kill();
 
-        // Trigger after 1 second
-        pressTimer.current = setTimeout(() => {
-            triggerSOS(); // In real app, pass audioEnabled state to service
-            resetPress();
-        }, 1000);
+        // High performance GSAP animation
+        progressTween.current = gsap.to({}, {
+            duration: 1.5,
+            ease: "none",
+            onUpdate: function () {
+                const p = this.progress() * 100;
+                if (progressBarRef.current) {
+                    progressBarRef.current.style.width = `${p}%`;
+                }
+            },
+            onComplete: () => {
+                triggerSOS();
+                resetPress();
+            }
+        });
     };
 
     const handleMouseUp = () => {
@@ -46,9 +54,13 @@ export default function SOSButton() {
 
     const resetPress = () => {
         setIsPressed(false);
-        setProgress(0);
-        if (pressTimer.current) clearTimeout(pressTimer.current);
-        if (progressInterval.current) clearInterval(progressInterval.current);
+        if (progressTween.current) {
+            progressTween.current.kill();
+            progressTween.current = null;
+        }
+        if (progressBarRef.current) {
+            progressBarRef.current.style.width = '0%';
+        }
     };
 
     const handleModalClose = () => {
@@ -94,8 +106,9 @@ export default function SOSButton() {
                 >
                     {/* Progress Bar Background */}
                     <div
-                        className="absolute bottom-0 left-0 h-full bg-red-900 transition-all duration-75 ease-linear opacity-40"
-                        style={{ width: `${progress}%` }}
+                        ref={progressBarRef}
+                        className="absolute bottom-0 left-0 h-full bg-red-900 opacity-40 will-change-[width]"
+                        style={{ width: '0%' }}
                     />
 
                     {/* Ripple Effect (Visual only for now) */}

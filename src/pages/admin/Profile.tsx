@@ -201,7 +201,7 @@ export default function AdminProfile() {
 
                 {/* Biometric Auth Settings */}
                 <motion.div variants={cardVariant} className="mb-24">
-                    <BiometricSettings role="admin" />
+                    <BiometricSettings role="admin" userEmail={user?.email || ''} />
                 </motion.div>
             </motion.main>
             <BottomNav items={adminNavItems} />

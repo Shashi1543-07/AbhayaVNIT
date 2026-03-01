@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronUp, ChevronDown, AlertTriangle, HeartPulse } from 'lucide-react';
 import { sosPulse, sosRipple } from '../../lib/animations';
+import gsap from 'gsap';
 
 interface SOSButtonProps {
     onActivate: (type: 'medical' | 'harassment' | 'general') => void;
@@ -11,27 +12,42 @@ interface SOSButtonProps {
 
 const SOSButton: React.FC<SOSButtonProps> = ({ onActivate, className = '', disabled = false }) => {
     const [isPressing, setIsPressing] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [sosType, setSosType] = useState<'medical' | 'harassment' | 'general'>('general');
     const containerRef = useRef<HTMLDivElement>(null);
+    const progressBarRef = useRef<HTMLDivElement>(null);
+    const progressTween = useRef<gsap.core.Tween | null>(null);
 
     useEffect(() => {
-        let interval: ReturnType<typeof setInterval>;
         if (isPressing && !disabled) {
-            interval = setInterval(() => {
-                setProgress((prev) => {
-                    if (prev >= 100) {
-                        clearInterval(interval);
-                        onActivate(sosType);
-                        return 0;
+            // Kill any existing tween
+            if (progressTween.current) progressTween.current.kill();
+
+            progressTween.current = gsap.to({}, {
+                duration: 1.5,
+                ease: "none",
+                onUpdate: function () {
+                    const p = this.progress() * 100;
+                    if (progressBarRef.current) {
+                        progressBarRef.current.style.height = `${p}%`;
                     }
-                    return prev + 2.5; // 40ms * 2.5 = 100% in ~1.6s (faster for better UX)
-                });
-            }, 40);
+                },
+                onComplete: () => {
+                    onActivate(sosType);
+                    setIsPressing(false);
+                }
+            });
         } else {
-            setProgress(0);
+            if (progressTween.current) {
+                progressTween.current.kill();
+                progressTween.current = null;
+            }
+            if (progressBarRef.current) {
+                progressBarRef.current.style.height = '0%';
+            }
         }
-        return () => clearInterval(interval);
+        return () => {
+            if (progressTween.current) progressTween.current.kill();
+        };
     }, [isPressing, onActivate, sosType, disabled]);
 
     const handleStart = () => setIsPressing(true);
@@ -106,15 +122,16 @@ const SOSButton: React.FC<SOSButtonProps> = ({ onActivate, className = '', disab
             >
                 {/* Progress Fill */}
                 <div
-                    className="absolute bottom-0 left-0 right-0 bg-black/30 transition-all duration-75 ease-linear"
-                    style={{ height: `${progress}%` }}
+                    ref={progressBarRef}
+                    className="absolute bottom-0 left-0 right-0 bg-black/30 will-change-[height]"
+                    style={{ height: '0%' }}
                 />
 
                 <span className="text-3xl font-bold font-heading relative z-20 drop-shadow-md">
                     {sosType === 'medical' ? 'MED' : sosType === 'harassment' ? 'HELP' : 'SOS'}
                 </span>
                 <span className="text-[10px] font-medium opacity-90 mt-1 relative z-20 uppercase tracking-wider">
-                    {sosType === 'general' ? 'Hold 3s' : 'Release'}
+                    {sosType === 'general' ? 'Hold 1.5s' : 'Release'}
                 </span>
             </motion.div>
 

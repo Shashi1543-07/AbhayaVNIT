@@ -3,8 +3,8 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth, db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Home, Fingerprint } from 'lucide-react';
-import { biometricService } from '../../services/biometricService';
+import { Fingerprint, X, User, Eye, EyeOff, Home } from 'lucide-react';
+import { biometricService, type SavedCredentials } from '../../services/biometricService';
 
 export default function Login() {
     const [searchParams] = useSearchParams();
@@ -17,20 +17,42 @@ export default function Login() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [biometricAvailable, setBiometricAvailable] = useState(false);
+    const [enabledAccounts, setEnabledAccounts] = useState<SavedCredentials[]>([]);
+    const [showAccountPicker, setShowAccountPicker] = useState(false);
     const navigate = useNavigate();
 
     React.useEffect(() => {
-        const checkBiometric = async () => {
+        const initBiometrics = async () => {
             const isAvailable = await biometricService.isAvailable();
             setBiometricAvailable(isAvailable);
+            if (isAvailable) {
+                const registry = await biometricService.getRegistry();
+                // Filter by current role
+                setEnabledAccounts(registry.filter(acc => acc.role === roleParam));
+            }
         };
-        checkBiometric();
-    }, []);
+        initBiometrics();
+    }, [roleParam]);
 
-    const handleBiometricLogin = async () => {
+    const handleBiometricLogin = async (selectedEmail?: string) => {
         setError('');
+
+        // If we have multiple accounts and none selected yet, show picker
+        if (!selectedEmail && enabledAccounts.length > 1) {
+            setShowAccountPicker(true);
+            return;
+        }
+
+        // Use selected or the only one available
+        const targetEmail = selectedEmail || (enabledAccounts.length === 1 ? enabledAccounts[0].email : email);
+
+        if (!targetEmail) {
+            setError('No biometric account selected. Please login manually first.');
+            return;
+        }
+
         try {
-            const credentials = await biometricService.getCredentials(roleParam, 'Authenticate to login into your Dashboard');
+            const credentials = await biometricService.getCredentials(roleParam, targetEmail);
             if (credentials && credentials.username && credentials.password) {
                 // If credentials match the current role's expected prefix/suffix or we just trust them
                 // To be safe we should try logging in
@@ -73,9 +95,10 @@ export default function Login() {
             }
         } catch (err) {
             console.error('Biometric login failed:', err);
-            setError('Biometric login failed or was cancelled.');
+            setError('Biometric authentication failed.');
         } finally {
             setLoading(false);
+            setShowAccountPicker(false);
         }
     };
 
@@ -128,7 +151,7 @@ export default function Login() {
                 if (biometricAvailable) {
                     // Try to save the credentials securely
                     // Note: This relies on native prompt "Do you want to allow this app to use Face ID/Touch ID?" 
-                    await biometricService.saveCredentials(email, password, roleParam);
+                    await biometricService.saveCredentials(email, password, roleParam, email);
                 }
 
                 routeToDashboard(userRole);
@@ -220,7 +243,7 @@ export default function Login() {
                     {biometricAvailable && (
                         <button
                             type="button"
-                            onClick={handleBiometricLogin}
+                            onClick={() => handleBiometricLogin()}
                             disabled={loading}
                             className="w-full mt-3 bg-black/40 border border-[#D4AF37]/50 text-[#D4AF37] py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[#D4AF37]/10 transition-all shadow-inner"
                         >
@@ -238,6 +261,41 @@ export default function Login() {
                     <p className="leading-relaxed opacity-70">Credentials are issued via official channels. Contact administrators for access rights.</p>
                 </div>
             </div>
+
+            {/* Professional Account Picker Modal */}
+            {showAccountPicker && (
+                <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowAccountPicker(false)} />
+                    <div className="relative glass w-full max-w-sm rounded-[32px] border border-[#D4AF37]/20 p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-black text-[#D4AF37] uppercase tracking-tight">Select Account</h3>
+                            <button onClick={() => setShowAccountPicker(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-zinc-500" />
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            {enabledAccounts.map((acc) => (
+                                <button
+                                    key={acc.email}
+                                    onClick={() => handleBiometricLogin(acc.email)}
+                                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-[#D4AF37]/30 hover:bg-[#D4AF37]/5 transition-all text-left active:scale-[0.98]"
+                                >
+                                    <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
+                                        <User className="w-5 h-5 text-[#D4AF37]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-white">{acc.email}</p>
+                                        <p className="text-[10px] text-[#D4AF37] uppercase tracking-widest font-bold">Biometric Active</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                        <p className="mt-6 text-[10px] text-zinc-500 text-center uppercase tracking-widest font-bold opacity-50">
+                            Secure isolation active
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

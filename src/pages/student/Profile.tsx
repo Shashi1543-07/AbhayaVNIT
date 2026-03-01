@@ -139,7 +139,7 @@ export default function Profile() {
 
                 {/* Biometric Auth Settings */}
                 <motion.div variants={cardVariant}>
-                    <BiometricSettings role="student" />
+                    <BiometricSettings role="student" userEmail={user?.email || ''} />
                 </motion.div>
 
                 {/* Emergency Contacts */}

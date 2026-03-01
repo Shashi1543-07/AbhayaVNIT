@@ -23,6 +23,8 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
     const [dragType, setDragType] = useState<'medical' | 'harassment' | 'general'>('general');
 
     const buttonRef = useRef<HTMLButtonElement>(null);
+    const progressCircleRef = useRef<SVGCircleElement>(null);
+    const progressTween = useRef<gsap.core.Tween | null>(null);
     const timerRef = useRef<any>(null);
     const startTimeRef = useRef<number>(0);
     const startYRef = useRef<number>(0);
@@ -104,23 +106,35 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
 
         Haptics.impact({ style: ImpactStyle.Light });
 
-        timerRef.current = setInterval(() => {
-            const elapsed = Date.now() - startTimeRef.current;
-            const newProgress = Math.min((elapsed / 2500) * 100, 100);
+        Haptics.impact({ style: ImpactStyle.Light });
 
-            // Access current progress via functional update to avoid dependency issues
-            setProgress((prevProgress) => {
-                if (Math.floor(newProgress / 20) > Math.floor(prevProgress / 20)) {
+        // Kill any existing progress tween
+        if (progressTween.current) progressTween.current.kill();
+
+        // High performance progress animation with GSAP
+        progressTween.current = gsap.to({}, {
+            duration: 1.5,
+            ease: "none",
+            onUpdate: function () {
+                const p = this.progress() * 100;
+                setProgress(p);
+
+                // Update SVG directly for maximum performance
+                if (progressCircleRef.current) {
+                    const offset = 615 - (615 * this.progress());
+                    progressCircleRef.current.style.strokeDashoffset = offset.toString();
+                }
+
+                // Haptic feedback at milestones
+                if (Math.floor(p / 20) > Math.floor(progress / 20)) {
                     Haptics.impact({ style: ImpactStyle.Light });
                 }
-                return newProgress;
-            });
-
-            if (newProgress >= 100) {
+            },
+            onComplete: () => {
                 Haptics.notification({ type: 'SUCCESS' as any });
                 activateSOS();
             }
-        }, 50);
+        });
     };
 
     const handleMove = (e: MouseEvent | TouchEvent) => {
@@ -149,7 +163,17 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
 
         // We check current progress state via a ref if needed, but here we can just check if long pressing was true
         setIsLongPressing(false);
+        if (progressTween.current) {
+            progressTween.current.kill();
+            progressTween.current = null;
+        }
         setProgress(0);
+
+        // Reset SVG
+        if (progressCircleRef.current) {
+            progressCircleRef.current.style.strokeDashoffset = "615";
+        }
+
         if (timerRef.current) clearInterval(timerRef.current);
 
         gsap.to(buttonRef.current, {
@@ -323,15 +347,16 @@ export default function SOSButton({ onActivate, disabled }: SOSButtonProps) {
                 {!isActive && (
                     <svg viewBox="0 0 208 208" className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none p-1">
                         <circle
+                            ref={progressCircleRef}
                             cx="104" cy="104" r="98"
                             fill="none"
                             stroke="#D4AF37"
                             strokeWidth="5"
                             strokeDasharray="615"
-                            strokeDashoffset={615 - (615 * progress) / 100}
+                            strokeDashoffset="615"
                             style={{
                                 filter: "drop-shadow(0 0 8px rgba(212, 175, 55, 0.6))",
-                                transition: "stroke-dashoffset 0.1s linear"
+                                willChange: "stroke-dashoffset"
                             }}
                         />
                     </svg>

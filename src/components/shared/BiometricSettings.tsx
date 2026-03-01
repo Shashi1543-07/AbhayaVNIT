@@ -4,9 +4,10 @@ import { biometricService } from '../../services/biometricService';
 
 interface BiometricSettingsProps {
     role: string;
+    userEmail: string;
 }
 
-export default function BiometricSettings({ role }: BiometricSettingsProps) {
+export default function BiometricSettings({ role, userEmail }: BiometricSettingsProps) {
     const [isAvailable, setIsAvailable] = useState(false);
     const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -17,19 +18,19 @@ export default function BiometricSettings({ role }: BiometricSettingsProps) {
             const available = await biometricService.isAvailable();
             setIsAvailable(available);
 
-            if (available) {
-                // Check if credentials exist for this specific role
-                const exists = await biometricService.hasCredentials(role);
+            if (available && userEmail) {
+                // Check if credentials exist for this specific role and user
+                const exists = await biometricService.hasCredentials(role, userEmail);
                 setHasSavedCredentials(exists);
             }
             setLoading(false);
         };
         checkBiometricStatus();
-    }, [role]);
+    }, [role, userEmail]);
 
     const handleRemoveBiometric = async () => {
         if (window.confirm('Are you sure you want to remove biometric login for this device? You will need to login manually next time.')) {
-            await biometricService.deleteCredentials(role);
+            await biometricService.deleteCredentials(role, userEmail);
             setHasSavedCredentials(false);
             alert('Biometric login removed for this device.');
         }

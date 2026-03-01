@@ -63,7 +63,7 @@ function AnimatedRoutes() {
 
   useEffect(() => {
     const setupBackButton = async () => {
-      const listener = await CapacitorApp.addListener('backButton', () => {
+      const listener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
         const rootPaths = [
           '/',
           '/login',
@@ -73,12 +73,16 @@ function AnimatedRoutes() {
           '/admin/dashboard'
         ];
 
-        // Check if we are on a root path
-        const isRoot = rootPaths.some(path => location.pathname === path || location.pathname.endsWith('/dashboard'));
+        // If we are on a root path AND the capacitor bridge says we can't go back further in its internal view stack
+        // OR we are on a root path and decide this is where we want to exit.
+        // Actually, just checking if we're at the root of our own routing history is usually better.
 
-        if (isRoot) {
+        const isRoot = rootPaths.includes(location.pathname);
+
+        if (isRoot && !canGoBack) {
           CapacitorApp.exitApp();
         } else {
+          // If we are not at root, or the bridge says we can go back internally
           navigate(-1);
         }
       });
